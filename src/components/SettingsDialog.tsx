@@ -1,0 +1,156 @@
+"use client";
+
+import { useState } from "react";
+import { useAppStore } from "@/stores/app.store";
+import { getAIProvider } from "@/services/ai";
+import { PROVIDER_DEFAULTS } from "@/types/ai";
+import type { AIProviderType } from "@/types/ai";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+
+const providerOrder: AIProviderType[] = ["openai", "anthropic", "gemini"];
+
+export function SettingsDialog() {
+  const { settingsOpen, setSettingsOpen, providerConfigs, setProviderConfig, saveProviderConfigs } =
+    useAppStore();
+
+  const [localKeys, setLocalKeys] = useState<Record<AIProviderType, string>>({
+    openai: "",
+    anthropic: "",
+    gemini: "",
+  });
+  const [testing, setTesting] = useState<AIProviderType | null>(null);
+  const [results, setResults] = useState<
+    Record<AIProviderType, "success" | "error" | null>
+  >({ openai: null, anthropic: null, gemini: null });
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      // Populate local state with current keys
+      setLocalKeys({
+        openai: providerConfigs.openai.apiKey,
+        anthropic: providerConfigs.anthropic.apiKey,
+        gemini: providerConfigs.gemini.apiKey,
+      });
+      setResults({ openai: null, anthropic: null, gemini: null });
+    }
+    setSettingsOpen(open);
+  };
+
+  const handleSaveAndTest = async (type: AIProviderType) => {
+    const apiKey = localKeys[type].trim();
+    if (!apiKey) return;
+
+    setTesting(type);
+    setResults((prev) => ({ ...prev, [type]: null }));
+
+    // Save key to store
+    setProviderConfig(type, {
+      ...providerConfigs[type],
+      apiKey,
+    });
+
+    const provider = getAIProvider(type);
+    if (!provider) {
+      setResults((prev) => ({ ...prev, [type]: "error" }));
+      setTesting(null);
+      return;
+    }
+
+    const valid = await provider.validateApiKey(apiKey);
+    setResults((prev) => ({ ...prev, [type]: valid ? "success" : "error" }));
+    setTesting(null);
+
+    if (valid) {
+      // Persist encrypted
+      // Need to ensure store is updated before saving
+      setTimeout(() => {
+        useAppStore.getState().saveProviderConfigs();
+      }, 0);
+    }
+  };
+
+  return (
+    <Dialog open={settingsOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>API Keys</DialogTitle>
+          <DialogDescription>
+            Enter your API keys to connect to AI providers. Keys are encrypted
+            and stored locally on your device.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-6 mt-2">
+          {providerOrder.map((type) => {
+            const defaults = PROVIDER_DEFAULTS[type];
+            const provider = getAIProvider(type);
+            const isComingSoon = !provider;
+            const result = results[type];
+            const isTesting = testing === type;
+
+            return (
+              <div key={type} className="flex flex-col gap-2">
+                <Label className="text-sm font-medium">
+                  {defaults.displayName}
+                  {isComingSoon && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      (coming soon)
+                    </span>
+                  )}
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="password"
+                    placeholder={
+                      isComingSoon
+                        ? "Not available yet"
+                        : `Enter ${defaults.displayName} API key`
+                    }
+                    value={localKeys[type]}
+                    onChange={(e) =>
+                      setLocalKeys((prev) => ({
+                        ...prev,
+                        [type]: e.target.value,
+                      }))
+                    }
+                    disabled={isComingSoon}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSaveAndTest(type)}
+                    disabled={isComingSoon || isTesting || !localKeys[type].trim()}
+                    className="shrink-0"
+                  >
+                    {isTesting ? "Testing..." : "Save & Test"}
+                  </Button>
+                </div>
+                {result === "success" && (
+                  <p className="text-xs text-green-600 flex items-center gap-1">
+                    <span>&#10003;</span> Connected successfully
+                  </p>
+                )}
+                {result === "error" && (
+                  <p className="text-xs text-red-600 flex items-center gap-1">
+                    <span>&#10007;</span> Invalid API key. Please check and try
+                    again.
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
