@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local planning docs
+discentia-feature-plan-v2.md
+discentia-feature-plan.md
+implementation-plan-v2-status.md
