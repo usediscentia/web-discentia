@@ -3538,7 +3538,7 @@
                   "type": "ref",
                   "ref": "C3KOZ",
                   "x": 24,
-                  "y": 24.019943701668048,
+                  "y": 24.01994370166805,
                   "width": "fill_container",
                   "descendants": {
                     "NEMHS": {
@@ -4644,7 +4644,8 @@
                   "fill": "#9CA3AF",
                   "content": "Generate flashcards, quizzes, crosswords, and more from any topic.",
                   "fontFamily": "Inter",
-                  "fontSize": 15
+                  "fontSize": 15,
+                  "fontWeight": "normal"
                 }
               ]
             },
@@ -4878,7 +4879,8 @@
                   "width": "fill_container",
                   "content": "Ask anything or generate exercises...",
                   "fontFamily": "Inter",
-                  "fontSize": 14
+                  "fontSize": 14,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "frame",
@@ -5116,7 +5118,8 @@
                           "content": "Generate flashcards about cell biology — \norganelles, their functions, and key processes.",
                           "lineHeight": 1.5,
                           "fontFamily": "Inter",
-                          "fontSize": 14
+                          "fontSize": 14,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -5181,7 +5184,8 @@
                           "content": "I've created 15 flashcards covering cell biology! Here are your flashcards on organelles, their functions, and key cellular processes. Tap any card to flip it.",
                           "lineHeight": 1.5,
                           "fontFamily": "Inter",
-                          "fontSize": 14
+                          "fontSize": 14,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -5220,7 +5224,8 @@
                           "content": "Now quiz me on what I just learned!",
                           "lineHeight": 1.5,
                           "fontFamily": "Inter",
-                          "fontSize": 14
+                          "fontSize": 14,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -5285,7 +5290,8 @@
                           "content": "Great idea! Here's a 10-question quiz based on the cell biology flashcards. Let's see how well you retained the information.",
                           "lineHeight": 1.5,
                           "fontFamily": "Inter",
-                          "fontSize": 14
+                          "fontSize": 14,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -5397,7 +5403,8 @@
                   "width": "fill_container",
                   "content": "Ask anything or generate exercises...",
                   "fontFamily": "Inter",
-                  "fontSize": 14
+                  "fontSize": 14,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "frame",
@@ -5632,7 +5639,8 @@
                           "content": "Generate flashcards about cell biology",
                           "lineHeight": 1.5,
                           "fontFamily": "Inter",
-                          "fontSize": 14
+                          "fontSize": 14,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -5766,7 +5774,8 @@
                               "fill": "#9CA3AF",
                               "content": "Tap to reveal answer",
                               "fontFamily": "Inter",
-                              "fontSize": 13
+                              "fontSize": 13,
+                              "fontWeight": "normal"
                             },
                             {
                               "type": "frame",
@@ -10115,7 +10124,7 @@
       "x": 6560,
       "y": 3900,
       "name": "AI Provider Selector",
-      "width": 280,
+      "width": 340,
       "fill": "#FFFFFF",
       "cornerRadius": 12,
       "stroke": {
@@ -10148,16 +10157,15 @@
         }
       ],
       "layout": "vertical",
-      "gap": 4,
       "padding": [
-        16,
+        12,
         0
       ],
       "children": [
         {
           "type": "frame",
-          "id": "rUY7x",
-          "name": "aiTitle",
+          "id": "3tgTn",
+          "name": "Header",
           "width": "fill_container",
           "padding": [
             0,
@@ -10165,222 +10173,636 @@
             8,
             16
           ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
           "children": [
             {
               "type": "text",
-              "id": "5vyYw",
-              "name": "aiTitleText",
-              "fill": "#1A1A1A",
-              "content": "Select AI Provider",
+              "id": "E39oI",
+              "name": "titleText",
+              "fill": "$--foreground",
+              "content": "AI Provider",
               "fontFamily": "Inter",
-              "fontSize": 14,
-              "fontWeight": "600"
+              "fontSize": 13,
+              "fontWeight": "600",
+              "letterSpacing": 0.5
             }
           ]
         },
         {
           "type": "frame",
-          "id": "CYOKB",
-          "name": "aiOpt1",
+          "id": "7XhPT",
+          "name": "Provider List",
           "width": "fill_container",
-          "gap": 12,
+          "layout": "vertical",
+          "gap": 2,
           "padding": [
-            10,
-            16
+            0,
+            6
           ],
-          "alignItems": "center",
           "children": [
             {
               "type": "frame",
-              "id": "G5Cnk",
-              "name": "aiOpt1Radio",
-              "width": 16,
-              "height": 16,
+              "id": "RpCI6",
+              "name": "Claude Row",
+              "width": "fill_container",
               "cornerRadius": 8,
-              "stroke": {
-                "align": "inside",
-                "thickness": 2,
-                "fill": "#E5E7EB"
-              }
-            },
-            {
-              "type": "icon_font",
-              "id": "maj2Z",
-              "name": "aiOpt1Icon",
-              "width": 16,
-              "height": 16,
-              "iconFontName": "sparkles",
-              "iconFontFamily": "lucide",
-              "fill": "#6B7280"
-            },
-            {
-              "type": "text",
-              "id": "LK2Bk",
-              "name": "aiOpt1Text",
-              "fill": "#1A1A1A",
-              "content": "Claude (Anthropic)",
-              "fontFamily": "Inter",
-              "fontSize": 14
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "QDVvu",
-          "name": "aiOpt2",
-          "width": "fill_container",
-          "fill": "#F3F4F6",
-          "gap": 12,
-          "padding": [
-            10,
-            16
-          ],
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "frame",
-              "id": "rRXGn",
-              "name": "aiOpt2Radio",
-              "width": 16,
-              "height": 16,
-              "cornerRadius": 8,
-              "stroke": {
-                "align": "inside",
-                "thickness": 2,
-                "fill": "#1A1A1A"
-              },
-              "layout": "vertical",
-              "justifyContent": "center",
+              "gap": 10,
+              "padding": [
+                8,
+                10
+              ],
               "alignItems": "center",
               "children": [
                 {
-                  "type": "ellipse",
-                  "id": "Bl4Zs",
-                  "name": "aiOpt2Dot",
-                  "fill": "#1A1A1A",
-                  "width": 8,
-                  "height": 8
+                  "type": "frame",
+                  "id": "4Q3KQ",
+                  "name": "cRadio",
+                  "width": 18,
+                  "height": 18,
+                  "cornerRadius": 9,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 2,
+                    "fill": "$--border"
+                  }
+                },
+                {
+                  "type": "icon_font",
+                  "id": "D4F0P",
+                  "name": "claudeIcon",
+                  "width": 18,
+                  "height": 18,
+                  "iconFontName": "sparkles",
+                  "iconFontFamily": "lucide",
+                  "fill": "#D97706"
+                },
+                {
+                  "type": "text",
+                  "id": "oVNXY",
+                  "name": "claudeText",
+                  "fill": "$--foreground",
+                  "content": "Claude",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "QkAf1",
+                  "name": "claudeBadge",
+                  "fill": "#FEF3C7",
+                  "cornerRadius": 4,
+                  "padding": [
+                    2,
+                    6
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "4L6Vn",
+                      "name": "claudeBadgeText",
+                      "fill": "#92400E",
+                      "content": "Anthropic",
+                      "fontFamily": "Inter",
+                      "fontSize": 10,
+                      "fontWeight": "500"
+                    }
+                  ]
                 }
               ]
             },
             {
-              "type": "icon_font",
-              "id": "ZgNxF",
-              "name": "aiOpt2Icon",
-              "width": 16,
-              "height": 16,
-              "iconFontName": "zap",
-              "iconFontFamily": "lucide",
-              "fill": "#1A1A1A"
+              "type": "frame",
+              "id": "FOUzq",
+              "name": "OpenAI Row - Selected",
+              "width": "fill_container",
+              "fill": "$--accent",
+              "cornerRadius": 8,
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "KH0Jq",
+                  "name": "OpenAI Header",
+                  "width": "fill_container",
+                  "gap": 10,
+                  "padding": [
+                    8,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "JoaSA",
+                      "name": "openaiRadio",
+                      "width": 18,
+                      "height": 18,
+                      "cornerRadius": 9,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 2,
+                        "fill": "$--primary"
+                      },
+                      "layout": "vertical",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "BW7Fm",
+                          "name": "openaiDot",
+                          "fill": "$--primary",
+                          "width": 8,
+                          "height": 8
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "gyK7Y",
+                      "name": "openaiIcon",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "zap",
+                      "iconFontFamily": "lucide",
+                      "fill": "#10B981"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ieXqd",
+                      "name": "openaiText",
+                      "fill": "$--foreground",
+                      "content": "OpenAI",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "tE92G",
+                      "name": "oaiBadge",
+                      "fill": "#DCFCE7",
+                      "cornerRadius": 4,
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "iuQFE",
+                          "name": "oaiBadgeText",
+                          "fill": "#166534",
+                          "content": "OpenAI",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "33U3x",
+                      "name": "spacer",
+                      "width": "fill_container",
+                      "height": 1
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "jBXwc",
+                      "name": "chevron",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "chevron-down",
+                      "iconFontFamily": "lucide",
+                      "fill": "$--muted-foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "l9RSD",
+                  "name": "Model Sub-selector",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "padding": [
+                    4,
+                    10,
+                    8,
+                    38
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "PKLUE",
+                      "name": "modelLabel",
+                      "width": "fill_container",
+                      "gap": 6,
+                      "padding": [
+                        0,
+                        0,
+                        4,
+                        0
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "KgbgF",
+                          "name": "modelLabelIcon",
+                          "width": 12,
+                          "height": 12,
+                          "iconFontName": "cpu",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "poCyp",
+                          "name": "modelLabelText",
+                          "fill": "$--muted-foreground",
+                          "content": "Model",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "LlPTS",
+                      "name": "Model GPT-4o Selected",
+                      "width": "fill_container",
+                      "fill": "$--background",
+                      "cornerRadius": 6,
+                      "gap": 8,
+                      "padding": [
+                        6,
+                        8
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "dLH9P",
+                          "name": "m1Check",
+                          "width": 14,
+                          "height": 14,
+                          "iconFontName": "check",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--primary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "YnRNE",
+                          "name": "m1Text",
+                          "fill": "$--foreground",
+                          "content": "GPT-4o",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ixjIU",
+                          "name": "m1Spacer",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "eYXiQ",
+                          "name": "m1Speed",
+                          "fill": "$--muted-foreground",
+                          "content": "Fast",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "urYKq",
+                      "name": "Model GPT-4o-mini",
+                      "width": "fill_container",
+                      "cornerRadius": 6,
+                      "gap": 8,
+                      "padding": [
+                        6,
+                        8
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ehxxT",
+                          "name": "m2Dot",
+                          "width": 14,
+                          "height": 14
+                        },
+                        {
+                          "type": "text",
+                          "id": "UxM23",
+                          "name": "m2Text",
+                          "fill": "$--muted-foreground",
+                          "content": "GPT-4o-mini",
+                          "fontFamily": "Inter",
+                          "fontSize": 13
+                        },
+                        {
+                          "type": "frame",
+                          "id": "r2KWk",
+                          "name": "m2Spacer",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "9VG0l",
+                          "name": "m2Tag",
+                          "fill": "$--muted-foreground",
+                          "content": "Cheap",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "MDNgL",
+                      "name": "Model o1",
+                      "width": "fill_container",
+                      "cornerRadius": 6,
+                      "gap": 8,
+                      "padding": [
+                        6,
+                        8
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "suMOJ",
+                          "name": "m3Dot",
+                          "width": 14,
+                          "height": 14
+                        },
+                        {
+                          "type": "text",
+                          "id": "McRtr",
+                          "name": "m3Text",
+                          "fill": "$--muted-foreground",
+                          "content": "o1",
+                          "fontFamily": "Inter",
+                          "fontSize": 13
+                        },
+                        {
+                          "type": "frame",
+                          "id": "TNCxm",
+                          "name": "m3Spacer",
+                          "width": "fill_container",
+                          "height": 1
+                        },
+                        {
+                          "type": "text",
+                          "id": "HYT8Q",
+                          "name": "m3Tag",
+                          "fill": "$--muted-foreground",
+                          "content": "Reasoning",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
             },
-            {
-              "type": "text",
-              "id": "p5WhY",
-              "name": "aiOpt2Text",
-              "fill": "#1A1A1A",
-              "content": "GPT-4o (OpenAI)",
-              "fontFamily": "Inter",
-              "fontSize": 14,
-              "fontWeight": "600"
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "Ihys8",
-          "name": "aiOpt3",
-          "width": "fill_container",
-          "gap": 12,
-          "padding": [
-            10,
-            16
-          ],
-          "alignItems": "center",
-          "children": [
             {
               "type": "frame",
-              "id": "RgXLO",
-              "name": "aiOpt3Radio",
-              "width": 16,
-              "height": 16,
+              "id": "w96ql",
+              "name": "Gemini Row",
+              "width": "fill_container",
               "cornerRadius": 8,
-              "stroke": {
-                "align": "inside",
-                "thickness": 2,
-                "fill": "#E5E7EB"
-              }
+              "gap": 10,
+              "padding": [
+                8,
+                10
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "rei8G",
+                  "name": "geminiRadio",
+                  "width": 18,
+                  "height": 18,
+                  "cornerRadius": 9,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 2,
+                    "fill": "$--border"
+                  }
+                },
+                {
+                  "type": "icon_font",
+                  "id": "XF4Jq",
+                  "name": "geminiIcon",
+                  "width": 18,
+                  "height": 18,
+                  "iconFontName": "gem",
+                  "iconFontFamily": "lucide",
+                  "fill": "#6366F1"
+                },
+                {
+                  "type": "text",
+                  "id": "JwtBl",
+                  "name": "geminiText",
+                  "fill": "$--foreground",
+                  "content": "Gemini",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "Xjs4S",
+                  "name": "geminiBadge",
+                  "fill": "#EEF2FF",
+                  "cornerRadius": 4,
+                  "padding": [
+                    2,
+                    6
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "5oBEn",
+                      "name": "geminiBadgeText",
+                      "fill": "#4338CA",
+                      "content": "Google",
+                      "fontFamily": "Inter",
+                      "fontSize": 10,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
             },
-            {
-              "type": "icon_font",
-              "id": "7KRfn",
-              "name": "aiOpt3Icon",
-              "width": 16,
-              "height": 16,
-              "iconFontName": "gem",
-              "iconFontFamily": "lucide",
-              "fill": "#6B7280"
-            },
-            {
-              "type": "text",
-              "id": "xC6fb",
-              "name": "aiOpt3Text",
-              "fill": "#1A1A1A",
-              "content": "Gemini (Google)",
-              "fontFamily": "Inter",
-              "fontSize": 14
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "I0m6s",
-          "name": "aiOpt4",
-          "width": "fill_container",
-          "gap": 12,
-          "padding": [
-            10,
-            16
-          ],
-          "alignItems": "center",
-          "children": [
             {
               "type": "frame",
-              "id": "0yltZ",
-              "name": "aiOpt4Radio",
-              "width": 16,
-              "height": 16,
+              "id": "MKTUk",
+              "name": "Ollama Row",
+              "width": "fill_container",
               "cornerRadius": 8,
-              "stroke": {
-                "align": "inside",
-                "thickness": 2,
-                "fill": "#E5E7EB"
-              }
+              "gap": 10,
+              "padding": [
+                8,
+                10
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "v1hrA",
+                  "name": "ollamaRadio",
+                  "width": 18,
+                  "height": 18,
+                  "cornerRadius": 9,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 2,
+                    "fill": "$--border"
+                  }
+                },
+                {
+                  "type": "icon_font",
+                  "id": "0H9FL",
+                  "name": "ollamaIcon",
+                  "width": 18,
+                  "height": 18,
+                  "iconFontName": "server",
+                  "iconFontFamily": "lucide",
+                  "fill": "#8B5CF6"
+                },
+                {
+                  "type": "text",
+                  "id": "rrEH7",
+                  "name": "ollamaText",
+                  "fill": "$--foreground",
+                  "content": "Ollama",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "vRxFf",
+                  "name": "ollamaBadge",
+                  "fill": "#F3E8FF",
+                  "cornerRadius": 4,
+                  "padding": [
+                    2,
+                    6
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "emHrS",
+                      "name": "ollamaBadgeText",
+                      "fill": "#6B21A8",
+                      "content": "Local",
+                      "fontFamily": "Inter",
+                      "fontSize": 10,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
             },
             {
-              "type": "icon_font",
-              "id": "bTPKi",
-              "name": "aiOpt4Icon",
-              "width": 16,
-              "height": 16,
-              "iconFontName": "bot",
-              "iconFontFamily": "lucide",
-              "fill": "#6B7280"
-            },
-            {
-              "type": "text",
-              "id": "X0tSp",
-              "name": "aiOpt4Text",
-              "fill": "#1A1A1A",
-              "content": "Llama (Meta)",
-              "fontFamily": "Inter",
-              "fontSize": 14
+              "type": "frame",
+              "id": "a6kIc",
+              "name": "OpenRouter Row",
+              "width": "fill_container",
+              "cornerRadius": 8,
+              "gap": 10,
+              "padding": [
+                8,
+                10
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ymqCr",
+                  "name": "orRadio",
+                  "width": 18,
+                  "height": 18,
+                  "cornerRadius": 9,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 2,
+                    "fill": "$--border"
+                  }
+                },
+                {
+                  "type": "icon_font",
+                  "id": "4f5Si",
+                  "name": "orIcon",
+                  "width": 18,
+                  "height": 18,
+                  "iconFontName": "route",
+                  "iconFontFamily": "lucide",
+                  "fill": "#EC4899"
+                },
+                {
+                  "type": "text",
+                  "id": "fPsHV",
+                  "name": "orText",
+                  "fill": "$--foreground",
+                  "content": "OpenRouter",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "Rrvo2",
+                  "name": "orBadge",
+                  "fill": "#FCE7F3",
+                  "cornerRadius": 4,
+                  "padding": [
+                    2,
+                    6
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "KSnSN",
+                      "name": "orBadgeText",
+                      "fill": "#9D174D",
+                      "content": "Multi",
+                      "fontFamily": "Inter",
+                      "fontSize": 10,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
         {
           "type": "frame",
-          "id": "FaGn5",
-          "name": "aiDivider",
+          "id": "4cVco",
+          "name": "Divider",
           "width": "fill_container",
           "padding": [
             4,
@@ -10389,35 +10811,35 @@
           "children": [
             {
               "type": "line",
-              "id": "agQLf",
-              "name": "aiDividerLine",
+              "id": "Ux62v",
+              "name": "divLine",
               "width": "fill_container",
               "height": 0,
               "stroke": {
                 "align": "center",
                 "thickness": 1,
-                "fill": "#E5E7EB"
+                "fill": "$--border"
               }
             }
           ]
         },
         {
           "type": "frame",
-          "id": "g7Rf4",
-          "name": "aiManage",
+          "id": "D6ZS5",
+          "name": "Footer",
           "width": "fill_container",
           "gap": 8,
           "padding": [
-            8,
+            4,
             16
           ],
           "alignItems": "center",
           "children": [
             {
               "type": "text",
-              "id": "tDYK5",
-              "name": "aiManageText",
-              "fill": "#6B7280",
+              "id": "hKiQ1",
+              "name": "footerText",
+              "fill": "$--muted-foreground",
               "content": "Manage API Keys",
               "fontFamily": "Inter",
               "fontSize": 13,
@@ -10425,13 +10847,13 @@
             },
             {
               "type": "icon_font",
-              "id": "lTVyr",
-              "name": "aiManageIcon",
+              "id": "VsUlk",
+              "name": "footerIcon",
               "width": 14,
               "height": 14,
               "iconFontName": "arrow-right",
               "iconFontFamily": "lucide",
-              "fill": "#9CA3AF"
+              "fill": "$--muted-foreground"
             }
           ]
         }
