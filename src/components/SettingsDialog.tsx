@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 const providerOrder: AIProviderType[] = ["ollama", "openai", "openrouter", "anthropic", "gemini"];
 
 export function SettingsDialog() {
-  const { settingsOpen, setSettingsOpen, providerConfigs, setProviderConfig, ollamaStatus, checkOllamaConnection } =
+  const { settingsOpen, setSettingsOpen, providerConfigs, setProviderConfig, ollamaStatus, ollamaModels, checkOllamaConnection } =
     useAppStore();
 
   const [localKeys, setLocalKeys] = useState<Record<AIProviderType, string>>({
@@ -145,7 +145,12 @@ export function SettingsDialog() {
                   </div>
                   {result === "success" && (
                     <p className="text-xs text-green-600 flex items-center gap-1">
-                      <span>&#10003;</span> Ollama is running and reachable
+                      <span>&#10003;</span> Ollama is running
+                      {ollamaModels.length > 0 && (
+                        <span className="text-muted-foreground ml-1">
+                          — {ollamaModels.length} model{ollamaModels.length !== 1 ? "s" : ""}: {ollamaModels.join(", ")}
+                        </span>
+                      )}
                     </p>
                   )}
                   {result === "error" && (

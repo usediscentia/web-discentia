@@ -2,31 +2,83 @@
 
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import {
-  SparklesIcon,
-  BoltIcon,
-  ArrowRightIcon,
-  ComputerDesktopIcon,
-  CloudIcon,
-} from "@heroicons/react/24/outline";
-import { GlobeAltIcon } from "@heroicons/react/24/outline";
+import { Check, ChevronDown, ArrowRight, Cpu } from "lucide-react";
+import { ProviderIcon, ModelIcon } from "@lobehub/icons";
 import { useAppStore } from "@/stores/app.store";
+import { PROVIDER_DEFAULTS } from "@/types/ai";
 import type { AIProviderType } from "@/types/ai";
 
-interface AIProviderUI {
+// ── Provider visual metadata matching design.pen ──
+
+interface ProviderMeta {
   id: AIProviderType;
   name: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  /** String key for @lobehub/icons ProviderIcon */
+  lobeProvider: string;
+  badgeLabel: string;
+  badgeBg: string;
+  badgeText: string;
   comingSoon?: boolean;
 }
 
-const providers: AIProviderUI[] = [
-  { id: "ollama", name: "Ollama (Local)", icon: ComputerDesktopIcon },
-  { id: "openai", name: "GPT-4o (OpenAI)", icon: BoltIcon },
-  { id: "openrouter", name: "OpenRouter", icon: CloudIcon },
-  { id: "anthropic", name: "Claude (Anthropic)", icon: SparklesIcon, comingSoon: true },
-  { id: "gemini", name: "Gemini (Google)", icon: GlobeAltIcon, comingSoon: true },
+const providers: ProviderMeta[] = [
+  {
+    id: "anthropic",
+    name: "Claude",
+    lobeProvider: "anthropic",
+    badgeLabel: "Anthropic",
+    badgeBg: "#FEF3C7",
+    badgeText: "#92400E",
+    comingSoon: true,
+  },
+  {
+    id: "openai",
+    name: "OpenAI",
+    lobeProvider: "openai",
+    badgeLabel: "OpenAI",
+    badgeBg: "#DCFCE7",
+    badgeText: "#166534",
+  },
+  {
+    id: "gemini",
+    name: "Gemini",
+    lobeProvider: "google",
+    badgeLabel: "Google",
+    badgeBg: "#EEF2FF",
+    badgeText: "#4338CA",
+    comingSoon: true,
+  },
+  {
+    id: "ollama",
+    name: "Ollama",
+    lobeProvider: "ollama",
+    badgeLabel: "Local",
+    badgeBg: "#F3E8FF",
+    badgeText: "#6B21A8",
+  },
+  {
+    id: "openrouter",
+    name: "OpenRouter",
+    lobeProvider: "openrouter",
+    badgeLabel: "Multi",
+    badgeBg: "#FCE7F3",
+    badgeText: "#9D174D",
+  },
 ];
+
+// ── Model tags ──
+
+const MODEL_TAGS: Record<string, string> = {
+  "gpt-4o": "Fast",
+  "gpt-4o-mini": "Cheap",
+  "gpt-4-turbo": "Power",
+  "openai/gpt-4o": "Fast",
+  "anthropic/claude-3.5-sonnet": "Smart",
+  "google/gemini-2.0-flash-exp:free": "Free",
+  "meta-llama/llama-3.1-70b-instruct": "Open",
+};
+
+// ── Component ──
 
 interface AIProviderSelectorProps {
   isOpen: boolean;
@@ -37,7 +89,17 @@ export function AIProviderSelector({
   isOpen,
   onClose,
 }: AIProviderSelectorProps) {
-  const { selectedProvider, setSelectedProvider, setSettingsOpen, ollamaStatus, checkOllamaConnection } = useAppStore();
+  const {
+    selectedProvider,
+    setSelectedProvider,
+    selectedModel,
+    setSelectedModel,
+    setSettingsOpen,
+    ollamaModels,
+    checkOllamaConnection,
+    providerConfigs,
+    setProviderConfig,
+  } = useAppStore();
 
   useEffect(() => {
     if (isOpen) {
@@ -45,13 +107,26 @@ export function AIProviderSelector({
     }
   }, [isOpen, checkOllamaConnection]);
 
-  const handleSelect = (id: AIProviderType) => {
+  const handleSelectProvider = (id: AIProviderType) => {
     setSelectedProvider(id);
+  };
+
+  const handleSelectModel = (providerId: AIProviderType, model: string) => {
+    setSelectedModel(model);
+    setProviderConfig(providerId, {
+      ...providerConfigs[providerId],
+      model,
+    });
   };
 
   const handleManageKeys = () => {
     onClose();
     setSettingsOpen(true);
+  };
+
+  const getModelsForProvider = (id: AIProviderType): string[] => {
+    if (id === "ollama") return ollamaModels;
+    return PROVIDER_DEFAULTS[id].models;
   };
 
   return (
@@ -63,97 +138,201 @@ export function AIProviderSelector({
             initial={{ opacity: 0, y: 8, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.96 }}
-            transition={{ duration: 0.2 }}
-            className="absolute bottom-20 left-1/2 -translate-x-1/2 z-50 w-[280px] bg-white rounded-xl border border-[#E5E7EB] shadow-[0_8px_12px_-4px_rgba(0,0,0,0.08),0_2px_4px_-2px_rgba(0,0,0,0.04)] py-4"
+            transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+            className="absolute bottom-20 left-1/2 -translate-x-1/2 z-50 w-[340px] bg-white rounded-xl border border-[#E5E7EB] shadow-[0_8px_12px_-4px_rgba(0,0,0,0.08),0_2px_4px_-2px_rgba(0,0,0,0.04)] py-3"
           >
+            {/* Header */}
             <div className="px-4 pb-2">
-              <h3 className="text-sm font-semibold text-[#1A1A1A]">
-                Select AI Provider
+              <h3 className="text-[13px] font-semibold text-[#0a0a0a] tracking-wide">
+                AI Provider
               </h3>
             </div>
 
-            <div className="flex flex-col gap-1">
+            {/* Provider List */}
+            <div className="flex flex-col gap-0.5 px-1.5">
               {providers.map((provider) => {
                 const isSelected = selectedProvider === provider.id;
-                const Icon = provider.icon;
+                const models = getModelsForProvider(provider.id);
 
                 return (
-                  <button
-                    key={provider.id}
-                    onClick={() => !provider.comingSoon && handleSelect(provider.id)}
-                    className={`flex items-center gap-3 w-full px-4 py-2.5 transition-colors ${
-                      provider.comingSoon
-                        ? "opacity-50 cursor-default"
-                        : "cursor-pointer"
-                    } ${
-                      isSelected
-                        ? "bg-[#F3F4F6]"
-                        : provider.comingSoon
-                        ? ""
-                        : "hover:bg-[#F9FAFB]"
-                    }`}
-                  >
-                    <div
-                      className={`flex items-center justify-center w-4 h-4 rounded-lg border-2 shrink-0 ${
-                        isSelected
-                          ? "border-[#1A1A1A]"
-                          : "border-[#E5E7EB]"
-                      }`}
+                  <div key={provider.id}>
+                    {/* Provider row */}
+                    <button
+                      onClick={() =>
+                        !provider.comingSoon &&
+                        handleSelectProvider(provider.id)
+                      }
+                      className={`flex items-center gap-2.5 w-full rounded-lg px-2.5 py-2 transition-colors ${
+                        provider.comingSoon
+                          ? "opacity-40 cursor-default"
+                          : "cursor-pointer hover:bg-[#fafafa]"
+                      } ${isSelected && !provider.comingSoon ? "bg-[#f5f5f5]" : ""}`}
                     >
-                      {isSelected && (
-                        <div className="w-2 h-2 rounded-full bg-[#1A1A1A]" />
-                      )}
-                    </div>
-                    <Icon
-                      className={`w-4 h-4 ${
-                        isSelected ? "text-[#1A1A1A]" : "text-[#6B7280]"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm flex items-center gap-1.5 ${
-                        isSelected
-                          ? "font-semibold text-[#1A1A1A]"
-                          : "text-[#1A1A1A]"
-                      }`}
-                    >
-                      {provider.name}
-                      {provider.comingSoon && (
-                        <span className="ml-1 text-xs text-[#9CA3AF]">
-                          (soon)
-                        </span>
-                      )}
-                      {provider.id === "ollama" && ollamaStatus !== "unknown" && (
-                        <span className="flex items-center gap-1">
-                          <span
-                            className={`inline-block w-1.5 h-1.5 rounded-full ${
-                              ollamaStatus === "connected"
-                                ? "bg-green-500"
-                                : "bg-red-400"
-                            }`}
+                      {/* Radio */}
+                      <div
+                        className={`flex items-center justify-center w-[18px] h-[18px] rounded-full border-2 shrink-0 transition-colors ${
+                          isSelected && !provider.comingSoon
+                            ? "border-[#171717]"
+                            : "border-[#e5e5e5]"
+                        }`}
+                      >
+                        {isSelected && !provider.comingSoon && (
+                          <div className="w-2 h-2 rounded-full bg-[#171717]" />
+                        )}
+                      </div>
+
+                      {/* Provider logo */}
+                      <div className="shrink-0 flex items-center justify-center w-[18px] h-[18px]">
+                        <ProviderIcon
+                          provider={provider.lobeProvider}
+                          size={18}
+                          type="color"
+                        />
+                      </div>
+
+                      {/* Name */}
+                      <span
+                        className={`text-sm text-[#0a0a0a] ${
+                          isSelected && !provider.comingSoon
+                            ? "font-semibold"
+                            : "font-medium"
+                        }`}
+                      >
+                        {provider.name}
+                      </span>
+
+                      {/* Badge */}
+                      <span
+                        className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                        style={{
+                          backgroundColor: provider.badgeBg,
+                          color: provider.badgeText,
+                        }}
+                      >
+                        {provider.badgeLabel}
+                      </span>
+
+                      {/* Spacer + Chevron for selected */}
+                      {isSelected && !provider.comingSoon && models.length > 0 && (
+                        <>
+                          <div className="flex-1" />
+                          <ChevronDown
+                            size={14}
+                            className="text-[#737373] shrink-0"
                           />
-                          <span className="text-[10px] text-[#9CA3AF]">
-                            {ollamaStatus === "connected" ? "running" : "offline"}
-                          </span>
-                        </span>
+                        </>
                       )}
-                    </span>
-                  </button>
+                    </button>
+
+                    {/* Model Sub-selector */}
+                    <AnimatePresence initial={false}>
+                      {isSelected &&
+                        !provider.comingSoon &&
+                        models.length > 0 && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                            className="overflow-hidden"
+                          >
+                            <div className="flex flex-col gap-0.5 pl-[38px] pr-2.5 pt-1 pb-2">
+                              {/* Model label */}
+                              <div className="flex items-center gap-1.5 pb-1">
+                                <Cpu
+                                  size={12}
+                                  className="text-[#737373]"
+                                />
+                                <span className="text-[11px] font-medium text-[#737373]">
+                                  Model
+                                </span>
+                              </div>
+
+                              {/* Model items */}
+                              {models.map((model) => {
+                                const isModelSelected =
+                                  selectedModel === model;
+                                const tag = MODEL_TAGS[model];
+
+                                return (
+                                  <button
+                                    key={model}
+                                    onClick={() =>
+                                      handleSelectModel(
+                                        provider.id,
+                                        model
+                                      )
+                                    }
+                                    className={`flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-[13px] transition-colors cursor-pointer ${
+                                      isModelSelected
+                                        ? "bg-[#fafafa]"
+                                        : "hover:bg-[#fafafa]/60"
+                                    }`}
+                                  >
+                                    {/* Check or spacer */}
+                                    {isModelSelected ? (
+                                      <Check
+                                        size={14}
+                                        className="text-[#171717] shrink-0"
+                                        strokeWidth={2.5}
+                                      />
+                                    ) : (
+                                      <div className="w-3.5 shrink-0" />
+                                    )}
+
+                                    {/* Model icon from @lobehub/icons */}
+                                    <div className="shrink-0 flex items-center justify-center w-3.5 h-3.5">
+                                      <ModelIcon
+                                        model={model}
+                                        size={14}
+                                        type="color"
+                                      />
+                                    </div>
+
+                                    {/* Model name */}
+                                    <span
+                                      className={
+                                        isModelSelected
+                                          ? "font-semibold text-[#0a0a0a]"
+                                          : "text-[#737373]"
+                                      }
+                                    >
+                                      {model}
+                                    </span>
+
+                                    {/* Spacer + Tag */}
+                                    <div className="flex-1" />
+                                    {tag && (
+                                      <span className="text-[10px] font-medium text-[#737373]">
+                                        {tag}
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </motion.div>
+                        )}
+                    </AnimatePresence>
+                  </div>
                 );
               })}
             </div>
 
+            {/* Divider */}
             <div className="px-4 py-1">
-              <div className="w-full h-px bg-[#E5E7EB]" />
+              <div className="w-full h-px bg-[#e5e5e5]" />
             </div>
 
+            {/* Footer */}
             <button
               onClick={handleManageKeys}
-              className="flex items-center gap-2 w-full px-4 py-2 cursor-pointer hover:bg-[#F9FAFB] transition-colors"
+              className="flex items-center gap-2 w-full px-4 py-1 cursor-pointer hover:bg-[#fafafa] transition-colors"
             >
-              <span className="text-[13px] font-medium text-[#6B7280]">
+              <span className="text-[13px] font-medium text-[#737373]">
                 Manage API Keys
               </span>
-              <ArrowRightIcon className="w-3.5 h-3.5 text-[#9CA3AF]" />
+              <ArrowRight size={14} className="text-[#737373]" />
             </button>
           </motion.div>
         </>

@@ -9,8 +9,8 @@ import { OLLAMA_API_URL } from "@/lib/constants";
 export const ollamaProvider: AIServiceProvider = {
   type: "ollama",
   displayName: "Ollama (Local)",
-  models: ["llama3.1", "llama3.2", "mistral", "gemma2"],
-  defaultModel: "llama3.2",
+  models: [],
+  defaultModel: "",
 
   async sendMessage(
     messages: AIMessage[],
