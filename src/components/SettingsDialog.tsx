@@ -16,47 +16,55 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-const providerOrder: AIProviderType[] = ["openai", "anthropic", "gemini"];
+const providerOrder: AIProviderType[] = ["ollama", "openai", "openrouter", "anthropic", "gemini"];
 
 export function SettingsDialog() {
-  const { settingsOpen, setSettingsOpen, providerConfigs, setProviderConfig, saveProviderConfigs } =
+  const { settingsOpen, setSettingsOpen, providerConfigs, setProviderConfig, ollamaStatus, checkOllamaConnection } =
     useAppStore();
 
   const [localKeys, setLocalKeys] = useState<Record<AIProviderType, string>>({
     openai: "",
     anthropic: "",
     gemini: "",
+    ollama: "",
+    openrouter: "",
   });
   const [testing, setTesting] = useState<AIProviderType | null>(null);
   const [results, setResults] = useState<
     Record<AIProviderType, "success" | "error" | null>
-  >({ openai: null, anthropic: null, gemini: null });
+  >({ openai: null, anthropic: null, gemini: null, ollama: null, openrouter: null });
 
   const handleOpenChange = (open: boolean) => {
     if (open) {
-      // Populate local state with current keys
       setLocalKeys({
         openai: providerConfigs.openai.apiKey,
         anthropic: providerConfigs.anthropic.apiKey,
         gemini: providerConfigs.gemini.apiKey,
+        ollama: "",
+        openrouter: providerConfigs.openrouter.apiKey,
       });
-      setResults({ openai: null, anthropic: null, gemini: null });
+      setResults({ openai: null, anthropic: null, gemini: null, ollama: null, openrouter: null });
+      checkOllamaConnection();
     }
     setSettingsOpen(open);
   };
 
   const handleSaveAndTest = async (type: AIProviderType) => {
     const apiKey = localKeys[type].trim();
-    if (!apiKey) return;
+
+    // For providers that require API key, bail if empty
+    if (PROVIDER_DEFAULTS[type].requiresApiKey && !apiKey) return;
 
     setTesting(type);
     setResults((prev) => ({ ...prev, [type]: null }));
 
-    // Save key to store
-    setProviderConfig(type, {
-      ...providerConfigs[type],
-      apiKey,
-    });
+    // Save key to store (skip for ollama)
+    if (type !== "ollama") {
+      setProviderConfig(type, {
+        ...providerConfigs[type],
+        apiKey,
+      });
+    }
 
     const provider = getAIProvider(type);
     if (!provider) {
@@ -69,12 +77,14 @@ export function SettingsDialog() {
     setResults((prev) => ({ ...prev, [type]: valid ? "success" : "error" }));
     setTesting(null);
 
-    if (valid) {
-      // Persist encrypted
-      // Need to ensure store is updated before saving
+    if (valid && type !== "ollama") {
       setTimeout(() => {
         useAppStore.getState().saveProviderConfigs();
       }, 0);
+    }
+
+    if (type === "ollama") {
+      checkOllamaConnection();
     }
   };
 
@@ -82,9 +92,9 @@ export function SettingsDialog() {
     <Dialog open={settingsOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>API Keys</DialogTitle>
+          <DialogTitle>Provider Settings</DialogTitle>
           <DialogDescription>
-            Enter your API keys to connect to AI providers. Keys are encrypted
+            Configure your AI providers. API keys are encrypted
             and stored locally on your device.
           </DialogDescription>
         </DialogHeader>
@@ -97,6 +107,65 @@ export function SettingsDialog() {
             const result = results[type];
             const isTesting = testing === type;
 
+            // Ollama: special UI (no API key, just connection test)
+            if (type === "ollama") {
+              return (
+                <div key={type} className="flex flex-col gap-2">
+                  <Label className="text-sm font-medium">
+                    {defaults.displayName}
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-1">
+                      <span
+                        className={`inline-block w-2 h-2 rounded-full ${
+                          ollamaStatus === "connected"
+                            ? "bg-green-500"
+                            : ollamaStatus === "disconnected"
+                            ? "bg-red-400"
+                            : "bg-gray-300"
+                        }`}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {ollamaStatus === "connected"
+                          ? "Connected"
+                          : ollamaStatus === "disconnected"
+                          ? "Not running"
+                          : "Not checked"}
+                      </span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSaveAndTest("ollama")}
+                      disabled={isTesting}
+                      className="shrink-0"
+                    >
+                      {isTesting ? "Testing..." : "Test Connection"}
+                    </Button>
+                  </div>
+                  {result === "success" && (
+                    <p className="text-xs text-green-600 flex items-center gap-1">
+                      <span>&#10003;</span> Ollama is running and reachable
+                    </p>
+                  )}
+                  {result === "error" && (
+                    <p className="text-xs text-red-600 flex items-center gap-1">
+                      <span>&#10007;</span> Could not connect. Make sure Ollama is running.{" "}
+                      <a
+                        href="https://ollama.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline"
+                      >
+                        Get Ollama
+                      </a>
+                    </p>
+                  )}
+                </div>
+              );
+            }
+
+            // Standard API key provider
             return (
               <div key={type} className="flex flex-col gap-2">
                 <Label className="text-sm font-medium">

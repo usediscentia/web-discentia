@@ -1,10 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   SparklesIcon,
   BoltIcon,
   ArrowRightIcon,
+  ComputerDesktopIcon,
+  CloudIcon,
 } from "@heroicons/react/24/outline";
 import { GlobeAltIcon } from "@heroicons/react/24/outline";
 import { useAppStore } from "@/stores/app.store";
@@ -18,7 +21,9 @@ interface AIProviderUI {
 }
 
 const providers: AIProviderUI[] = [
+  { id: "ollama", name: "Ollama (Local)", icon: ComputerDesktopIcon },
   { id: "openai", name: "GPT-4o (OpenAI)", icon: BoltIcon },
+  { id: "openrouter", name: "OpenRouter", icon: CloudIcon },
   { id: "anthropic", name: "Claude (Anthropic)", icon: SparklesIcon, comingSoon: true },
   { id: "gemini", name: "Gemini (Google)", icon: GlobeAltIcon, comingSoon: true },
 ];
@@ -32,7 +37,13 @@ export function AIProviderSelector({
   isOpen,
   onClose,
 }: AIProviderSelectorProps) {
-  const { selectedProvider, setSelectedProvider, setSettingsOpen } = useAppStore();
+  const { selectedProvider, setSelectedProvider, setSettingsOpen, ollamaStatus, checkOllamaConnection } = useAppStore();
+
+  useEffect(() => {
+    if (isOpen) {
+      checkOllamaConnection();
+    }
+  }, [isOpen, checkOllamaConnection]);
 
   const handleSelect = (id: AIProviderType) => {
     setSelectedProvider(id);
@@ -99,7 +110,7 @@ export function AIProviderSelector({
                       }`}
                     />
                     <span
-                      className={`text-sm ${
+                      className={`text-sm flex items-center gap-1.5 ${
                         isSelected
                           ? "font-semibold text-[#1A1A1A]"
                           : "text-[#1A1A1A]"
@@ -109,6 +120,20 @@ export function AIProviderSelector({
                       {provider.comingSoon && (
                         <span className="ml-1 text-xs text-[#9CA3AF]">
                           (soon)
+                        </span>
+                      )}
+                      {provider.id === "ollama" && ollamaStatus !== "unknown" && (
+                        <span className="flex items-center gap-1">
+                          <span
+                            className={`inline-block w-1.5 h-1.5 rounded-full ${
+                              ollamaStatus === "connected"
+                                ? "bg-green-500"
+                                : "bg-red-400"
+                            }`}
+                          />
+                          <span className="text-[10px] text-[#9CA3AF]">
+                            {ollamaStatus === "connected" ? "running" : "offline"}
+                          </span>
                         </span>
                       )}
                     </span>

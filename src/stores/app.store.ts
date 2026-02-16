@@ -2,12 +2,14 @@ import { create } from "zustand";
 import type { AIProviderType, ProviderConfig } from "@/types/ai";
 import { PROVIDER_DEFAULTS, } from "@/types/ai";
 import { encrypt, decrypt } from "@/lib/crypto";
-import { STORAGE_KEYS } from "@/lib/constants";
+import { STORAGE_KEYS, OLLAMA_API_URL } from "@/lib/constants";
 
 interface ProviderConfigState {
   apiKey: string;
   model: string;
 }
+
+export type OllamaStatus = "unknown" | "connected" | "disconnected";
 
 interface AppState {
   activeConversationId: string | null;
@@ -16,6 +18,7 @@ interface AppState {
   providerConfigs: Record<AIProviderType, ProviderConfigState>;
   settingsOpen: boolean;
   isStreaming: boolean;
+  ollamaStatus: OllamaStatus;
 
   setActiveConversationId: (id: string | null) => void;
   setSelectedProvider: (provider: AIProviderType) => void;
@@ -26,12 +29,15 @@ interface AppState {
   getActiveProviderConfig: () => ProviderConfig;
   loadProviderConfigs: () => Promise<void>;
   saveProviderConfigs: () => Promise<void>;
+  checkOllamaConnection: () => Promise<void>;
 }
 
 const defaultConfigs: Record<AIProviderType, ProviderConfigState> = {
   openai: { apiKey: "", model: PROVIDER_DEFAULTS.openai.defaultModel },
   anthropic: { apiKey: "", model: PROVIDER_DEFAULTS.anthropic.defaultModel },
   gemini: { apiKey: "", model: PROVIDER_DEFAULTS.gemini.defaultModel },
+  ollama: { apiKey: "", model: PROVIDER_DEFAULTS.ollama.defaultModel },
+  openrouter: { apiKey: "", model: PROVIDER_DEFAULTS.openrouter.defaultModel },
 };
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -41,6 +47,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   providerConfigs: { ...defaultConfigs },
   settingsOpen: false,
   isStreaming: false,
+  ollamaStatus: "unknown",
 
   setActiveConversationId: (id) => set({ activeConversationId: id }),
   setSelectedProvider: (provider) =>
@@ -108,5 +115,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       STORAGE_KEYS.PROVIDER_CONFIGS,
       JSON.stringify(encrypted)
     );
+  },
+
+  checkOllamaConnection: async () => {
+    try {
+      const response = await fetch(`${OLLAMA_API_URL}/api/tags`);
+      set({ ollamaStatus: response.ok ? "connected" : "disconnected" });
+    } catch {
+      set({ ollamaStatus: "disconnected" });
+    }
   },
 }));

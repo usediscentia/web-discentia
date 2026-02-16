@@ -1,4 +1,6 @@
 export const OPENAI_API_URL = "https://api.openai.com/v1";
+export const OLLAMA_API_URL = "http://localhost:11434";
+export const OPENROUTER_API_URL = "https://openrouter.ai/api/v1";
 
 export const STORAGE_KEYS = {
   PROVIDER_CONFIGS: "discentia:provider-configs",

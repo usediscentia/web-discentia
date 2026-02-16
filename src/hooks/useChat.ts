@@ -7,12 +7,14 @@ import { getAIProvider } from "@/services/ai";
 import { SYSTEM_PROMPT } from "@/lib/constants";
 import type { Message } from "@/types/chat";
 import type { AIMessage } from "@/types/ai";
+import { PROVIDER_DEFAULTS } from "@/types/ai";
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streamingContent, setStreamingContent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const skipNextLoadRef = useRef(false);
 
   const {
     activeConversationId,
@@ -23,10 +25,15 @@ export function useChat() {
     setSettingsOpen,
   } = useAppStore();
 
-  // Load messages when conversation changes
+  // Load messages when conversation changes (e.g. page refresh, switching conversations)
+  // Skipped when we just created the conversation ourselves in sendMessage
   useEffect(() => {
     if (!activeConversationId) {
       setMessages([]);
+      return;
+    }
+    if (skipNextLoadRef.current) {
+      skipNextLoadRef.current = false;
       return;
     }
     StorageService.getMessages(activeConversationId).then(setMessages);
@@ -36,7 +43,7 @@ export function useChat() {
     async (content: string) => {
       const config = getActiveProviderConfig();
 
-      if (!config.apiKey) {
+      if (PROVIDER_DEFAULTS[config.type].requiresApiKey && !config.apiKey) {
         setSettingsOpen(true);
         return;
       }
@@ -56,6 +63,7 @@ export function useChat() {
           content.slice(0, 50)
         );
         convId = conversation.id;
+        skipNextLoadRef.current = true;
         setActiveConversationId(convId);
       }
 
@@ -92,13 +100,10 @@ export function useChat() {
               setStreamingContent((prev) => prev + token);
             },
             onComplete: async (fullText) => {
-              // Save assistant message to Dexie
-              const assistantMessage = await StorageService.addMessage(
-                convId!,
-                "assistant",
-                fullText
-              );
-              setMessages((prev) => [...prev, assistantMessage]);
+              await StorageService.addMessage(convId!, "assistant", fullText);
+              // Reload from Dexie to avoid race conditions with useEffect
+              const allMessages = await StorageService.getMessages(convId!);
+              setMessages(allMessages);
               setStreamingContent("");
               setIsStreaming(false);
               abortControllerRef.current = null;
