@@ -56,8 +56,8 @@ export const PROVIDER_DEFAULTS: Record<
   },
   ollama: {
     displayName: "Ollama (Local)",
-    models: ["llama3.1", "llama3.2", "mistral", "gemma2"],
-    defaultModel: "llama3.2",
+    models: [],
+    defaultModel: "",
     requiresApiKey: false,
   },
   openrouter: {

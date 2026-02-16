@@ -19,6 +19,7 @@ interface AppState {
   settingsOpen: boolean;
   isStreaming: boolean;
   ollamaStatus: OllamaStatus;
+  ollamaModels: string[];
 
   setActiveConversationId: (id: string | null) => void;
   setSelectedProvider: (provider: AIProviderType) => void;
@@ -48,6 +49,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   settingsOpen: false,
   isStreaming: false,
   ollamaStatus: "unknown",
+  ollamaModels: [],
 
   setActiveConversationId: (id) => set({ activeConversationId: id }),
   setSelectedProvider: (provider) =>
@@ -120,9 +122,28 @@ export const useAppStore = create<AppState>((set, get) => ({
   checkOllamaConnection: async () => {
     try {
       const response = await fetch(`${OLLAMA_API_URL}/api/tags`);
-      set({ ollamaStatus: response.ok ? "connected" : "disconnected" });
+      if (!response.ok) {
+        set({ ollamaStatus: "disconnected", ollamaModels: [] });
+        return;
+      }
+      const data = await response.json();
+      const models: string[] = (data.models ?? []).map((m: { name: string }) => m.name);
+      set({ ollamaStatus: "connected", ollamaModels: models });
+
+      // Auto-select first available model if current one isn't installed
+      const state = get();
+      const currentModel = state.providerConfigs.ollama.model;
+      if (models.length > 0 && !models.includes(currentModel)) {
+        set({
+          providerConfigs: {
+            ...state.providerConfigs,
+            ollama: { ...state.providerConfigs.ollama, model: models[0] },
+          },
+          ...(state.selectedProvider === "ollama" ? { selectedModel: models[0] } : {}),
+        });
+      }
     } catch {
-      set({ ollamaStatus: "disconnected" });
+      set({ ollamaStatus: "disconnected", ollamaModels: [] });
     }
   },
 }));
