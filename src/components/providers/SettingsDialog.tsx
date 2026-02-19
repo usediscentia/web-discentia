@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAppStore } from "@/stores/app.store";
+import { useProviderStore } from "@/stores/provider.store";
 import { getAIProvider } from "@/services/ai";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
 import type { AIProviderType } from "@/types/ai";
@@ -19,8 +20,9 @@ import { Label } from "@/components/ui/label";
 const providerOrder: AIProviderType[] = ["ollama", "openai", "openrouter", "anthropic", "gemini"];
 
 export function SettingsDialog() {
-  const { settingsOpen, setSettingsOpen, providerConfigs, setProviderConfig, ollamaStatus, ollamaModels, checkOllamaConnection } =
-    useAppStore();
+  const { settingsOpen, setSettingsOpen } = useAppStore();
+  const { providerConfigs, setProviderConfig, ollamaStatus, ollamaModels, checkOllamaConnection } =
+    useProviderStore();
 
   const [localKeys, setLocalKeys] = useState<Record<AIProviderType, string>>({
     openai: "",
@@ -79,7 +81,7 @@ export function SettingsDialog() {
 
     if (valid && type !== "ollama") {
       setTimeout(() => {
-        useAppStore.getState().saveProviderConfigs();
+        useProviderStore.getState().saveProviderConfigs();
       }, 0);
     }
 

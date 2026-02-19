@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Check, ChevronDown, ArrowRight, Cpu } from "lucide-react";
 import { ProviderIcon, ModelIcon } from "@lobehub/icons";
+import { useProviderStore } from "@/stores/provider.store";
 import { useAppStore } from "@/stores/app.store";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
 import type { AIProviderType } from "@/types/ai";
@@ -94,12 +95,12 @@ export function AIProviderSelector({
     setSelectedProvider,
     selectedModel,
     setSelectedModel,
-    setSettingsOpen,
     ollamaModels,
     checkOllamaConnection,
     providerConfigs,
     setProviderConfig,
-  } = useAppStore();
+  } = useProviderStore();
+  const { setSettingsOpen } = useAppStore();
 
   useEffect(() => {
     if (isOpen) {

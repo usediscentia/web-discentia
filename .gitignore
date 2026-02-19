@@ -44,3 +44,6 @@ next-env.d.ts
 discentia-feature-plan-v2.md
 discentia-feature-plan.md
 implementation-plan-v2-status.md
+
+# design files
+*.pen
