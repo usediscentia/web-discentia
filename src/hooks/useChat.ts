@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useChatStore } from "@/stores/chat.store";
+import { useProviderStore } from "@/stores/provider.store";
 import { useAppStore } from "@/stores/app.store";
 import { StorageService } from "@/services/storage";
 import { getAIProvider } from "@/services/ai";
@@ -19,11 +21,12 @@ export function useChat() {
   const {
     activeConversationId,
     setActiveConversationId,
-    getActiveProviderConfig,
     isStreaming,
     setIsStreaming,
-    setSettingsOpen,
-  } = useAppStore();
+  } = useChatStore();
+
+  const { getActiveProviderConfig } = useProviderStore();
+  const { setSettingsOpen } = useAppStore();
 
   // Load messages when conversation changes (e.g. page refresh, switching conversations)
   // Skipped when we just created the conversation ourselves in sendMessage
