@@ -2,6 +2,7 @@
 
 import { useState, useCallback, type ComponentPropsWithoutRef } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Check, Copy, ExternalLink } from "lucide-react";
@@ -264,7 +265,7 @@ const markdownComponents = {
 export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
   return (
     <div className="text-sm text-[#2a2a2a] leading-[1.75]">
-      <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{content}</ReactMarkdown>
     </div>
   );
 }
