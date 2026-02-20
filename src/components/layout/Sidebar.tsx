@@ -41,7 +41,6 @@ export default function Sidebar() {
     sidebarCollapsed,
     setSidebarCollapsed,
     setCommandPaletteOpen,
-    setSettingsOpen,
   } = useAppStore();
   const { activeConversationId, setActiveConversationId, messages } =
     useChatStore();
@@ -256,7 +255,7 @@ export default function Sidebar() {
             </span>
           </button>
           <button
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => setActiveView("settings")}
             className="flex items-center gap-2.5 rounded-md cursor-pointer hover:bg-[#F9FAFB] text-[#6B7280] transition-colors px-3 py-2"
             title={sidebarCollapsed ? "Settings" : undefined}
           >

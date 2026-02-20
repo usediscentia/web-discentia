@@ -98,7 +98,6 @@ export function AIProviderSelector({
     ollamaModels,
     checkOllamaConnection,
   } = useProviderStore();
-  const { setSettingsOpen } = useAppStore();
 
   useEffect(() => {
     if (isOpen) {
@@ -117,9 +116,11 @@ export function AIProviderSelector({
     setSelectedModel(model);
   };
 
+  const { setActiveView } = useAppStore();
+
   const handleManageKeys = () => {
     onClose();
-    setSettingsOpen(true);
+    setActiveView("settings");
   };
 
   const getModelsForProvider = (id: AIProviderType): string[] => {

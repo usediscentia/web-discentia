@@ -6,6 +6,7 @@ import { useProviderStore } from "@/stores/provider.store";
 import Sidebar from "@/components/layout/Sidebar";
 import ChatView from "@/components/chat/ChatView";
 import LibraryView from "@/components/library/LibraryView";
+import SettingsPage from "@/components/providers/SettingsPage";
 
 export default function AppShell() {
   const { activeView } = useAppStore();
@@ -31,11 +32,7 @@ export default function AppShell() {
             Editor — Phase 3
           </div>
         )}
-        {activeView === "settings" && (
-          <div className="flex items-center justify-center h-full text-[#9CA3AF] text-sm">
-            Settings — Phase 4
-          </div>
-        )}
+        {activeView === "settings" && <SettingsPage />}
       </main>
     </div>
   );
