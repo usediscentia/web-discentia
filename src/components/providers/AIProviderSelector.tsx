@@ -97,8 +97,6 @@ export function AIProviderSelector({
     setSelectedModel,
     ollamaModels,
     checkOllamaConnection,
-    providerConfigs,
-    setProviderConfig,
   } = useProviderStore();
   const { setSettingsOpen } = useAppStore();
 
@@ -113,11 +111,10 @@ export function AIProviderSelector({
   };
 
   const handleSelectModel = (providerId: AIProviderType, model: string) => {
+    if (providerId !== selectedProvider) {
+      setSelectedProvider(providerId);
+    }
     setSelectedModel(model);
-    setProviderConfig(providerId, {
-      ...providerConfigs[providerId],
-      model,
-    });
   };
 
   const handleManageKeys = () => {
