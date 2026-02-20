@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import { motion } from "motion/react";
-import { AcademicCapIcon } from "@heroicons/react/24/outline";
-import ReactMarkdown from "react-markdown";
-import { ReactNode } from "react";
+import { GraduationCap } from "lucide-react";
+import MarkdownRenderer from "@/components/chat/MarkdownRenderer";
 import type { Citation } from "@/types/chat";
 import { Button } from "@/components/ui/button";
 
@@ -29,21 +28,53 @@ export function ChatMessages({
   isStreaming,
   onOpenCitation,
 }: ChatMessagesProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+
+  const checkNearBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const threshold = 120;
+    const nearBottom =
+      el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+    setIsNearBottom(nearBottom);
+  }, []);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingContent]);
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", checkNearBottom, { passive: true });
+    return () => el.removeEventListener("scroll", checkNearBottom);
+  }, [checkNearBottom]);
+
+  useEffect(() => {
+    if (isNearBottom) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, streamingContent, isNearBottom]);
+
+  // Always scroll to bottom when a new user message is sent
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (last?.role === "user") {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      setIsNearBottom(true);
+    }
+  }, [messages.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="flex flex-col items-center flex-1 overflow-y-auto w-full px-0 py-6">
-      <div className="flex flex-col gap-5 w-[720px]">
+    <div
+      ref={scrollRef}
+      className="flex flex-col items-center flex-1 overflow-y-auto w-full px-0 py-6"
+    >
+      <div className="flex flex-col gap-5 w-full max-w-[720px] px-4">
         {messages.map((message, index) => (
           <motion.div
             key={message.id}
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
+            transition={{ duration: 0.25, delay: Math.min(index * 0.05, 0.3) }}
           >
             {message.role === "user" ? (
               <UserMessage content={message.content} />
@@ -60,9 +91,9 @@ export function ChatMessages({
 
         {isStreaming && (
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.15 }}
           >
             <AIMessage
               content={streamingContent || ""}
@@ -80,12 +111,22 @@ export function ChatMessages({
 function UserMessage({ content }: { content: string }) {
   return (
     <div className="flex justify-end w-full">
-      <div className="bg-[#1A1A1A] rounded-[18px_18px_4px_18px] px-4 py-3">
-        <p className="text-sm text-white leading-6 whitespace-pre-wrap">
+      <div className="bg-[#1A1A1A] rounded-[20px_20px_6px_20px] px-4 py-3 max-w-[85%]">
+        <p className="text-sm text-white leading-[1.7] whitespace-pre-wrap">
           {content}
         </p>
       </div>
     </div>
+  );
+}
+
+function StreamingIndicator() {
+  return (
+    <span className="inline-flex items-center gap-[3px] ml-1 align-middle">
+      <span className="w-[5px] h-[5px] rounded-full bg-[#1A1A1A] animate-bounce [animation-delay:0ms]" />
+      <span className="w-[5px] h-[5px] rounded-full bg-[#1A1A1A] animate-bounce [animation-delay:150ms]" />
+      <span className="w-[5px] h-[5px] rounded-full bg-[#1A1A1A] animate-bounce [animation-delay:300ms]" />
+    </span>
   );
 }
 
@@ -106,52 +147,63 @@ function AIMessage({
 
   return (
     <div className="flex gap-3 w-full">
-      <div className="flex items-center justify-center w-8 h-8 rounded-2xl bg-[#1A1A1A] shrink-0">
-        <AcademicCapIcon className="w-4 h-4 text-white" />
+      <div className="flex items-center justify-center w-8 h-8 rounded-2xl bg-[#1A1A1A] shrink-0 mt-0.5">
+        <GraduationCap size={16} className="text-white" />
       </div>
-      <div className="flex flex-col gap-3 flex-1 min-w-0">
-        <div className="bg-transparent rounded-[18px_18px_18px_4px] px-4 py-3">
-          <div className="text-sm text-[#1A1A1A] leading-6 prose prose-sm max-w-none prose-p:my-1 prose-headings:mt-3 prose-headings:mb-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-2 prose-code:text-[#1A1A1A] prose-code:bg-[#F3F4F6] prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-none prose-code:after:content-none">
-            <ReactMarkdown>{content}</ReactMarkdown>
-            {isStreaming && (
-              <span className="inline-block w-1.5 h-4 bg-[#1A1A1A] ml-0.5 animate-pulse align-middle" />
-            )}
-          </div>
+      <div className="flex flex-col gap-2 flex-1 min-w-0">
+        <div className="px-1">
+          {content ? (
+            <MarkdownRenderer content={content} />
+          ) : isStreaming ? (
+            <div className="py-2">
+              <StreamingIndicator />
+            </div>
+          ) : null}
+          {isStreaming && content && (
+            <span className="inline-block w-[3px] h-[18px] bg-[#1A1A1A] ml-0.5 animate-pulse align-middle rounded-full" />
+          )}
         </div>
+
         {Boolean(citations?.length) && (
-          <div className="px-4">
+          <div className="px-1">
             <button
               onClick={() => setCitationsOpen((open) => !open)}
-              className="text-xs px-3 py-1.5 rounded-full border border-[#E5E7EB] bg-white text-[#333] cursor-pointer hover:bg-[#F8F8F8]"
+              className="text-xs px-3 py-1.5 rounded-full border border-[#E5E7EB] bg-white text-[#444] cursor-pointer hover:bg-[#F8F8F8] transition-colors flex items-center gap-1.5"
             >
-              📚 {citations?.length} source{citations && citations.length > 1 ? "s" : ""}
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              {citations?.length} source{citations && citations.length > 1 ? "s" : ""} from your library
             </button>
 
             {citationsOpen && (
-              <div className="mt-2 rounded-lg border border-[#EAEAEA] bg-white p-3 space-y-2">
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.15 }}
+                className="mt-2 rounded-xl border border-[#EAEAEA] bg-white p-3 space-y-2 shadow-sm"
+              >
                 {citations?.map((citation) => (
                   <div
                     key={`${citation.libraryItemId}-${citation.excerpt}`}
-                    className="flex items-start justify-between gap-3 border-b border-[#F2F2F2] pb-2 last:border-b-0 last:pb-0"
+                    className="flex items-start justify-between gap-3 border-b border-[#F2F2F2] pb-2.5 last:border-b-0 last:pb-0"
                   >
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-[#1A1A1A]">
                         {citation.itemTitle}
                       </p>
-                      <p className="text-xs text-[#6B7280] mt-1 line-clamp-2">
+                      <p className="text-xs text-[#6B7280] mt-1 line-clamp-2 leading-relaxed">
                         {citation.excerpt}
                       </p>
                     </div>
                     <Button
                       variant="outline"
-                      className="cursor-pointer h-7 px-2 text-xs"
+                      className="cursor-pointer h-7 px-2.5 text-xs shrink-0"
                       onClick={() => onOpenCitation?.(citation)}
                     >
                       View
                     </Button>
                   </div>
                 ))}
-              </div>
+              </motion.div>
             )}
           </div>
         )}
