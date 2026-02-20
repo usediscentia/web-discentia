@@ -45,17 +45,39 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
   ollamaStatus: "unknown",
   ollamaModels: [],
 
-  setSelectedProvider: (provider) =>
+  setSelectedProvider: (provider) => {
+    const model = get().providerConfigs[provider].model;
     set({
       selectedProvider: provider,
-      selectedModel: get().providerConfigs[provider].model,
-    }),
-  setSelectedModel: (model) => set({ selectedModel: model }),
+      selectedModel: model,
+    });
+    localStorage.setItem(STORAGE_KEYS.SELECTED_PROVIDER, provider);
+    localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, model);
+  },
+  setSelectedModel: (model) => {
+    const state = get();
+    set({
+      selectedModel: model,
+      providerConfigs: {
+        ...state.providerConfigs,
+        [state.selectedProvider]: {
+          ...state.providerConfigs[state.selectedProvider],
+          model,
+        },
+      },
+    });
+    localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, model);
+    void get().saveProviderConfigs();
+  },
 
   setProviderConfig: (type, config) =>
-    set((state) => ({
-      providerConfigs: { ...state.providerConfigs, [type]: config },
-    })),
+    set((state) => {
+      const nextConfigs = { ...state.providerConfigs, [type]: config };
+      return {
+        providerConfigs: nextConfigs,
+        ...(state.selectedProvider === type ? { selectedModel: config.model } : {}),
+      };
+    }),
 
   getActiveProviderConfig: () => {
     const state = get();
@@ -70,23 +92,36 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
   loadProviderConfigs: async () => {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.PROVIDER_CONFIGS);
-      if (!raw) return;
-
-      const encrypted: Record<string, { apiKey: string; model: string }> =
-        JSON.parse(raw);
       const configs = { ...defaultConfigs };
+      if (raw) {
+        const encrypted: Record<string, { apiKey: string; model: string }> =
+          JSON.parse(raw);
 
-      for (const [key, value] of Object.entries(encrypted)) {
-        const type = key as AIProviderType;
-        if (configs[type] && value.apiKey) {
+        for (const [key, value] of Object.entries(encrypted)) {
+          const type = key as AIProviderType;
+          if (!configs[type]) continue;
+
           configs[type] = {
-            apiKey: await decrypt(value.apiKey),
+            apiKey: value.apiKey ? await decrypt(value.apiKey) : "",
             model: value.model || configs[type].model,
           };
         }
       }
 
-      set({ providerConfigs: configs });
+      const savedProvider = localStorage.getItem(
+        STORAGE_KEYS.SELECTED_PROVIDER
+      ) as AIProviderType | null;
+      const selectedProvider =
+        savedProvider && configs[savedProvider] ? savedProvider : "openai";
+      const selectedModel =
+        localStorage.getItem(STORAGE_KEYS.SELECTED_MODEL) ||
+        configs[selectedProvider].model;
+
+      set({
+        providerConfigs: configs,
+        selectedProvider,
+        selectedModel,
+      });
     } catch {
       // corrupted storage — start fresh
     }
@@ -135,6 +170,8 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
             ? { selectedModel: models[0] }
             : {}),
         });
+        localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, models[0]);
+        void get().saveProviderConfigs();
       }
     } catch {
       set({ ollamaStatus: "disconnected", ollamaModels: [] });
