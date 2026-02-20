@@ -12,10 +12,12 @@ interface AppState {
   settingsOpen: boolean;
   commandPaletteOpen: boolean;
   sidebarCollapsed: boolean;
+  libraryFocusItemId: string | null;
   setActiveView: (view: ActiveView) => void;
   setSettingsOpen: (open: boolean) => void;
   setCommandPaletteOpen: (open: boolean) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
+  setLibraryFocusItemId: (id: string | null) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -23,8 +25,10 @@ export const useAppStore = create<AppState>((set) => ({
   settingsOpen: false,
   commandPaletteOpen: false,
   sidebarCollapsed: false,
+  libraryFocusItemId: null,
   setActiveView: (view) => set({ activeView: view }),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+  setLibraryFocusItemId: (id) => set({ libraryFocusItemId: id }),
 }));
