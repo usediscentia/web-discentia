@@ -6,7 +6,6 @@ import { ChatEmpty } from "@/components/chat/ChatEmpty";
 import { ChatMessages, type Message as ViewMessage } from "@/components/chat/ChatMessages";
 import { InputBar } from "@/components/chat/InputBar";
 import { AIProviderSelector } from "@/components/providers/AIProviderSelector";
-import { SettingsDialog } from "@/components/providers/SettingsDialog";
 import { useChat } from "@/hooks/useChat";
 import { useAppStore } from "@/stores/app.store";
 import type { Citation } from "@/types/chat";
@@ -204,8 +203,6 @@ export default function ChatView() {
           onClose={() => setAiSelectorOpen(false)}
         />
       </div>
-
-      <SettingsDialog />
     </div>
   );
 }
