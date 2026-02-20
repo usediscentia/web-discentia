@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Discentia (Phase 1 MVP)
 
-## Getting Started
+Discentia is a local-first study app with:
 
-First, run the development server:
+- AI chat (OpenAI, OpenRouter, Ollama)
+- library management in IndexedDB (Dexie)
+- context-aware chat using selected libraries
+- citation panel per assistant response
+
+## Stack
+
+- Next.js 16 + React 19 + TypeScript
+- Tailwind CSS + shadcn/ui primitives
+- Zustand for client state
+- Dexie for local persistence
+
+## Run
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Phase 1 MVP Acceptance Checklist
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Provider setup
+- Open Settings.
+- Configure OpenAI/OpenRouter key or test Ollama.
+- Send a chat message successfully.
 
-## Learn More
+2. Library core
+- Create at least one library.
+- Add content via note and via file upload (`.txt`, `.md`, image, `.pdf`).
+- Refresh page and confirm libraries/items persist.
 
-To learn more about Next.js, take a look at the following resources:
+3. Library-context chat
+- In chat input, select one or more libraries in `Add context`.
+- Send a question that references your uploaded material.
+- Confirm answer changes when you toggle libraries on/off.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. Citations
+- Ask a question that uses library content.
+- Confirm assistant message shows `📚 N sources`.
+- Open citation panel and click `View` to jump to the item in Library.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+5. Conversation management
+- Create a new conversation.
+- Open previous conversations from sidebar.
+- Rename and delete a conversation from sidebar actions.
 
-## Deploy on Vercel
+## Notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Data is stored locally in browser IndexedDB (`discentia` database).
+- API keys are encrypted and stored locally in `localStorage`.
+- `npm run lint` should pass.
+- `npm run build` may fail in restricted/offline environments because Next.js tries to fetch Google Fonts (`Inter`) during build.
