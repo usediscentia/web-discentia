@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { AcademicCapIcon } from "@heroicons/react/24/outline";
 import ReactMarkdown from "react-markdown";
 import { ReactNode } from "react";
+import type { Citation } from "@/types/chat";
+import { Button } from "@/components/ui/button";
 
 export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  citations?: Citation[];
   morphContent?: ReactNode;
 }
 
@@ -17,12 +20,14 @@ interface ChatMessagesProps {
   messages: Message[];
   streamingContent?: string;
   isStreaming?: boolean;
+  onOpenCitation?: (citation: Citation) => void;
 }
 
 export function ChatMessages({
   messages,
   streamingContent,
   isStreaming,
+  onOpenCitation,
 }: ChatMessagesProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +50,9 @@ export function ChatMessages({
             ) : (
               <AIMessage
                 content={message.content}
+                citations={message.citations}
                 morphContent={message.morphContent}
+                onOpenCitation={onOpenCitation}
               />
             )}
           </motion.div>
@@ -84,13 +91,19 @@ function UserMessage({ content }: { content: string }) {
 
 function AIMessage({
   content,
+  citations,
   morphContent,
   isStreaming,
+  onOpenCitation,
 }: {
   content: string;
+  citations?: Citation[];
   morphContent?: ReactNode;
   isStreaming?: boolean;
+  onOpenCitation?: (citation: Citation) => void;
 }) {
+  const [citationsOpen, setCitationsOpen] = useState(false);
+
   return (
     <div className="flex gap-3 w-full">
       <div className="flex items-center justify-center w-8 h-8 rounded-2xl bg-[#1A1A1A] shrink-0">
@@ -105,6 +118,43 @@ function AIMessage({
             )}
           </div>
         </div>
+        {Boolean(citations?.length) && (
+          <div className="px-4">
+            <button
+              onClick={() => setCitationsOpen((open) => !open)}
+              className="text-xs px-3 py-1.5 rounded-full border border-[#E5E7EB] bg-white text-[#333] cursor-pointer hover:bg-[#F8F8F8]"
+            >
+              📚 {citations?.length} source{citations && citations.length > 1 ? "s" : ""}
+            </button>
+
+            {citationsOpen && (
+              <div className="mt-2 rounded-lg border border-[#EAEAEA] bg-white p-3 space-y-2">
+                {citations?.map((citation) => (
+                  <div
+                    key={`${citation.libraryItemId}-${citation.excerpt}`}
+                    className="flex items-start justify-between gap-3 border-b border-[#F2F2F2] pb-2 last:border-b-0 last:pb-0"
+                  >
+                    <div>
+                      <p className="text-xs font-semibold text-[#1A1A1A]">
+                        {citation.itemTitle}
+                      </p>
+                      <p className="text-xs text-[#6B7280] mt-1 line-clamp-2">
+                        {citation.excerpt}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="cursor-pointer h-7 px-2 text-xs"
+                      onClick={() => onOpenCitation?.(citation)}
+                    >
+                      View
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {morphContent}
       </div>
     </div>
