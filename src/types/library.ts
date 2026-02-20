@@ -16,6 +16,7 @@ export interface LibraryItemMetadata {
   wordCount?: number;
   pageCount?: number;
   dimensions?: { width: number; height: number };
+  thumbnail?: string; // base64 data URL of first page (PDFs)
 }
 
 export interface LibraryItem {
