@@ -9,6 +9,12 @@ import { getAIProvider } from "@/services/ai";
 import { SYSTEM_PROMPT } from "@/lib/constants";
 import { splitMessageAndCitations } from "@/lib/citations";
 import {
+  detectExerciseIntent,
+  parseExerciseFromResponse,
+} from "@/services/ai/parsers/exercise.parser";
+import { buildExercisePrompt } from "@/services/ai/prompts/exercise.prompts";
+import { getDB } from "@/services/storage/database";
+import {
   buildContextSnippet,
   DEFAULT_CONTEXT_TOKEN_BUDGET,
   estimateTokenCountFromChars,
@@ -40,7 +46,7 @@ export function useChat() {
   } = useChatStore();
 
   const { getActiveProviderConfig } = useProviderStore();
-  const { setSettingsOpen } = useAppStore();
+  const { setActiveView } = useAppStore();
 
   const refreshLibraries = useCallback(async () => {
     const libraries = await StorageService.listLibraries();
@@ -105,7 +111,7 @@ export function useChat() {
       const config = getActiveProviderConfig();
 
       if (PROVIDER_DEFAULTS[config.type].requiresApiKey && !config.apiKey) {
-        setSettingsOpen(true);
+        setActiveView("settings");
         return;
       }
 
@@ -165,10 +171,19 @@ Rules:
       );
       appendMessage(userMessage);
 
+      // Detect exercise generation intent
+      const exerciseIntent = detectExerciseIntent(content);
+      const exercisePrompt = exerciseIntent
+        ? buildExercisePrompt(exerciseIntent.type, exerciseIntent.topic, contextText || undefined)
+        : null;
+
       // Build AI message history
       const aiMessages: AIMessage[] = [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "system", content: citationInstruction },
+        ...(exercisePrompt
+          ? [{ role: "system" as const, content: exercisePrompt }]
+          : []),
+        { role: "system" as const, content: citationInstruction },
         ...(contextText
           ? [
               {
@@ -206,9 +221,34 @@ Rules:
                 fullText,
                 allowedItemIds
               );
-              await StorageService.addMessage(convId!, "assistant", cleanContent, {
+
+              // Save the assistant message first to get a real messageId
+              let exerciseId: string | undefined;
+
+              // Pre-parse exercise so we can include its id on the message
+              const parsedExercise = exerciseIntent
+                ? parseExerciseFromResponse(fullText, "" /* placeholder, set below */)
+                : null;
+
+              if (parsedExercise) {
+                exerciseId = parsedExercise.id;
+              }
+
+              const savedMessage = await StorageService.addMessage(convId!, "assistant", cleanContent, {
                 citations,
+                exerciseId,
               });
+
+              // Now save the exercise with the real messageId
+              if (parsedExercise) {
+                try {
+                  parsedExercise.messageId = savedMessage.id;
+                  await getDB().exercises.add(parsedExercise);
+                } catch {
+                  // Exercise storage failed — message is already saved
+                }
+              }
+
               // Reload from Dexie to avoid race conditions with useEffect
               const allMessages = await StorageService.getMessages(convId!);
               setMessages(allMessages);
@@ -243,7 +283,7 @@ Rules:
       selectedLibraryIds,
       setActiveConversationId,
       setIsStreaming,
-      setSettingsOpen,
+      setActiveView,
       setMessages,
     ]
   );
