@@ -6,10 +6,13 @@ import { ChatEmpty } from "@/components/chat/ChatEmpty";
 import { ChatMessages, type Message as ViewMessage } from "@/components/chat/ChatMessages";
 import { InputBar } from "@/components/chat/InputBar";
 import { AIProviderSelector } from "@/components/providers/AIProviderSelector";
+import { ExerciseRenderer } from "@/components/exercises/ExerciseRenderer";
 import { useChat } from "@/hooks/useChat";
 import { useAppStore } from "@/stores/app.store";
 import type { Citation } from "@/types/chat";
+import type { Exercise } from "@/types/exercise";
 import { StorageService } from "@/services/storage";
+import { getDB } from "@/services/storage/database";
 
 export default function ChatView() {
   const [aiSelectorOpen, setAiSelectorOpen] = useState(false);
@@ -30,12 +33,83 @@ export default function ChatView() {
     activeConversationId,
   } = useChat();
 
-  const viewMessages: ViewMessage[] = messages.map((m) => ({
-    id: m.id,
-    role: m.role,
-    content: m.content,
-    citations: m.citations,
-  }));
+  // Load exercises linked to messages
+  const [exercises, setExercises] = useState<Record<string, Exercise>>({});
+  useEffect(() => {
+    let cancelled = false;
+
+    const exerciseIds = messages
+      .map((m) => m.exerciseId)
+      .filter((id): id is string => Boolean(id));
+    if (exerciseIds.length === 0) {
+      setExercises({});
+      return;
+    }
+
+    // Small delay to handle the timing gap between message save and exercise save
+    const timeout = window.setTimeout(() => {
+      const db = getDB();
+      Promise.all(exerciseIds.map((id) => db.exercises.get(id)))
+        .then((results) => {
+          if (cancelled) return;
+          const map: Record<string, Exercise> = {};
+          const missing: string[] = [];
+          for (let i = 0; i < results.length; i++) {
+            const ex = results[i];
+            if (ex) {
+              map[ex.id] = ex;
+            } else {
+              missing.push(exerciseIds[i]);
+            }
+          }
+          setExercises(map);
+
+          // Retry once for missing exercises (may not be saved yet)
+          if (missing.length > 0) {
+            window.setTimeout(() => {
+              if (cancelled) return;
+              Promise.all(missing.map((id) => db.exercises.get(id)))
+                .then((retryResults) => {
+                  if (cancelled) return;
+                  let hasNew = false;
+                  const updated = { ...map };
+                  for (const ex of retryResults) {
+                    if (ex) {
+                      updated[ex.id] = ex;
+                      hasNew = true;
+                    }
+                  }
+                  if (hasNew) setExercises(updated);
+                })
+                .catch(() => {
+                  // Retry failed — exercises may not exist
+                });
+            }, 500);
+          }
+        })
+        .catch(() => {
+          // Exercise loading failed — continue without exercises
+        });
+    }, 50);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
+  }, [messages]);
+
+  const viewMessages: ViewMessage[] = messages.map((m) => {
+    const exercise = m.exerciseId ? exercises[m.exerciseId] : undefined;
+    return {
+      id: m.id,
+      role: m.role,
+      content: m.content,
+      citations: m.citations,
+      morphContent: exercise ? (
+        <ExerciseRenderer exercise={exercise} />
+      ) : undefined,
+    };
+  });
 
   const hasMessages = viewMessages.length > 0;
   const canManageConversation = Boolean(activeConversationId);
