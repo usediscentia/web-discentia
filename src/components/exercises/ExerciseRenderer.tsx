@@ -2,9 +2,10 @@
 
 import { useCallback } from "react";
 import type { Exercise, ExerciseResult } from "@/types/exercise";
-import type { FlashcardData, QuizData } from "@/types/exercise";
+import type { FlashcardData, QuizData, SprintData } from "@/types/exercise";
 import { FlashcardMorph } from "./FlashcardMorph";
 import { QuizMorph } from "./QuizMorph";
+import { SprintMorph } from "./SprintMorph";
 import { getDB } from "@/services/storage/database";
 import { Layers } from "lucide-react";
 
@@ -49,7 +50,16 @@ export function ExerciseRenderer({ exercise }: ExerciseRendererProps) {
           onComplete={handleComplete}
         />
       );
-    // Sprint, Connections, FillGap, Crossword, BossFight — coming later
+    case "sprint":
+      return (
+        <SprintMorph
+          exerciseId={exercise.id}
+          title={exercise.title}
+          data={exercise.data as SprintData}
+          onComplete={handleComplete}
+        />
+      );
+    // Connections, FillGap, Crossword, BossFight — coming later
     default:
       return (
         <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] text-sm text-[#6B7280]">
