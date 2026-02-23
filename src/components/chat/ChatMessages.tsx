@@ -152,14 +152,14 @@ function AIMessage({
       </div>
       <div className="flex flex-col gap-2 flex-1 min-w-0">
         <div className="px-1">
-          {content ? (
+          {content && !morphContent ? (
             <MarkdownRenderer content={content} />
-          ) : isStreaming ? (
+          ) : !morphContent && isStreaming ? (
             <div className="py-2">
               <StreamingIndicator />
             </div>
           ) : null}
-          {isStreaming && content && (
+          {isStreaming && content && !morphContent && (
             <span className="inline-block w-[3px] h-[18px] bg-[#1A1A1A] ml-0.5 animate-pulse align-middle rounded-full" />
           )}
         </div>
