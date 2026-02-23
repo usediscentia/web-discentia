@@ -10,6 +10,7 @@ import { SYSTEM_PROMPT } from "@/lib/constants";
 import { splitMessageAndCitations } from "@/lib/citations";
 import {
   detectExerciseIntent,
+  classifyExerciseIntentWithAI,
   parseExerciseFromResponse,
 } from "@/services/ai/parsers/exercise.parser";
 import { buildExercisePrompt } from "@/services/ai/prompts/exercise.prompts";
@@ -171,19 +172,23 @@ Rules:
       );
       appendMessage(userMessage);
 
-      // Detect exercise generation intent
-      const exerciseIntent = detectExerciseIntent(content);
+      // Detect exercise generation intent — regex fast path, then AI fallback
+      const exerciseIntent =
+        detectExerciseIntent(content) ??
+        (await classifyExerciseIntentWithAI(content, provider, config));
       const exercisePrompt = exerciseIntent
         ? buildExercisePrompt(exerciseIntent.type, exerciseIntent.topic, contextText || undefined)
         : null;
 
-      // Build AI message history
+      // Build AI message history.
+      // For exercises: include exercise prompt + library context (no citation block —
+      //   it conflicts with the JSON-only instruction and produces malformed output).
+      // For normal chat: include citation instruction + library context.
       const aiMessages: AIMessage[] = [
         { role: "system", content: SYSTEM_PROMPT },
         ...(exercisePrompt
           ? [{ role: "system" as const, content: exercisePrompt }]
-          : []),
-        { role: "system" as const, content: citationInstruction },
+          : [{ role: "system" as const, content: citationInstruction }]),
         ...(contextText
           ? [
               {

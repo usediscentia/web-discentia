@@ -1,4 +1,5 @@
 import type { Exercise, ExerciseType } from "@/types/exercise";
+import type { AIServiceProvider, ProviderConfig } from "@/types/ai";
 import { nanoid } from "nanoid";
 
 const VALID_TYPES: ExerciseType[] = [
@@ -113,6 +114,10 @@ function validateExerciseData(
   }
 }
 
+// Prepositions that introduce the topic of an exercise request.
+// Covers: "about X", "on X", "for X", "based on X", "using X", "from X", "covering X", "related to X"
+const PREP = String.raw`(?:about|on|for|based\s+on|using|from|covering|regarding|related\s+to)`;
+
 /**
  * Detect if the user message is requesting an exercise.
  * Returns the exercise type and topic, or null.
@@ -123,70 +128,90 @@ export function detectExerciseIntent(
   const lower = message.toLowerCase();
 
   const patterns: { type: ExerciseType; keywords: RegExp }[] = [
-    // With action verb: "create flashcards about X"
+    // With action verb: "create flashcards about X", "create a quiz based on X"
     {
       type: "flashcard",
-      keywords:
-        /(?:create|make|generate|build)\s+(?:some\s+)?flashcards?\s+(?:about|on|for)\s+(.+)/i,
+      keywords: new RegExp(
+        String.raw`(?:create|make|generate|build)\s+(?:some\s+)?flashcards?\s+${PREP}\s+(.+)`,
+        "i"
+      ),
     },
     {
       type: "quiz",
-      keywords:
-        /(?:create|make|generate|build)\s+(?:a\s+)?quiz\s+(?:about|on|for)\s+(.+)/i,
+      keywords: new RegExp(
+        String.raw`(?:create|make|generate|build)\s+(?:a\s+)?quiz\s+${PREP}\s+(.+)`,
+        "i"
+      ),
     },
     {
       type: "sprint",
-      keywords:
-        /(?:create|make|generate|build|start)\s+(?:a\s+)?sprint\s+(?:about|on|for)\s+(.+)/i,
+      keywords: new RegExp(
+        String.raw`(?:create|make|generate|build|start)\s+(?:a\s+)?sprint\s+${PREP}\s+(.+)`,
+        "i"
+      ),
     },
     {
       type: "connections",
-      keywords:
-        /(?:create|make|generate|build)\s+(?:a\s+)?connections?\s+(?:puzzle\s+)?(?:about|on|for)\s+(.+)/i,
+      keywords: new RegExp(
+        String.raw`(?:create|make|generate|build)\s+(?:a\s+)?connections?\s+(?:puzzle\s+)?${PREP}\s+(.+)`,
+        "i"
+      ),
     },
     {
       type: "fillgap",
-      keywords:
-        /(?:create|make|generate|build)\s+(?:a\s+)?fill[\s-]?(?:the[\s-]?)?gap\s+(?:about|on|for)\s+(.+)/i,
+      keywords: new RegExp(
+        String.raw`(?:create|make|generate|build)\s+(?:a\s+)?fill[\s-]?(?:the[\s-]?)?gap\s+${PREP}\s+(.+)`,
+        "i"
+      ),
     },
     {
       type: "crossword",
-      keywords:
-        /(?:create|make|generate|build)\s+(?:a\s+)?crossword\s+(?:about|on|for)\s+(.+)/i,
+      keywords: new RegExp(
+        String.raw`(?:create|make|generate|build)\s+(?:a\s+)?crossword\s+${PREP}\s+(.+)`,
+        "i"
+      ),
     },
     {
       type: "bossfight",
-      keywords:
-        /(?:create|make|generate|build|start)\s+(?:a\s+)?boss[\s-]?fight\s+(?:about|on|for)\s+(.+)/i,
+      keywords: new RegExp(
+        String.raw`(?:create|make|generate|build|start)\s+(?:a\s+)?boss[\s-]?fight\s+${PREP}\s+(.+)`,
+        "i"
+      ),
     },
-    // Without action verb: "flashcards about X", "quiz on Y"
+    // Without action verb: "flashcards about X", "quiz based on Y"
     {
       type: "flashcard",
-      keywords: /flashcards?\s+(?:about|on|for)\s+(.+)/i,
+      keywords: new RegExp(String.raw`flashcards?\s+${PREP}\s+(.+)`, "i"),
     },
     {
       type: "quiz",
-      keywords: /quiz\s+(?:about|on|for)\s+(.+)/i,
+      keywords: new RegExp(String.raw`quiz\s+${PREP}\s+(.+)`, "i"),
     },
     {
       type: "sprint",
-      keywords: /sprint\s+(?:about|on|for)\s+(.+)/i,
+      keywords: new RegExp(String.raw`sprint\s+${PREP}\s+(.+)`, "i"),
     },
     {
       type: "connections",
-      keywords: /connections?\s+(?:puzzle\s+)?(?:about|on|for)\s+(.+)/i,
+      keywords: new RegExp(
+        String.raw`connections?\s+(?:puzzle\s+)?${PREP}\s+(.+)`,
+        "i"
+      ),
     },
     {
       type: "fillgap",
-      keywords: /fill[\s-]?(?:the[\s-]?)?gap\s+(?:about|on|for)\s+(.+)/i,
+      keywords: new RegExp(
+        String.raw`fill[\s-]?(?:the[\s-]?)?gap\s+${PREP}\s+(.+)`,
+        "i"
+      ),
     },
     {
       type: "crossword",
-      keywords: /crossword\s+(?:about|on|for)\s+(.+)/i,
+      keywords: new RegExp(String.raw`crossword\s+${PREP}\s+(.+)`, "i"),
     },
     {
       type: "bossfight",
-      keywords: /boss[\s-]?fight\s+(?:about|on|for)\s+(.+)/i,
+      keywords: new RegExp(String.raw`boss[\s-]?fight\s+${PREP}\s+(.+)`, "i"),
     },
   ];
 
@@ -209,7 +234,7 @@ export function detectExerciseIntent(
   for (const { type, words } of typeKeywords) {
     if (words.some((w) => lower.includes(w))) {
       const topicMatch = message.match(
-        /(?:about|on|for|regarding)\s+(.+?)(?:\.|$)/i
+        new RegExp(String.raw`${PREP}\s+(.+?)(?:\.|$)`, "i")
       );
       const topic = topicMatch ? topicMatch[1].trim() : message;
       return { type, topic };
@@ -217,4 +242,65 @@ export function detectExerciseIntent(
   }
 
   return null;
+}
+
+const CLASSIFIER_SYSTEM_PROMPT = `You are a classifier. Determine if the user message is requesting a learning exercise to be created.
+
+Reply ONLY with a raw JSON object — no markdown, no explanation:
+- If requesting an exercise: {"type":"flashcard","topic":"..."} (use the detected type and the full topic)
+- If NOT requesting an exercise: {"type":null}
+
+Valid types: flashcard, quiz, sprint, connections, fillgap, crossword, bossfight
+- flashcard: wants flashcards / flash cards
+- quiz: wants a quiz, test, or questionnaire
+- sprint: wants a speed quiz or sprint mode
+- connections: wants a connections puzzle (group related words)
+- fillgap: wants fill-in-the-blank / fill the gap
+- crossword: wants a crossword puzzle
+- bossfight: wants a boss fight challenge
+
+Extract the topic as the subject matter to study (e.g. "the feature plan for my Discentia app", "World War II", "photosynthesis").`;
+
+/**
+ * AI-based exercise intent classifier — used as fallback when regex detection fails.
+ * Wraps the provider's streaming sendMessage into a Promise.
+ */
+export async function classifyExerciseIntentWithAI(
+  message: string,
+  provider: AIServiceProvider,
+  config: ProviderConfig
+): Promise<{ type: ExerciseType; topic: string } | null> {
+  return new Promise((resolve) => {
+    provider
+      .sendMessage(
+        [
+          { role: "system", content: CLASSIFIER_SYSTEM_PROMPT },
+          { role: "user", content: message },
+        ],
+        config,
+        {
+          onToken: () => {
+            // discard streaming tokens — we only need the final text
+          },
+          onComplete: (fullText) => {
+            try {
+              const clean = fullText.replace(/```json\n?|\n?```/g, "").trim();
+              const parsed = JSON.parse(clean);
+              if (parsed.type && VALID_TYPES.includes(parsed.type as ExerciseType)) {
+                resolve({
+                  type: parsed.type as ExerciseType,
+                  topic: (parsed.topic as string) || message,
+                });
+              } else {
+                resolve(null);
+              }
+            } catch {
+              resolve(null);
+            }
+          },
+          onError: () => resolve(null),
+        }
+      )
+      .catch(() => resolve(null));
+  });
 }
