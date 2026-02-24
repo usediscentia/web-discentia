@@ -12,6 +12,8 @@ import type {
   LibraryItemMetadata,
   LibraryItemType,
 } from "@/types/library";
+import type { SRSCard, ActivityEvent } from "@/types/srs";
+import type { DashboardStats } from "@/types/dashboard";
 
 export interface CreateLibraryInput {
   name: string;
@@ -38,6 +40,12 @@ export interface SearchLibraryItemsInput {
 export interface ScoredLibraryItem {
   item: LibraryItem;
   score: number;
+}
+
+export interface CreateSRSCardInput {
+  front: string;
+  back: string;
+  libraryItemId?: string;
 }
 
 async function syncLibraryItemCount(libraryId: string): Promise<void> {
@@ -281,5 +289,110 @@ export const StorageService = {
       });
 
     return scored.slice(0, limit);
+  },
+
+  async createSRSCards(inputs: CreateSRSCardInput[]): Promise<SRSCard[]> {
+    const now = Date.now();
+    const cards: SRSCard[] = inputs.map((input) => ({
+      id: nanoid(),
+      libraryItemId: input.libraryItemId,
+      front: input.front,
+      back: input.back,
+      easeFactor: 2.5,
+      interval: 0,
+      repetitions: 0,
+      nextReviewDate: now,
+      lastReviewDate: null,
+      lapses: 0,
+      createdAt: now,
+    }));
+    await getDB().srsCards.bulkAdd(cards);
+    return cards;
+  },
+
+  async getDueCards(limit = 20): Promise<SRSCard[]> {
+    const now = Date.now();
+    const due = await getDB()
+      .srsCards.where("nextReviewDate")
+      .belowOrEqual(now)
+      .limit(limit)
+      .toArray();
+    for (let i = due.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [due[i], due[j]] = [due[j], due[i]];
+    }
+    return due;
+  },
+
+  async updateSRSCard(id: string, updates: Partial<SRSCard>): Promise<void> {
+    await getDB().srsCards.update(id, updates);
+  },
+
+  async logActivityEvent(
+    type: ActivityEvent["type"],
+    description: string,
+    metadata: Record<string, unknown> = {}
+  ): Promise<void> {
+    await getDB().activityEvents.add({
+      id: nanoid(),
+      type,
+      description,
+      metadata,
+      timestamp: Date.now(),
+    });
+  },
+
+  async getDashboardStats(): Promise<DashboardStats> {
+    const db = getDB();
+    const now = Date.now();
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayTs = todayStart.getTime();
+
+    const [dueCards, allCards, libraryItems, srsReviewEvents] = await Promise.all([
+      db.srsCards.where("nextReviewDate").belowOrEqual(now).count(),
+      db.srsCards.toArray(),
+      db.libraryItems.count(),
+      db.activityEvents.where("type").equals("srs_review").toArray(),
+    ]);
+
+    const reviewedToday = srsReviewEvents.filter((e) => e.timestamp >= todayTs).length;
+
+    const reviewDays = new Set(
+      srsReviewEvents.map((e) => {
+        const d = new Date(e.timestamp);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      })
+    );
+    let streak = 0;
+    const cursor = new Date();
+    while (true) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
+      if (!reviewDays.has(key)) break;
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    const activityByDay: Record<string, number> = {};
+    const heatStart = Date.now() - 70 * 86400000;
+    srsReviewEvents
+      .filter((e) => e.timestamp >= heatStart)
+      .forEach((e) => {
+        const d = new Date(e.timestamp);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        activityByDay[key] = (activityByDay[key] ?? 0) + 1;
+      });
+
+    const masteredCards = allCards.filter((c) => c.interval >= 21).length;
+
+    return {
+      dueToday: dueCards,
+      reviewedToday,
+      streak,
+      totalCards: allCards.length,
+      masteredCards,
+      libraryItemCount: libraryItems,
+      activityByDay,
+    };
   },
 };

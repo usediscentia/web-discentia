@@ -5,6 +5,7 @@ export type ActiveView =
   | "library"
   | "dashboard"
   | "editor"
+  | "review"
   | "settings";
 
 interface AppState {
