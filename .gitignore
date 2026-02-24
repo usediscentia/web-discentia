@@ -50,3 +50,4 @@ phase-*-implementation*.md
 
 # design files
 *.pen
+.worktrees/
