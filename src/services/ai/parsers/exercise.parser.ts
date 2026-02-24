@@ -28,6 +28,17 @@ export function parseExerciseFromResponse(
     if (!parsed.type || !parsed.data) return null;
     if (!VALID_TYPES.includes(parsed.type)) return null;
 
+    // Normalise: if model put a single card's fields directly in data instead of data.cards[]
+    if (
+      parsed.type === "flashcard" &&
+      !Array.isArray(parsed.data.cards) &&
+      typeof parsed.data.front === "string"
+    ) {
+      parsed.data = {
+        cards: [{ id: parsed.data.id ?? "c1", front: parsed.data.front, back: parsed.data.back ?? "", hint: parsed.data.hint }],
+      };
+    }
+
     // Basic structural validation per type
     if (!validateExerciseData(parsed.type, parsed.data)) return null;
 

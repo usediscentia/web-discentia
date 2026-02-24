@@ -10,19 +10,24 @@ export function buildFlashcardPrompt(
   return `${JSON_WRAPPER}
 Generate ${count} flashcards about: "${topic}"
 ${context ? `\nUse this material as source:\n${context}\n` : ""}
+IMPORTANT: All ${count} cards must be inside ONE single JSON object, in the "cards" array. Do NOT create separate JSON objects per card.
+
 \`\`\`json
 {
   "type": "flashcard",
   "title": "short title here",
   "data": {
     "cards": [
-      { "id": "c1", "front": "question text", "back": "answer text", "hint": "optional hint" }
+      { "id": "c1", "front": "first question", "back": "first answer", "hint": "optional hint" },
+      { "id": "c2", "front": "second question", "back": "second answer", "hint": "optional hint" },
+      { "id": "c3", "front": "third question", "back": "third answer", "hint": "optional hint" }
     ]
   }
 }
 \`\`\`
 Rules:
-- Each card must have unique id (c1, c2, etc)
+- ALL ${count} cards in ONE JSON object — never split into multiple JSON blocks
+- Each card must have unique id (c1, c2, ... c${count})
 - Front: clear question or term
 - Back: concise but complete answer
 - Hint: one-word or short phrase clue (optional)
