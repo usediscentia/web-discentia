@@ -204,16 +204,23 @@ export function useLibrary() {
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [hasInitialized, setHasInitialized] = useState(false);
+
   const refreshLibraries = useCallback(async () => {
     const allLibraries = await StorageService.listLibraries();
     setLibraries(allLibraries);
     setActiveLibraryId((current) => {
-      if (current && allLibraries.some((library) => library.id === current)) {
-        return current;
+      // After first load, preserve null (= "All") as an intentional choice
+      if (hasInitialized) {
+        if (current === null) return null;
+        if (allLibraries.some((library) => library.id === current)) return current;
+        return allLibraries[0]?.id || null;
       }
+      // First load: default to first library
       return allLibraries[0]?.id || null;
     });
-  }, []);
+    setHasInitialized(true);
+  }, [hasInitialized]);
 
   const refreshItems = useCallback(async () => {
     const query = searchQuery.trim();

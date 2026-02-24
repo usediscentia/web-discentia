@@ -9,6 +9,7 @@ import { AIProviderSelector } from "@/components/providers/AIProviderSelector";
 import { ExerciseRenderer } from "@/components/exercises/ExerciseRenderer";
 import { useChat } from "@/hooks/useChat";
 import { useAppStore } from "@/stores/app.store";
+import { useChatStore } from "@/stores/chat.store";
 import type { Citation } from "@/types/chat";
 import type { Exercise } from "@/types/exercise";
 import { StorageService } from "@/services/storage";
@@ -32,6 +33,15 @@ export default function ChatView() {
     toggleLibrary,
     activeConversationId,
   } = useChat();
+
+  // Auto-send pending message (e.g. from Editor AI Action Bar)
+  const { pendingMessage, setPendingMessage } = useChatStore();
+  useEffect(() => {
+    if (pendingMessage) {
+      sendMessage(pendingMessage);
+      setPendingMessage(null);
+    }
+  }, [pendingMessage, sendMessage, setPendingMessage]);
 
   // Load exercises linked to messages
   const [exercises, setExercises] = useState<Record<string, Exercise>>({});

@@ -219,6 +219,16 @@ export const StorageService = {
     return getDB().libraryItems.orderBy("createdAt").reverse().toArray();
   },
 
+  async updateLibraryItem(
+    id: string,
+    updates: Partial<Pick<LibraryItem, "title" | "content" | "preview" | "metadata">>
+  ): Promise<void> {
+    await getDB().libraryItems.update(id, {
+      ...updates,
+      updatedAt: Date.now(),
+    });
+  },
+
   async deleteLibraryItem(id: string): Promise<void> {
     const existing = await getDB().libraryItems.get(id);
     if (!existing) return;

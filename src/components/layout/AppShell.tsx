@@ -7,6 +7,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import ChatView from "@/components/chat/ChatView";
 import LibraryView from "@/components/library/LibraryView";
 import SettingsPage from "@/components/providers/SettingsPage";
+import EditorView from "@/components/editor/EditorView";
 import OnboardingFlow, {
   ONBOARDED_KEY,
 } from "@/components/onboarding/OnboardingFlow";
@@ -48,11 +49,7 @@ export default function AppShell() {
               Dashboard — Phase 3
             </div>
           )}
-          {activeView === "editor" && (
-            <div className="flex items-center justify-center h-full text-[#9CA3AF] text-sm">
-              Editor — Phase 3
-            </div>
-          )}
+          {activeView === "editor" && <EditorView />}
           {activeView === "settings" && <SettingsPage />}
         </main>
       </div>
