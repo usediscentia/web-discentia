@@ -6,6 +6,7 @@ interface ChatState {
   isStreaming: boolean;
   messages: Message[];
   selectedLibraryIds: string[];
+  pendingMessage: string | null;
   setActiveConversationId: (id: string | null) => void;
   setIsStreaming: (streaming: boolean) => void;
   setMessages: (messages: Message[]) => void;
@@ -14,6 +15,7 @@ interface ChatState {
   setSelectedLibraryIds: (ids: string[]) => void;
   toggleLibrary: (id: string) => void;
   clearLibraries: () => void;
+  setPendingMessage: (msg: string | null) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -21,6 +23,7 @@ export const useChatStore = create<ChatState>((set) => ({
   isStreaming: false,
   messages: [],
   selectedLibraryIds: [],
+  pendingMessage: null,
   setActiveConversationId: (id) => set({ activeConversationId: id }),
   setIsStreaming: (streaming) => set({ isStreaming: streaming }),
   setMessages: (messages) => set({ messages }),
@@ -35,4 +38,5 @@ export const useChatStore = create<ChatState>((set) => ({
         : [...state.selectedLibraryIds, id],
     })),
   clearLibraries: () => set({ selectedLibraryIds: [] }),
+  setPendingMessage: (msg) => set({ pendingMessage: msg }),
 }));
