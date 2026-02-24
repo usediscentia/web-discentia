@@ -8,6 +8,8 @@ import ChatView from "@/components/chat/ChatView";
 import LibraryView from "@/components/library/LibraryView";
 import SettingsPage from "@/components/providers/SettingsPage";
 import EditorView from "@/components/editor/EditorView";
+import ReviewView from "@/components/review/ReviewView";
+import DashboardView from "@/components/dashboard/DashboardView";
 import OnboardingFlow, {
   ONBOARDED_KEY,
 } from "@/components/onboarding/OnboardingFlow";
@@ -44,12 +46,9 @@ export default function AppShell() {
         <main className="flex-1 min-w-0 overflow-hidden">
           {activeView === "chat" && <ChatView />}
           {activeView === "library" && <LibraryView />}
-          {activeView === "dashboard" && (
-            <div className="flex items-center justify-center h-full text-[#9CA3AF] text-sm">
-              Dashboard — Phase 3
-            </div>
-          )}
+          {activeView === "dashboard" && <DashboardView />}
           {activeView === "editor" && <EditorView />}
+          {activeView === "review" && <ReviewView />}
           {activeView === "settings" && <SettingsPage />}
         </main>
       </div>

@@ -7,6 +7,7 @@ import {
   MessageSquare,
   BookOpen,
   Pencil,
+  GraduationCap,
   ChevronLeft,
   Search,
   Settings,
@@ -29,6 +30,7 @@ const navItems: {
   { id: "chat", label: "Chat", icon: MessageSquare },
   { id: "library", label: "Library", icon: BookOpen },
   { id: "editor", label: "Editor", icon: Pencil },
+  { id: "review", label: "Review", icon: GraduationCap },
 ];
 
 const EXPANDED_W = 240;
@@ -45,6 +47,11 @@ export default function Sidebar() {
   const { activeConversationId, setActiveConversationId, messages } =
     useChatStore();
   const [recentChats, setRecentChats] = useState<Conversation[]>([]);
+  const [dueCount, setDueCount] = useState(0);
+
+  useEffect(() => {
+    StorageService.getDashboardStats().then((s) => setDueCount(s.dueToday));
+  }, [activeView]);
 
   const refreshChats = useCallback(() => {
     StorageService.listConversations().then((convos) => {
@@ -153,6 +160,11 @@ export default function Sidebar() {
                 <span className={`text-sm whitespace-nowrap ${fade}`}>
                   {item.label}
                 </span>
+                {item.id === "review" && dueCount > 0 && !sidebarCollapsed && (
+                  <span className="ml-auto text-[10px] font-semibold bg-[#1A7A6D] text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    {dueCount}
+                  </span>
+                )}
               </button>
             );
           })}
