@@ -1,6 +1,6 @@
 export interface SRSCard {
   id: string;
-  libraryItemId: string;
+  libraryItemId?: string;
   front: string;
   back: string;
   easeFactor: number;

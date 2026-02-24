@@ -5,4 +5,5 @@ export interface DashboardStats {
   totalCards: number;
   masteredCards: number;
   libraryItemCount: number;
+  activityByDay: Record<string, number>; // "YYYY-MM-DD" → review count
 }
