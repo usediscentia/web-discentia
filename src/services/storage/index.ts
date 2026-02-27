@@ -13,7 +13,7 @@ import type {
   LibraryItemType,
 } from "@/types/library";
 import type { SRSCard, ActivityEvent } from "@/types/srs";
-import type { DashboardStats } from "@/types/dashboard";
+import type { DashboardInsights, DashboardStats } from "@/types/dashboard";
 
 export interface CreateLibraryInput {
   name: string;
@@ -57,6 +57,44 @@ async function syncLibraryItemCount(libraryId: string): Promise<void> {
     itemCount: count,
     updatedAt: Date.now(),
   });
+}
+
+function toDayKey(timestamp: number): string {
+  const d = new Date(timestamp);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function getCurrentStreak(reviewDays: Set<string>): number {
+  let streak = 0;
+  const cursor = new Date();
+  while (true) {
+    const key = toDayKey(cursor.getTime());
+    if (!reviewDays.has(key)) break;
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+function getBestStreak(reviewDays: Set<string>): number {
+  if (reviewDays.size === 0) return 0;
+  const sorted = [...reviewDays].sort();
+  let best = 1;
+  let current = 1;
+
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(`${sorted[i - 1]}T00:00:00`).getTime();
+    const curr = new Date(`${sorted[i]}T00:00:00`).getTime();
+    const diffDays = Math.round((curr - prev) / 86400000);
+    if (diffDays === 1) {
+      current++;
+      if (current > best) best = current;
+      continue;
+    }
+    current = 1;
+  }
+
+  return best;
 }
 
 export const StorageService = {
@@ -427,28 +465,15 @@ export const StorageService = {
 
     const reviewedToday = srsReviewEvents.filter((e) => e.timestamp >= todayTs).length;
 
-    const reviewDays = new Set(
-      srsReviewEvents.map((e) => {
-        const d = new Date(e.timestamp);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      })
-    );
-    let streak = 0;
-    const cursor = new Date();
-    while (true) {
-      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
-      if (!reviewDays.has(key)) break;
-      streak++;
-      cursor.setDate(cursor.getDate() - 1);
-    }
+    const reviewDays = new Set(srsReviewEvents.map((e) => toDayKey(e.timestamp)));
+    const streak = getCurrentStreak(reviewDays);
 
     const activityByDay: Record<string, number> = {};
     const heatStart = Date.now() - 70 * 86400000;
     srsReviewEvents
       .filter((e) => e.timestamp >= heatStart)
       .forEach((e) => {
-        const d = new Date(e.timestamp);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const key = toDayKey(e.timestamp);
         activityByDay[key] = (activityByDay[key] ?? 0) + 1;
       });
 
@@ -462,6 +487,92 @@ export const StorageService = {
       masteredCards,
       libraryItemCount: libraryItems,
       activityByDay,
+    };
+  },
+
+  async getDashboardInsights(): Promise<DashboardInsights> {
+    const db = getDB();
+    const now = Date.now();
+
+    const [cards, libraryItems, libraries, events] = await Promise.all([
+      db.srsCards.toArray(),
+      db.libraryItems.toArray(),
+      db.libraries.toArray(),
+      db.activityEvents.orderBy("timestamp").reverse().limit(12).toArray(),
+    ]);
+
+    const libraryById = new Map(libraries.map((library) => [library.id, library]));
+    const itemById = new Map(libraryItems.map((item) => [item.id, item]));
+
+    const dueByLibraryCounter = new Map<string, { libraryId: string | null; name: string; dueCount: number }>();
+    for (const card of cards) {
+      if (card.nextReviewDate > now) continue;
+      const item = card.libraryItemId ? itemById.get(card.libraryItemId) : undefined;
+      const library = item ? libraryById.get(item.libraryId) : undefined;
+      const key = library?.id ?? "__general__";
+      const current = dueByLibraryCounter.get(key) ?? {
+        libraryId: library?.id ?? null,
+        name: library?.name ?? "General",
+        dueCount: 0,
+      };
+      current.dueCount += 1;
+      dueByLibraryCounter.set(key, current);
+    }
+
+    const dueByLibrary = [...dueByLibraryCounter.values()]
+      .sort((a, b) => b.dueCount - a.dueCount)
+      .slice(0, 3);
+
+    const upcomingReviews = Array.from({ length: 4 }, (_, idx) => {
+      const day = new Date();
+      day.setHours(0, 0, 0, 0);
+      day.setDate(day.getDate() + idx + 1);
+      const start = day.getTime();
+      const end = start + 86400000;
+      const dueCount = cards.filter(
+        (card) => card.nextReviewDate >= start && card.nextReviewDate < end
+      ).length;
+
+      let label = new Intl.DateTimeFormat("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      }).format(day);
+      label = label.replace(",", "");
+      if (idx === 0) label = "Tomorrow";
+
+      return { label, dueCount, timestamp: start };
+    });
+
+    const reviewEvents = events.filter((event) => event.type === "srs_review");
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const reviewedThisMonth = reviewEvents.filter(
+      (event) => event.timestamp >= monthStart.getTime()
+    ).length;
+
+    const reviewedLast7Days = reviewEvents.filter(
+      (event) => event.timestamp >= now - 7 * 86400000
+    ).length;
+    const reviewedPrev7Days = reviewEvents.filter(
+      (event) =>
+        event.timestamp < now - 7 * 86400000 &&
+        event.timestamp >= now - 14 * 86400000
+    ).length;
+
+    const allReviewEvents = await db.activityEvents.where("type").equals("srs_review").toArray();
+    const reviewDays = new Set(allReviewEvents.map((event) => toDayKey(event.timestamp)));
+    const bestStreak = getBestStreak(reviewDays);
+
+    return {
+      dueByLibrary,
+      upcomingReviews,
+      recentActivity: events.slice(0, 4),
+      reviewedThisMonth,
+      reviewedLast7Days,
+      reviewedPrev7Days,
+      bestStreak,
     };
   },
 };
