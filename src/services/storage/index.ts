@@ -305,12 +305,27 @@ export const StorageService = {
     for (const conversation of conversations) {
       // Search in conversation title
       if (conversation.title.toLowerCase().includes(q)) {
-        results.push({
-          conversation,
-          messageId: "",
-          snippet: conversation.title,
-          score: 40,
-        });
+        const messages = await db.messages
+          .where("conversationId")
+          .equals(conversation.id)
+          .toArray();
+        const firstMatchMsg = messages.find((m) =>
+          m.content.toLowerCase().includes(q)
+        );
+        let snippet = conversation.title;
+        let messageId = "";
+        if (firstMatchMsg) {
+          const normalized = firstMatchMsg.content.replace(/\s+/g, " ");
+          const idx = normalized.toLowerCase().indexOf(q);
+          const start = Math.max(0, idx - 40);
+          const end = Math.min(normalized.length, idx + q.length + 60);
+          snippet =
+            (start > 0 ? "\u2026" : "") +
+            normalized.slice(start, end) +
+            (end < normalized.length ? "\u2026" : "");
+          messageId = firstMatchMsg.id;
+        }
+        results.push({ conversation, messageId, snippet, score: 40 });
         continue;
       }
 
@@ -321,12 +336,13 @@ export const StorageService = {
         .toArray();
 
       for (const message of messages) {
-        const idx = message.content.toLowerCase().indexOf(q);
+        const normalized = message.content.replace(/\s+/g, " ");
+        const idx = normalized.toLowerCase().indexOf(q);
         if (idx === -1) continue;
 
         const start = Math.max(0, idx - 40);
-        const end = Math.min(message.content.length, idx + q.length + 60);
-        const snippet = (start > 0 ? "\u2026" : "") + message.content.slice(start, end) + (end < message.content.length ? "\u2026" : "");
+        const end = Math.min(normalized.length, idx + q.length + 60);
+        const snippet = (start > 0 ? "\u2026" : "") + normalized.slice(start, end) + (end < normalized.length ? "\u2026" : "");
 
         results.push({
           conversation,
