@@ -7,6 +7,7 @@ interface ChatState {
   messages: Message[];
   selectedLibraryIds: string[];
   pendingMessage: string | null;
+  searchHighlight: { term: string; messageId: string } | null;
   setActiveConversationId: (id: string | null) => void;
   setIsStreaming: (streaming: boolean) => void;
   setMessages: (messages: Message[]) => void;
@@ -16,6 +17,7 @@ interface ChatState {
   toggleLibrary: (id: string) => void;
   clearLibraries: () => void;
   setPendingMessage: (msg: string | null) => void;
+  setSearchHighlight: (highlight: { term: string; messageId: string } | null) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -24,6 +26,7 @@ export const useChatStore = create<ChatState>((set) => ({
   messages: [],
   selectedLibraryIds: [],
   pendingMessage: null,
+  searchHighlight: null,
   setActiveConversationId: (id) => set({ activeConversationId: id }),
   setIsStreaming: (streaming) => set({ isStreaming: streaming }),
   setMessages: (messages) => set({ messages }),
@@ -39,4 +42,5 @@ export const useChatStore = create<ChatState>((set) => ({
     })),
   clearLibraries: () => set({ selectedLibraryIds: [] }),
   setPendingMessage: (msg) => set({ pendingMessage: msg }),
+  setSearchHighlight: (highlight) => set({ searchHighlight: highlight }),
 }));

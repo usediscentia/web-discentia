@@ -474,7 +474,10 @@ export default function EditorView() {
       }
       setTitle(item.title);
       setLibraryId(item.libraryId);
-      const html = marked.parse(item.content, { async: false }) as string;
+      const html =
+        item.type === "text"
+          ? `<p>${item.content.replace(/\n/g, "</p><p>")}</p>`
+          : (marked.parse(item.content, { async: false }) as string);
       setInitialContent(html);
       setContentReady(true);
     });

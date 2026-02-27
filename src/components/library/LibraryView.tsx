@@ -34,7 +34,7 @@ export default function LibraryView() {
     deleteItem,
     deleteLibrary,
   } = useLibrary();
-  const { libraryFocusItemId, setLibraryFocusItemId } = useAppStore();
+  const { libraryFocusItemId, setLibraryFocusItemId, setEditorItemId, setActiveView } = useAppStore();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -191,6 +191,14 @@ export default function LibraryView() {
                     index={i}
                     onOpen={() => setDetailItem(item)}
                     onDelete={() => deleteItem(item.id)}
+                    onOpenInEditor={
+                      item.type === "markdown" || item.type === "text"
+                        ? () => {
+                            setEditorItemId(item.id);
+                            setActiveView("editor");
+                          }
+                        : undefined
+                    }
                   />
                 );
               })}

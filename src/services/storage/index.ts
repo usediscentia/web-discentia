@@ -229,7 +229,7 @@ export const StorageService = {
 
   async updateLibraryItem(
     id: string,
-    updates: Partial<Pick<LibraryItem, "title" | "content" | "preview" | "metadata">>
+    updates: Partial<Pick<LibraryItem, "title" | "content" | "preview" | "metadata" | "type">>
   ): Promise<void> {
     await getDB().libraryItems.update(id, {
       ...updates,
@@ -289,6 +289,75 @@ export const StorageService = {
       });
 
     return scored.slice(0, limit);
+  },
+
+  async searchConversations(
+    query: string,
+    limit = 5
+  ): Promise<{ conversation: Conversation; messageId: string; snippet: string }[]> {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+
+    const db = getDB();
+    const conversations = await db.conversations.toArray();
+    const results: { conversation: Conversation; messageId: string; snippet: string; score: number }[] = [];
+
+    for (const conversation of conversations) {
+      // Search in conversation title
+      if (conversation.title.toLowerCase().includes(q)) {
+        const messages = await db.messages
+          .where("conversationId")
+          .equals(conversation.id)
+          .toArray();
+        const firstMatchMsg = messages.find((m) =>
+          m.content.toLowerCase().includes(q)
+        );
+        let snippet = conversation.title;
+        let messageId = "";
+        if (firstMatchMsg) {
+          const normalized = firstMatchMsg.content.replace(/\s+/g, " ");
+          const idx = normalized.toLowerCase().indexOf(q);
+          const start = Math.max(0, idx - 40);
+          const end = Math.min(normalized.length, idx + q.length + 60);
+          snippet =
+            (start > 0 ? "\u2026" : "") +
+            normalized.slice(start, end) +
+            (end < normalized.length ? "\u2026" : "");
+          messageId = firstMatchMsg.id;
+        }
+        results.push({ conversation, messageId, snippet, score: 40 });
+        continue;
+      }
+
+      // Search in messages
+      const messages = await db.messages
+        .where("conversationId")
+        .equals(conversation.id)
+        .toArray();
+
+      for (const message of messages) {
+        const normalized = message.content.replace(/\s+/g, " ");
+        const idx = normalized.toLowerCase().indexOf(q);
+        if (idx === -1) continue;
+
+        const start = Math.max(0, idx - 40);
+        const end = Math.min(normalized.length, idx + q.length + 60);
+        const snippet = (start > 0 ? "\u2026" : "") + normalized.slice(start, end) + (end < normalized.length ? "\u2026" : "");
+
+        results.push({
+          conversation,
+          messageId: message.id,
+          snippet,
+          score: 20,
+        });
+        break; // one result per conversation
+      }
+    }
+
+    return results
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map(({ conversation, messageId, snippet }) => ({ conversation, messageId, snippet }));
   },
 
   async createSRSCards(inputs: CreateSRSCardInput[]): Promise<SRSCard[]> {

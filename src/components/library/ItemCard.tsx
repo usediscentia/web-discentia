@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { FileText, ImageIcon, File, FileType, Trash2 } from "lucide-react";
+import { FileText, ImageIcon, File, FileType, Trash2, PencilLine } from "lucide-react";
 import { motion } from "motion/react";
 import type { LibraryItem } from "@/types/library";
 
@@ -12,6 +12,7 @@ interface ItemCardProps {
   index: number;
   onOpen: () => void;
   onDelete: () => void;
+  onOpenInEditor?: () => void;
 }
 
 function iconForType(type: string) {
@@ -29,6 +30,7 @@ export default function ItemCard({
   index,
   onOpen,
   onDelete,
+  onOpenInEditor,
 }: ItemCardProps) {
   return (
     <motion.div
@@ -38,7 +40,7 @@ export default function ItemCard({
       className="break-inside-avoid mb-4 group"
     >
       <div
-        onClick={onOpen}
+        onClick={onOpenInEditor ?? onOpen}
         className="bg-white border border-[#E5E7EB] rounded-xl overflow-hidden hover:shadow-sm transition-shadow cursor-pointer relative"
       >
         {/* Delete button — visible on hover */}
@@ -52,6 +54,13 @@ export default function ItemCard({
         >
           <Trash2 size={13} />
         </button>
+
+        {/* Pencil hint — visible on hover when editor is available */}
+        {onOpenInEditor && (
+          <div className="absolute top-2.5 right-10 z-10 p-1.5 rounded-md bg-white/80 backdrop-blur-sm text-[#9CA3AF] opacity-0 group-hover:opacity-100 transition-all pointer-events-none">
+            <PencilLine size={13} />
+          </div>
+        )}
 
         {/* Image card: thumbnail at top */}
         {item.type === "image" && item.content && (

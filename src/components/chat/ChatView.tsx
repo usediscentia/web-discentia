@@ -35,13 +35,20 @@ export default function ChatView() {
   } = useChat();
 
   // Auto-send pending message (e.g. from Editor AI Action Bar)
-  const { pendingMessage, setPendingMessage } = useChatStore();
+  const { pendingMessage, setPendingMessage, searchHighlight, setSearchHighlight } = useChatStore();
   useEffect(() => {
     if (pendingMessage) {
       sendMessage(pendingMessage);
       setPendingMessage(null);
     }
   }, [pendingMessage, sendMessage, setPendingMessage]);
+
+  // Auto-clear searchHighlight after 3s
+  useEffect(() => {
+    if (!searchHighlight) return;
+    const t = setTimeout(() => setSearchHighlight(null), 3000);
+    return () => clearTimeout(t);
+  }, [searchHighlight, setSearchHighlight]);
 
   // Load exercises linked to messages
   const [exercises, setExercises] = useState<Record<string, Exercise>>({});
@@ -260,6 +267,8 @@ export default function ChatView() {
           streamingContent={streamingContent}
           isStreaming={isStreaming}
           onOpenCitation={handleOpenCitation}
+          highlightMessageId={searchHighlight?.messageId}
+          highlightTerm={searchHighlight?.term}
         />
       )}
 
