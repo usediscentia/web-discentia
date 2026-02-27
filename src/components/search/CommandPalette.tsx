@@ -72,17 +72,19 @@ export function CommandPalette() {
     setConversationResults([]);
   }, [commandPaletteOpen, query]);
 
-  // Debounced search
+  // Debounced search with cancellation guard
   useEffect(() => {
     if (!query.trim()) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
+    let cancelled = false;
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       const [lib, convos] = await Promise.all([
         StorageService.searchLibraryItems({ query, limit: 5 }),
         StorageService.searchConversations(query, 5),
       ]);
+      if (cancelled) return;
       setLibraryResults(lib);
       setConversationResults(convos);
       setActiveIndex(0);
@@ -90,6 +92,7 @@ export function CommandPalette() {
     }, 200);
 
     return () => {
+      cancelled = true;
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [query]);
@@ -139,10 +142,9 @@ export function CommandPalette() {
     [allResults, activeIndex, openResult, setCommandPaletteOpen]
   );
 
-  if (!commandPaletteOpen) return null;
-
   return (
     <AnimatePresence>
+      {commandPaletteOpen && (
       <motion.div
         key="palette-overlay"
         initial={{ opacity: 0 }}
@@ -187,6 +189,9 @@ export function CommandPalette() {
 
           {/* Results */}
           <div className="max-h-96 overflow-y-auto">
+            {loading && (
+              <p className="text-sm text-[#9CA3AF] text-center py-10">Searching…</p>
+            )}
             {allResults.length === 0 && !loading && query.trim() && (
               <p className="text-sm text-[#9CA3AF] text-center py-10">
                 No results for &ldquo;{query}&rdquo;
@@ -287,6 +292,7 @@ export function CommandPalette() {
           )}
         </motion.div>
       </motion.div>
+      )}
     </AnimatePresence>
   );
 }
