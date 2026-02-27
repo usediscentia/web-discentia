@@ -20,6 +20,8 @@ interface ChatMessagesProps {
   streamingContent?: string;
   isStreaming?: boolean;
   onOpenCitation?: (citation: Citation) => void;
+  highlightMessageId?: string | null;
+  highlightTerm?: string;
 }
 
 export function ChatMessages({
@@ -27,10 +29,14 @@ export function ChatMessages({
   streamingContent,
   isStreaming,
   onOpenCitation,
+  highlightMessageId,
+  highlightTerm: _highlightTerm,
 }: ChatMessagesProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [isNearBottom, setIsNearBottom] = useState(true);
+  const [flashId, setFlashId] = useState<string | null>(null);
 
   const checkNearBottom = useCallback(() => {
     const el = scrollRef.current;
@@ -63,6 +69,18 @@ export function ChatMessages({
     }
   }, [messages.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Scroll to and flash highlighted message
+  useEffect(() => {
+    if (!highlightMessageId) return;
+    const el = messageRefs.current[highlightMessageId];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setFlashId(highlightMessageId);
+      const t = setTimeout(() => setFlashId(null), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [highlightMessageId]);
+
   return (
     <div
       ref={scrollRef}
@@ -72,9 +90,11 @@ export function ChatMessages({
         {messages.map((message, index) => (
           <motion.div
             key={message.id}
+            ref={(el: HTMLDivElement | null) => { messageRefs.current[message.id] = el; }}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: Math.min(index * 0.05, 0.3) }}
+            className={flashId === message.id ? "bg-amber-50 rounded-xl transition-colors" : ""}
           >
             {message.role === "user" ? (
               <UserMessage content={message.content} />
