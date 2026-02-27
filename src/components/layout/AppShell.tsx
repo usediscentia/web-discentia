@@ -13,9 +13,10 @@ import DashboardView from "@/components/dashboard/DashboardView";
 import OnboardingFlow, {
   ONBOARDED_KEY,
 } from "@/components/onboarding/OnboardingFlow";
+import { CommandPalette } from "@/components/search/CommandPalette";
 
 export default function AppShell() {
-  const { activeView } = useAppStore();
+  const { activeView, setCommandPaletteOpen } = useAppStore();
   const { loadProviderConfigs } = useProviderStore();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [checkDone, setCheckDone] = useState(false);
@@ -33,6 +34,18 @@ export default function AppShell() {
     setCheckDone(true);
   }, []);
 
+  // Global ⌘K / Ctrl+K shortcut opens CommandPalette
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCommandPaletteOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [setCommandPaletteOpen]);
+
   // Don't render anything until we've checked onboarding status
   if (!checkDone) return null;
 
@@ -41,6 +54,7 @@ export default function AppShell() {
       {showOnboarding && (
         <OnboardingFlow onComplete={() => setShowOnboarding(false)} />
       )}
+      <CommandPalette />
       <div className="flex h-screen overflow-hidden bg-white">
         <Sidebar />
         <main className="flex-1 min-w-0 overflow-hidden">
