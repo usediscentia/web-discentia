@@ -18,8 +18,6 @@ import {
   Search,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import TurndownService from "turndown";
-import { marked } from "marked";
 import { useAppStore } from "@/stores/app.store";
 import { useChatStore } from "@/stores/chat.store";
 import { StorageService } from "@/services/storage";
@@ -28,24 +26,17 @@ import { useEditorAutosave } from "./useEditorAutosave";
 import type { Library } from "@/types/library";
 import { LIBRARY_COLORS } from "@/lib/colors";
 
-const turndown = new TurndownService({
-  headingStyle: "atx",
-  codeBlockStyle: "fenced",
-  bulletListMarker: "-",
-});
 
-function stripHtmlTags(html: string): string {
-  return html.replace(/<[^>]*>/g, " ");
+function stripMarkdown(md: string): string {
+  return md.replace(/[#*_~`>\-|]/g, " ").replace(/\s+/g, " ");
 }
 
-function countWords(html: string): number {
-  const text = stripHtmlTags(html);
-  return text.split(/\s+/).filter(Boolean).length;
+function countWords(md: string): number {
+  return stripMarkdown(md).trim().split(/\s+/).filter(Boolean).length;
 }
 
-function countChars(html: string): number {
-  const text = stripHtmlTags(html).trim();
-  return text.length;
+function countChars(md: string): number {
+  return stripMarkdown(md).trim().length;
 }
 
 // --- Save Toast ---
@@ -396,7 +387,7 @@ export default function EditorView() {
   );
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
-  const [editorHtml, setEditorHtml] = useState("");
+  const [editorMarkdown, setEditorMarkdown] = useState<string>("");
   const [contentReady, setContentReady] = useState(false);
 
   // Toast state
@@ -410,7 +401,7 @@ export default function EditorView() {
 
   const editorRef = useRef<HTMLDivElement>(null);
 
-  const hasContent = Boolean(editorHtml && editorHtml !== "<p></p>");
+  const hasContent = Boolean(editorMarkdown && editorMarkdown.trim().length > 0);
 
   useEffect(() => {
     StorageService.listLibraries().then(setLibraries);
@@ -474,28 +465,24 @@ export default function EditorView() {
       }
       setTitle(item.title);
       setLibraryId(item.libraryId);
-      const html =
-        item.type === "text"
-          ? `<p>${item.content.replace(/\n/g, "</p><p>")}</p>`
-          : (marked.parse(item.content, { async: false }) as string);
-      setInitialContent(html);
+      setInitialContent(item.content);
       setContentReady(true);
     });
   }, [editorItemId]);
 
   const handleUpdate = useCallback(
-    (html: string) => {
-      setEditorHtml(html);
-      setWordCount(countWords(html));
-      setCharCount(countChars(html));
-      triggerSave(html);
+    (markdown: string) => {
+      setEditorMarkdown(markdown);
+      setWordCount(countWords(markdown));
+      setCharCount(countChars(markdown));
+      triggerSave(markdown);
     },
     [triggerSave]
   );
 
   useEffect(() => {
-    if (editorHtml && title) {
-      triggerSave(editorHtml);
+    if (editorMarkdown && title) {
+      triggerSave(editorMarkdown);
     }
   }, [title]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -514,7 +501,7 @@ export default function EditorView() {
     setEditorItemId(null);
     setTitle("");
     setInitialContent("");
-    setEditorHtml("");
+    setEditorMarkdown("");
     setWordCount(0);
     setCharCount(0);
     setToastVisible(false);
@@ -525,13 +512,12 @@ export default function EditorView() {
     (type: "flashcards" | "quiz" | "sprint") => {
       if (!hasContent) return;
 
-      const markdown = turndown.turndown(editorHtml);
       const labels = {
         flashcards: "flashcards",
         quiz: "a quiz",
         sprint: "a sprint exercise",
       };
-      const prompt = `Create ${labels[type]} about the following content:\n\n${markdown}`;
+      const prompt = `Create ${labels[type]} about the following content:\n\n${editorMarkdown}`;
 
       setPendingMessage(prompt);
       if (libraryId) {
@@ -541,7 +527,7 @@ export default function EditorView() {
     },
     [
       hasContent,
-      editorHtml,
+      editorMarkdown,
       libraryId,
       setPendingMessage,
       setSelectedLibraryIds,

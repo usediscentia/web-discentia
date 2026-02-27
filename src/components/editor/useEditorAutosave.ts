@@ -1,14 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import TurndownService from "turndown";
 import { StorageService } from "@/services/storage";
-
-const turndown = new TurndownService({
-  headingStyle: "atx",
-  codeBlockStyle: "fenced",
-  bulletListMarker: "-",
-});
 
 interface AutosaveOptions {
   itemId: string | null;
@@ -28,7 +21,7 @@ export function useEditorAutosave({
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
-  const latestHtml = useRef<string>("");
+  const latestMarkdown = useRef<string>("");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const itemIdRef = useRef(itemId);
   const libraryIdRef = useRef(libraryId);
@@ -46,12 +39,12 @@ export function useEditorAutosave({
   }, [title]);
 
   const performSave = useCallback(async () => {
-    const html = latestHtml.current;
+    const markdown = latestMarkdown.current;
     const currentLibraryId = libraryIdRef.current;
     const currentTitle = titleRef.current;
 
     // Don't save empty content without an existing item
-    if (!html || html === "<p></p>") {
+    if (!markdown.trim()) {
       if (!itemIdRef.current) return;
     }
 
@@ -59,8 +52,7 @@ export function useEditorAutosave({
 
     setIsSaving(true);
     try {
-      const markdown = turndown.turndown(html || "<p></p>");
-      const preview = markdown.replace(/[#*_~`>\-]/g, "").slice(0, 180).trim();
+      const preview = markdown.replace(/[#*_~`>\-|]/g, "").slice(0, 180).trim();
 
       if (itemIdRef.current) {
         await StorageService.updateLibraryItem(itemIdRef.current, {
@@ -93,8 +85,8 @@ export function useEditorAutosave({
   }, [onItemCreated]);
 
   const triggerSave = useCallback(
-    (html: string) => {
-      latestHtml.current = html;
+    (markdown: string) => {
+      latestMarkdown.current = markdown;
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         performSave();
@@ -117,7 +109,7 @@ export function useEditorAutosave({
 
   const reset = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    latestHtml.current = "";
+    latestMarkdown.current = "";
     itemIdRef.current = null;
     setLastSavedAt(null);
     setIsSaving(false);
