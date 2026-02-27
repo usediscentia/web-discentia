@@ -99,25 +99,31 @@ export default function Sidebar() {
         {/* Header */}
         <div className="flex items-center h-14 shrink-0 px-4">
           <motion.div
-            className={`w-8 h-8 bg-[#171717] rounded-lg flex items-center justify-center shrink-0 ${
-              sidebarCollapsed ? "cursor-pointer" : ""
-            }`}
-            onClick={
-              sidebarCollapsed ? () => setSidebarCollapsed(false) : undefined
-            }
-            whileHover={sidebarCollapsed ? { scale: 1.08 } : {}}
-            whileTap={sidebarCollapsed ? { scale: 0.92 } : {}}
+            className={`shrink-0 flex items-center ${sidebarCollapsed ? "cursor-pointer" : ""}`}
+            onClick={sidebarCollapsed ? () => setSidebarCollapsed(false) : undefined}
+            whileHover={sidebarCollapsed ? { scale: 1.06 } : {}}
+            whileTap={sidebarCollapsed ? { scale: 0.94 } : {}}
             role={sidebarCollapsed ? "button" : undefined}
             tabIndex={sidebarCollapsed ? 0 : undefined}
             title={sidebarCollapsed ? "Expand sidebar" : undefined}
           >
-            <span className="text-white text-sm font-bold select-none">d</span>
+            {/* Icon mark */}
+            <svg width="30" height="26" viewBox="0 0 425 356" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+              <path d="M74.5 70.5V1.5H350.5V70.5H419.5V208.5H350.5V346.5C312.392 346.5 281.5 315.608 281.5 277.5H212.5C174.392 277.5 143.5 246.608 143.5 208.5H5.5V70.5H74.5Z" fill="#FF5787"/>
+            </svg>
           </motion.div>
 
           <span
-            className={`text-sm font-semibold text-[#0a0a0a] whitespace-nowrap ml-2.5 ${fade}`}
+            className={`whitespace-nowrap ml-2 ${fade}`}
+            style={{
+              fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+              fontWeight: 700,
+              fontSize: 17,
+              letterSpacing: "-0.3px",
+              color: "#0a0a0a",
+            }}
           >
-            discentia
+            Discentia
           </span>
 
           <div className="flex-1" />
