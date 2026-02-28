@@ -18,6 +18,27 @@ interface MarkdownEditorProps {
   isEmpty?: boolean;
 }
 
+/** Collapse blank lines between pipe-delimited table rows so markdown-it parses them. */
+function normalizeTableBlankLines(md: string): string {
+  const lines = md.split("\n");
+  const result: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // Skip empty lines that sit between two pipe-rows
+    if (
+      line.trim() === "" &&
+      result.length > 0 &&
+      result[result.length - 1].trimStart().startsWith("|") &&
+      i + 1 < lines.length &&
+      lines[i + 1].trimStart().startsWith("|")
+    ) {
+      continue;
+    }
+    result.push(line);
+  }
+  return result.join("\n");
+}
+
 export default function MarkdownEditor({
   initialContent,
   onUpdate,
@@ -44,7 +65,7 @@ export default function MarkdownEditor({
       TableCell,
       Markdown.configure({ html: false, tightLists: true }),
     ],
-    content: initialContent || "",
+    content: normalizeTableBlankLines(initialContent || ""),
     onUpdate: ({ editor }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onUpdate?.((editor.storage as any).markdown.getMarkdown());
@@ -59,7 +80,7 @@ export default function MarkdownEditor({
   useEffect(() => {
     if (editor && initialContent !== undefined && initialContent !== lastLoadedContent.current) {
       lastLoadedContent.current = initialContent;
-      editor.commands.setContent(initialContent);
+      editor.commands.setContent(normalizeTableBlankLines(initialContent));
     }
   }, [editor, initialContent]);
 
