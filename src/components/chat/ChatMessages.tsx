@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback, type ReactNode } from "react"
 import { motion } from "motion/react";
 import { GraduationCap } from "lucide-react";
 import MarkdownRenderer from "@/components/chat/MarkdownRenderer";
+import { ExerciseGeneratingIndicator } from "@/components/chat/ExerciseGeneratingIndicator";
 import type { Citation } from "@/types/chat";
 import { Button } from "@/components/ui/button";
 
@@ -19,6 +20,7 @@ interface ChatMessagesProps {
   messages: Message[];
   streamingContent?: string;
   isStreaming?: boolean;
+  isGeneratingExercise?: boolean;
   onOpenCitation?: (citation: Citation) => void;
   highlightMessageId?: string | null;
   highlightTerm?: string;
@@ -28,6 +30,7 @@ export function ChatMessages({
   messages,
   streamingContent,
   isStreaming,
+  isGeneratingExercise,
   onOpenCitation,
   highlightMessageId,
   highlightTerm: _highlightTerm,
@@ -115,10 +118,16 @@ export function ChatMessages({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.15 }}
           >
-            <AIMessage
-              content={streamingContent || ""}
-              isStreaming
-            />
+            {isGeneratingExercise ? (
+              <AIMessage content="" isStreaming>
+                <ExerciseGeneratingIndicator />
+              </AIMessage>
+            ) : (
+              <AIMessage
+                content={streamingContent || ""}
+                isStreaming
+              />
+            )}
           </motion.div>
         )}
 
@@ -156,12 +165,14 @@ function AIMessage({
   morphContent,
   isStreaming,
   onOpenCitation,
+  children,
 }: {
   content: string;
   citations?: Citation[];
   morphContent?: ReactNode;
   isStreaming?: boolean;
   onOpenCitation?: (citation: Citation) => void;
+  children?: ReactNode;
 }) {
   const [citationsOpen, setCitationsOpen] = useState(false);
 
@@ -228,6 +239,7 @@ function AIMessage({
           </div>
         )}
         {morphContent}
+        {children}
       </div>
     </div>
   );
