@@ -24,6 +24,7 @@ export default function ChatView() {
     messages,
     streamingContent,
     isStreaming,
+    isGeneratingExercise,
     error,
     sendMessage,
     stopStreaming,
@@ -266,6 +267,7 @@ export default function ChatView() {
           messages={viewMessages}
           streamingContent={streamingContent}
           isStreaming={isStreaming}
+          isGeneratingExercise={isGeneratingExercise}
           onOpenCitation={handleOpenCitation}
           highlightMessageId={searchHighlight?.messageId}
           highlightTerm={searchHighlight?.term}

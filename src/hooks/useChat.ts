@@ -27,6 +27,7 @@ import { PROVIDER_DEFAULTS } from "@/types/ai";
 export function useChat() {
   const [streamingContent, setStreamingContent] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isGeneratingExercise, setIsGeneratingExercise] = useState(false);
   const [availableLibraries, setAvailableLibraries] = useState<Library[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
   const skipNextLoadRef = useRef(false);
@@ -207,6 +208,7 @@ Rules:
       // Start streaming
       setIsStreaming(true);
       setStreamingContent("");
+      if (exerciseIntent) setIsGeneratingExercise(true);
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
@@ -259,12 +261,14 @@ Rules:
               setMessages(allMessages);
               setStreamingContent("");
               setIsStreaming(false);
+              setIsGeneratingExercise(false);
               abortControllerRef.current = null;
             },
             onError: (err) => {
               setError(err.message);
               setStreamingContent("");
               setIsStreaming(false);
+              setIsGeneratingExercise(false);
               abortControllerRef.current = null;
             },
           },
@@ -277,6 +281,7 @@ Rules:
         setError(message);
         setStreamingContent("");
         setIsStreaming(false);
+        setIsGeneratingExercise(false);
         abortControllerRef.current = null;
       }
     },
@@ -310,6 +315,7 @@ Rules:
     activeConversationId,
     streamingContent,
     isStreaming,
+    isGeneratingExercise,
     error,
     sendMessage,
     stopStreaming,

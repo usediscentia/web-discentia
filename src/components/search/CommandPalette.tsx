@@ -2,12 +2,20 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, FileText, MessageSquare, X } from "lucide-react";
+import {
+  Search,
+  FileText,
+  Image,
+  File,
+  MessageSquare,
+  X,
+} from "lucide-react";
 import { useAppStore } from "@/stores/app.store";
 import { useChatStore } from "@/stores/chat.store";
 import { StorageService } from "@/services/storage";
 import type { ScoredLibraryItem } from "@/services/storage";
 import type { Conversation } from "@/types/chat";
+import type { Library, LibraryItemType } from "@/types/library";
 
 interface ConversationResult {
   conversation: Conversation;
@@ -39,25 +47,44 @@ function timeAgo(ts: number): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+const ITEM_TYPE_ICONS: Record<LibraryItemType, typeof FileText> = {
+  markdown: FileText,
+  text: FileText,
+  image: Image,
+  pdf: File,
+  file: File,
+};
+
 export function CommandPalette() {
-  const { commandPaletteOpen, setCommandPaletteOpen, setActiveView, setEditorItemId } = useAppStore();
+  const {
+    commandPaletteOpen,
+    setCommandPaletteOpen,
+    setActiveView,
+    setEditorItemId,
+  } = useAppStore();
   const { setActiveConversationId, setSearchHighlight } = useChatStore();
 
   const [query, setQuery] = useState("");
   const [libraryResults, setLibraryResults] = useState<ScoredLibraryItem[]>([]);
-  const [conversationResults, setConversationResults] = useState<ConversationResult[]>([]);
+  const [conversationResults, setConversationResults] = useState<
+    ConversationResult[]
+  >([]);
+  const [libraries, setLibraries] = useState<Map<string, Library>>(new Map());
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Focus input when opened
+  // Focus input + load libraries when opened
   useEffect(() => {
     if (commandPaletteOpen) {
       setQuery("");
       setActiveIndex(0);
       setTimeout(() => inputRef.current?.focus(), 50);
+      StorageService.listLibraries().then((libs) =>
+        setLibraries(new Map(libs.map((l) => [l.id, l])))
+      );
     }
   }, [commandPaletteOpen]);
 
@@ -72,7 +99,7 @@ export function CommandPalette() {
     setConversationResults([]);
   }, [commandPaletteOpen, query]);
 
-  // Debounced search with cancellation guard
+  // Debounced search
   useEffect(() => {
     if (!query.trim()) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -99,7 +126,10 @@ export function CommandPalette() {
 
   const allResults = [
     ...libraryResults.map((r) => ({ type: "library" as const, data: r })),
-    ...conversationResults.map((r) => ({ type: "conversation" as const, data: r })),
+    ...conversationResults.map((r) => ({
+      type: "conversation" as const,
+      data: r,
+    })),
   ];
 
   const openResult = useCallback(
@@ -122,7 +152,14 @@ export function CommandPalette() {
       }
       setCommandPaletteOpen(false);
     },
-    [query, setActiveView, setEditorItemId, setActiveConversationId, setSearchHighlight, setCommandPaletteOpen]
+    [
+      query,
+      setActiveView,
+      setEditorItemId,
+      setActiveConversationId,
+      setSearchHighlight,
+      setCommandPaletteOpen,
+    ]
   );
 
   const handleKeyDown = useCallback(
@@ -145,153 +182,173 @@ export function CommandPalette() {
   return (
     <AnimatePresence>
       {commandPaletteOpen && (
-      <motion.div
-        key="palette-overlay"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.15 }}
-        className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4 bg-black/40 backdrop-blur-sm"
-        onClick={() => setCommandPaletteOpen(false)}
-      >
         <motion.div
-          key="palette-modal"
-          initial={{ opacity: 0, scale: 0.97, y: -8 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.97, y: -8 }}
-          transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-          className="w-full max-w-xl bg-white rounded-2xl border border-[#E5E7EB] shadow-2xl overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
+          key="palette-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-50 flex items-start justify-center px-4 bg-black/40 backdrop-blur-sm"
+          style={{ paddingTop: "15vh" }}
+          onClick={() => setCommandPaletteOpen(false)}
         >
-          {/* Search input */}
-          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[#F3F4F6]">
-            <Search size={16} className="text-[#9CA3AF] shrink-0" />
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Search everything…"
-              className="flex-1 text-sm text-[#111] placeholder:text-[#D1D5DB] bg-transparent outline-none"
-            />
-            {query && (
-              <button
-                onClick={() => setQuery("")}
-                className="text-[#9CA3AF] hover:text-[#6B7280] cursor-pointer"
-              >
-                <X size={14} />
-              </button>
-            )}
-            <kbd className="text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded px-1.5 py-0.5">
-              Esc
-            </kbd>
-          </div>
+          <motion.div
+            key="palette-modal"
+            initial={{ opacity: 0, scale: 0.97, y: -8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: -8 }}
+            transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
+            className="w-full max-w-[640px] bg-white rounded-xl border border-[#E5E7EB] overflow-hidden"
+            style={{
+              boxShadow:
+                "0 20px 60px -10px rgba(0,0,0,0.15), 0 4px 20px -4px rgba(0,0,0,0.08)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Search input */}
+            <div className="flex items-center gap-3 h-[52px] px-4 border-b border-[#E5E7EB]">
+              <Search size={20} className="text-[#9CA3AF] shrink-0" />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Search everything..."
+                className="flex-1 text-[16px] text-[#171717] placeholder:text-[#9CA3AF] bg-transparent outline-none"
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery("")}
+                  className="text-[#9CA3AF] hover:text-[#6B7280] cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
 
-          {/* Results */}
-          <div className="max-h-96 overflow-y-auto">
-            {loading && (
-              <p className="text-sm text-[#9CA3AF] text-center py-10">Searching…</p>
-            )}
-            {allResults.length === 0 && !loading && query.trim() && (
-              <p className="text-sm text-[#9CA3AF] text-center py-10">
-                No results for &ldquo;{query}&rdquo;
-              </p>
-            )}
-
-            {/* Library section */}
-            {libraryResults.length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider px-4 pt-3 pb-1.5">
-                  {query.trim() ? "Library" : "Recent Notes"}
+            {/* Results */}
+            <div className="max-h-[400px] overflow-y-auto py-2">
+              {loading && (
+                <p className="text-[14px] text-[#9CA3AF] text-center py-10">
+                  Searching…
                 </p>
-                {libraryResults.map((r, i) => {
-                  const globalIdx = i;
-                  return (
-                    <button
-                      key={r.item.id}
-                      onClick={() => openResult({ type: "library", data: r })}
-                      onMouseEnter={() => setActiveIndex(globalIdx)}
-                      className={`w-full flex items-start gap-3 px-4 py-2.5 text-left transition-colors cursor-pointer ${
-                        activeIndex === globalIdx ? "bg-[#F3F4F6]" : "hover:bg-[#FAFAFA]"
-                      }`}
-                    >
-                      <FileText size={14} className="text-[#9CA3AF] mt-0.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[#111] truncate">
-                          {highlight(r.item.title, query)}
-                        </p>
-                        {r.item.preview && (
-                          <p className="text-xs text-[#9CA3AF] truncate mt-0.5">
-                            {highlight(r.item.preview.slice(0, 80), query)}
+              )}
+              {allResults.length === 0 && !loading && query.trim() && (
+                <p className="text-[14px] text-[#9CA3AF] text-center py-10">
+                  No results for &ldquo;{query}&rdquo;
+                </p>
+              )}
+
+              {/* Library section */}
+              {libraryResults.length > 0 && (
+                <>
+                  <p className="text-[12px] font-medium text-[#9CA3AF] px-4 pt-2 pb-1">
+                    {query.trim() ? "Library Items" : "Recent"}
+                  </p>
+                  {libraryResults.map((r, i) => {
+                    const lib = libraries.get(r.item.libraryId);
+                    const Icon = ITEM_TYPE_ICONS[r.item.type] ?? FileText;
+                    const globalIdx = i;
+                    return (
+                      <button
+                        key={r.item.id}
+                        onClick={() =>
+                          openResult({ type: "library", data: r })
+                        }
+                        onMouseEnter={() => setActiveIndex(globalIdx)}
+                        className={`w-full flex items-center gap-3 h-[44px] px-4 text-left transition-colors cursor-pointer ${
+                          activeIndex === globalIdx
+                            ? "bg-[#F3F4F6]"
+                            : "hover:bg-[#FAFAFA]"
+                        }`}
+                      >
+                        <Icon
+                          size={16}
+                          className="text-[#9CA3AF] shrink-0"
+                        />
+                        <div className="flex-1 min-w-0 flex flex-col">
+                          <p className="text-[14px] text-[#171717] truncate leading-tight">
+                            {highlight(r.item.title, query)}
                           </p>
+                          {lib && (
+                            <p className="text-[12px] text-[#9CA3AF] truncate leading-tight">
+                              {lib.name}
+                            </p>
+                          )}
+                        </div>
+                        {lib && (
+                          <div
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: lib.color }}
+                          />
                         )}
-                      </div>
-                      <span className="text-[10px] text-[#D1D5DB] shrink-0 mt-0.5">
-                        {timeAgo(r.item.updatedAt)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+                        <span className="text-[11px] text-[#D1D5DB] shrink-0">
+                          {timeAgo(r.item.updatedAt)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </>
+              )}
 
-            {/* Conversations section */}
-            {conversationResults.length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider px-4 pt-3 pb-1.5">
-                  Conversations
-                </p>
-                {conversationResults.map((r, i) => {
-                  const globalIdx = libraryResults.length + i;
-                  return (
-                    <button
-                      key={r.conversation.id}
-                      onClick={() => openResult({ type: "conversation", data: r })}
-                      onMouseEnter={() => setActiveIndex(globalIdx)}
-                      className={`w-full flex items-start gap-3 px-4 py-2.5 text-left transition-colors cursor-pointer ${
-                        activeIndex === globalIdx ? "bg-[#F3F4F6]" : "hover:bg-[#FAFAFA]"
-                      }`}
-                    >
-                      <MessageSquare size={14} className="text-[#9CA3AF] mt-0.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[#111] truncate">
+              {/* Divider */}
+              {libraryResults.length > 0 &&
+                conversationResults.length > 0 && (
+                  <div className="h-px bg-[#E5E7EB] mx-0 my-1" />
+                )}
+
+              {/* Conversations section */}
+              {conversationResults.length > 0 && (
+                <>
+                  <p className="text-[12px] font-medium text-[#9CA3AF] px-4 pt-2 pb-1">
+                    Conversations
+                  </p>
+                  {conversationResults.map((r, i) => {
+                    const globalIdx = libraryResults.length + i;
+                    return (
+                      <button
+                        key={r.conversation.id}
+                        onClick={() =>
+                          openResult({ type: "conversation", data: r })
+                        }
+                        onMouseEnter={() => setActiveIndex(globalIdx)}
+                        className={`w-full flex items-center gap-3 h-[40px] px-4 text-left transition-colors cursor-pointer ${
+                          activeIndex === globalIdx
+                            ? "bg-[#F3F4F6]"
+                            : "hover:bg-[#FAFAFA]"
+                        }`}
+                      >
+                        <MessageSquare
+                          size={16}
+                          className="text-[#9CA3AF] shrink-0"
+                        />
+                        <p className="flex-1 min-w-0 text-[14px] text-[#171717] truncate">
                           {highlight(r.conversation.title, query)}
                         </p>
-                        {r.snippet && (
-                          <p className="text-xs text-[#9CA3AF] truncate mt-0.5">
-                            {highlight(r.snippet, query)}
-                          </p>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-[#D1D5DB] shrink-0 mt-0.5">
-                        {timeAgo(r.conversation.updatedAt)}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <span className="text-[11px] text-[#D1D5DB] shrink-0">
+                          {timeAgo(r.conversation.updatedAt)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            {allResults.length > 0 && (
+              <div className="flex items-center justify-between h-[40px] px-4 border-t border-[#E5E7EB]">
+                <span className="text-[12px] text-[#9CA3AF]">↵ Open</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] text-[#9CA3AF]">
+                    Tab switch category
+                  </span>
+                  <span className="text-[12px] text-[#9CA3AF]">Esc close</span>
+                </div>
               </div>
             )}
-          </div>
-
-          {/* Footer hint */}
-          {allResults.length > 0 && (
-            <div className="flex items-center gap-4 px-4 py-2.5 border-t border-[#F3F4F6] bg-[#FAFAFA]">
-              {[
-                { key: "↑↓", label: "navigate" },
-                { key: "↵", label: "open" },
-                { key: "Esc", label: "close" },
-              ].map((h) => (
-                <div key={h.key} className="flex items-center gap-1.5">
-                  <kbd className="text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded px-1.5 py-0.5 bg-white">
-                    {h.key}
-                  </kbd>
-                  <span className="text-[10px] text-[#9CA3AF]">{h.label}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          </motion.div>
         </motion.div>
-      </motion.div>
       )}
     </AnimatePresence>
   );
