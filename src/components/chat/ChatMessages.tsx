@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import { motion } from "motion/react";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, BookOpen } from "lucide-react";
 import MarkdownRenderer from "@/components/chat/MarkdownRenderer";
 import { ExerciseGeneratingIndicator } from "@/components/chat/ExerciseGeneratingIndicator";
 import type { Citation } from "@/types/chat";
-import { Button } from "@/components/ui/button";
+import { stripCitationsBlock } from "@/lib/citations";
 
 export interface Message {
   id: string;
@@ -103,7 +103,7 @@ export function ChatMessages({
               <UserMessage content={message.content} />
             ) : (
               <AIMessage
-                content={message.content}
+                content={stripCitationsBlock(message.content)}
                 citations={message.citations}
                 morphContent={message.morphContent}
                 onOpenCitation={onOpenCitation}
@@ -124,7 +124,7 @@ export function ChatMessages({
               </AIMessage>
             ) : (
               <AIMessage
-                content={streamingContent || ""}
+                content={stripCitationsBlock(streamingContent || "")}
                 isStreaming
               />
             )}
@@ -196,54 +196,105 @@ function AIMessage({
         </div>
 
         {Boolean(citations?.length) && (
-          <div className="px-1">
-            <button
-              onClick={() => setCitationsOpen((open) => !open)}
-              className="text-xs px-3 py-1.5 rounded-full border border-[#E5E7EB] bg-white text-[#444] cursor-pointer hover:bg-[#F8F8F8] transition-colors flex items-center gap-1.5"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              {citations?.length} source{citations && citations.length > 1 ? "s" : ""} from your library
-            </button>
-
-            {citationsOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15 }}
-                className="mt-2 rounded-xl border border-[#EAEAEA] bg-white p-3 space-y-2 shadow-sm"
-              >
-                {citations?.map((citation) => (
-                  <div
-                    key={`${citation.libraryItemId}-${citation.excerpt}`}
-                    className="flex items-start justify-between gap-3 border-b border-[#F2F2F2] pb-2.5 last:border-b-0 last:pb-0"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-[#1A1A1A]">
-                        {citation.itemTitle}
-                        {citation.page != null && (
-                          <span className="ml-1.5 font-normal text-[#9CA3AF]">p. {citation.page}</span>
-                        )}
-                      </p>
-                      <p className="text-xs text-[#6B7280] mt-1 line-clamp-2 leading-relaxed">
-                        {citation.excerpt}
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="cursor-pointer h-7 px-2.5 text-xs shrink-0"
-                      onClick={() => onOpenCitation?.(citation)}
-                    >
-                      View
-                    </Button>
-                  </div>
-                ))}
-              </motion.div>
-            )}
-          </div>
+          <CitationsPanel
+            citations={citations!}
+            open={citationsOpen}
+            onToggle={() => setCitationsOpen((o) => !o)}
+            onOpenCitation={onOpenCitation}
+          />
         )}
         {morphContent}
         {children}
       </div>
+    </div>
+  );
+}
+
+// ── Citation indicator + expandable panel ─────────────────────────────────────
+
+function CitationsPanel({
+  citations,
+  open,
+  onToggle,
+  onOpenCitation,
+}: {
+  citations: Citation[];
+  open: boolean;
+  onToggle: () => void;
+  onOpenCitation?: (citation: Citation) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      {/* Pill — collapsed trigger */}
+      <button
+        onClick={onToggle}
+        className="self-start flex items-center gap-1.5 bg-[#F3F4F6] rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-[#E9EAEC] transition-colors"
+      >
+        <BookOpen size={14} className="text-[#6B7280] shrink-0" />
+        <span className="text-[12px] font-medium text-[#6B7280]">
+          {citations.length} source{citations.length !== 1 ? "s" : ""} used
+        </span>
+      </button>
+
+      {/* Expanded panel */}
+      {open && (
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          className="flex flex-col gap-3 bg-[#FAFAFA] rounded-xl border border-[#E5E7EB] p-4"
+        >
+          {/* Panel header */}
+          <div className="flex items-center gap-2">
+            <BookOpen size={16} className="text-[#6B7280] shrink-0" />
+            <span className="text-[13px] font-semibold text-[#6B7280]">
+              Sources from your library
+            </span>
+          </div>
+
+          {/* Source cards */}
+          {citations.map((citation, i) => (
+            <div
+              key={`${citation.libraryItemId}-${i}`}
+              className="flex items-center gap-3 bg-white rounded-lg border border-[#E5E7EB] p-3"
+            >
+              {/* Left accent bar */}
+              <div className="w-[3px] h-10 rounded-sm bg-[#34D399] shrink-0" />
+
+              {/* Content */}
+              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                <span className="text-[13px] font-semibold text-[#171717] leading-tight truncate">
+                  {citation.itemTitle}
+                  {citation.page != null && (
+                    <span className="ml-1.5 font-normal text-[#9CA3AF]">p. {citation.page}</span>
+                  )}
+                </span>
+                {citation.excerpt && (
+                  <span className="text-[12px] text-[#9CA3AF] leading-snug line-clamp-2">
+                    "{citation.excerpt}"
+                  </span>
+                )}
+              </div>
+
+              {/* View link */}
+              <button
+                onClick={() => onOpenCitation?.(citation)}
+                className="shrink-0 text-[12px] font-medium text-[#171717] hover:text-[#6B7280] transition-colors cursor-pointer"
+              >
+                View →
+              </button>
+            </div>
+          ))}
+
+          {/* Collapse button */}
+          <button
+            onClick={onToggle}
+            className="flex items-center justify-center cursor-pointer hover:text-[#6B7280] transition-colors"
+          >
+            <span className="text-[12px] font-medium text-[#9CA3AF]">Collapse ↑</span>
+          </button>
+        </motion.div>
+      )}
     </div>
   );
 }
