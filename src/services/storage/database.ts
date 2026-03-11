@@ -49,6 +49,17 @@ class DiscentiaDB extends Dexie {
       srsCards: "id, libraryItemId, nextReviewDate, [nextReviewDate+id]",
       activityEvents: "id, type, timestamp",
     });
+
+    // v5: PDF paragraph chunks stored in metadata.chunks (no index changes)
+    this.version(5).stores({
+      conversations: "id, updatedAt",
+      messages: "id, conversationId, timestamp",
+      libraries: "id, updatedAt",
+      libraryItems: "id, libraryId, createdAt, [libraryId+createdAt], type",
+      exercises: "id, messageId, type, createdAt",
+      srsCards: "id, libraryItemId, nextReviewDate, [nextReviewDate+id]",
+      activityEvents: "id, type, timestamp",
+    });
   }
 }
 

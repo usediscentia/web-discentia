@@ -31,4 +31,5 @@ export interface Citation {
   libraryId: string;
   itemTitle: string;
   excerpt: string;
+  page?: number; // 1-based page number (PDFs with chunk metadata)
 }

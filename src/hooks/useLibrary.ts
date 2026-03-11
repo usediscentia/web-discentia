@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { StorageService } from "@/services/storage";
-import type { Library, LibraryItem, LibraryItemType } from "@/types/library";
+import type { ContentChunk, Library, LibraryItem, LibraryItemType } from "@/types/library";
 import { LIBRARY_COLORS } from "@/lib/colors";
 
 function previewFromContent(content: string): string {
@@ -29,7 +29,111 @@ function getImageDimensions(dataUrl: string): Promise<{ width: number; height: n
   });
 }
 
-async function extractPdfText(file: File): Promise<{ text: string; pageCount?: number; thumbnail?: string }> {
+type PdfTextItem = { str?: string; transform?: number[] };
+
+function chunkPageItems(
+  pageNum: number,
+  items: PdfTextItem[],
+  charOffset: number
+): { chunks: ContentChunk[]; pageText: string } {
+  const MIN_CHUNK_CHARS = 80;
+  const MAX_CHUNK_CHARS = 2000;
+
+  // Try to use Y-position (transform[5]) to detect paragraph breaks
+  const hasTransform = items.length > 0 && Array.isArray(items[0]?.transform) && items[0].transform.length >= 6;
+
+  let rawParagraphs: string[];
+
+  if (hasTransform) {
+    // Group items into paragraphs by vertical gaps
+    const groups: string[][] = [];
+    let currentGroup: string[] = [];
+    let prevY: number | null = null;
+    let prevFontHeight = 12; // default estimate
+
+    for (const item of items) {
+      const text = item.str || "";
+      if (!text.trim()) continue;
+
+      const transform = item.transform!;
+      const y = transform[5];
+      const scaleY = Math.abs(transform[3]) || prevFontHeight;
+
+      if (prevY !== null) {
+        const gap = Math.abs(prevY - y);
+        // Gap > 1.5x font height → new paragraph
+        if (gap > scaleY * 1.5) {
+          if (currentGroup.length > 0) {
+            groups.push(currentGroup);
+            currentGroup = [];
+          }
+        }
+      }
+
+      currentGroup.push(text);
+      prevY = y;
+      prevFontHeight = scaleY;
+    }
+    if (currentGroup.length > 0) groups.push(currentGroup);
+
+    rawParagraphs = groups.map((g) => g.join(" ").trim()).filter(Boolean);
+  } else {
+    // Fallback: join all items and split by double newline
+    const fullText = items.map((i) => i.str || "").join(" ").trim();
+    rawParagraphs = fullText.split(/\n{2,}/).map((p) => p.replace(/\s+/g, " ").trim()).filter(Boolean);
+  }
+
+  // Merge short paragraphs with the next one
+  const merged: string[] = [];
+  let pending = "";
+  for (const para of rawParagraphs) {
+    if (pending) {
+      pending = pending + " " + para;
+      if (pending.length >= MIN_CHUNK_CHARS) {
+        merged.push(pending);
+        pending = "";
+      }
+    } else if (para.length < MIN_CHUNK_CHARS) {
+      pending = para;
+    } else {
+      merged.push(para);
+    }
+  }
+  if (pending) merged.push(pending);
+
+  // Split oversized paragraphs at sentence boundaries
+  const final: string[] = [];
+  for (const para of merged) {
+    if (para.length <= MAX_CHUNK_CHARS) {
+      final.push(para);
+      continue;
+    }
+    // Split at ". " followed by uppercase
+    const sentenceBreaks = para.matchAll(/\.\s+(?=[A-Z])/g);
+    const breakPoints: number[] = [];
+    for (const match of sentenceBreaks) {
+      breakPoints.push(match.index! + 1);
+    }
+    let start = 0;
+    for (const bp of breakPoints) {
+      if (bp - start >= MAX_CHUNK_CHARS) {
+        final.push(para.slice(start, bp).trim());
+        start = bp;
+      }
+    }
+    if (start < para.length) final.push(para.slice(start).trim());
+  }
+
+  const pageText = final.join("\n\n");
+  const chunks: ContentChunk[] = final.map((text, index) => {
+    const startChar = charOffset + pageText.indexOf(text);
+    return { text, page: pageNum, index, startChar, endChar: startChar + text.length };
+  });
+
+  return { chunks, pageText };
+}
+
+async function extractPdfText(file: File): Promise<{ text: string; chunks: ContentChunk[]; pageCount?: number; thumbnail?: string }> {
   try {
     const pdfjs = (await import("pdfjs-dist/legacy/build/pdf.mjs")) as {
       getDocument: (arg: { data: ArrayBuffer }) => { promise: Promise<unknown> };
@@ -48,21 +152,23 @@ async function extractPdfText(file: File): Promise<{ text: string; pageCount?: n
     const pdfDoc = (await pdfjs.getDocument({ data }).promise) as {
       numPages: number;
       getPage: (page: number) => Promise<{
-        getTextContent: () => Promise<{
-          items: Array<{ str?: string }>;
-        }>;
+        getTextContent: () => Promise<{ items: Array<PdfTextItem> }>;
       }>;
     };
 
     const pageTexts: string[] = [];
+    const allChunks: ContentChunk[] = [];
+    let charOffset = 0;
+
     for (let page = 1; page <= pdfDoc.numPages; page += 1) {
       const pageData = await pdfDoc.getPage(page);
       const content = await pageData.getTextContent();
-      const lines = content.items
-        .map((item) => item.str || "")
-        .join(" ")
-        .trim();
-      if (lines) pageTexts.push(lines);
+      const { chunks, pageText } = chunkPageItems(page, content.items, charOffset);
+      if (pageText) {
+        pageTexts.push(pageText);
+        allChunks.push(...chunks);
+        charOffset += pageText.length + 2; // +2 for "\n\n" separator
+      }
     }
 
     // Render first page as thumbnail
@@ -87,13 +193,12 @@ async function extractPdfText(file: File): Promise<{ text: string; pageCount?: n
 
     return {
       text: pageTexts.join("\n\n"),
+      chunks: allChunks,
       pageCount: pdfDoc.numPages,
       thumbnail,
     };
   } catch {
-    return {
-      text: "",
-    };
+    return { text: "", chunks: [] };
   }
 }
 
@@ -151,6 +256,7 @@ async function buildItemFromFile(libraryId: string, file: File) {
         pageCount: extracted.pageCount,
         wordCount: content.split(/\s+/).filter(Boolean).length,
         thumbnail: extracted.thumbnail,
+        chunks: extracted.chunks.length > 0 ? extracted.chunks : undefined,
       },
     };
   }

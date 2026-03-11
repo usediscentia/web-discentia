@@ -158,12 +158,13 @@ export function useChat() {
 
       const citationInstruction = `If you used SOURCE context, append ONLY this block at the end:
 <CITATIONS>
-[{"libraryItemId":"...","libraryId":"...","itemTitle":"...","excerpt":"..."}]
+[{"libraryItemId":"...","libraryId":"...","itemTitle":"...","excerpt":"...","page":1}]
 </CITATIONS>
 Rules:
 - Use only source IDs provided in SOURCE context.
 - If no source was used, return <CITATIONS>[]</CITATIONS>.
-- Keep excerpt under 160 chars.`;
+- Keep excerpt under 160 chars.
+- Include "page" only when the source block has a chunkPage field; omit it otherwise.`;
 
       // Save user message
       const userMessage = await StorageService.addMessage(
