@@ -10,7 +10,6 @@ import { SYSTEM_PROMPT } from "@/lib/constants";
 import { splitMessageAndCitations } from "@/lib/citations";
 import {
   detectExerciseIntent,
-  classifyExerciseIntentWithAI,
   parseExerciseFromResponse,
 } from "@/services/ai/parsers/exercise.parser";
 import { buildExercisePrompt } from "@/services/ai/prompts/exercise.prompts";
@@ -174,10 +173,8 @@ Rules:
       );
       appendMessage(userMessage);
 
-      // Detect exercise generation intent — regex fast path, then AI fallback
-      const exerciseIntent =
-        detectExerciseIntent(content) ??
-        (await classifyExerciseIntentWithAI(content, provider, config));
+      // Detect exercise generation intent — regex only (AI classifier removed: too many false positives)
+      const exerciseIntent = detectExerciseIntent(content);
       const exercisePrompt = exerciseIntent
         ? buildExercisePrompt(exerciseIntent.type, exerciseIntent.topic, contextText || undefined)
         : null;
