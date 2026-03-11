@@ -7,6 +7,7 @@ import type {
   Attachment,
 } from "@/types/chat";
 import type {
+  ContentChunk,
   Library,
   LibraryItem,
   LibraryItemMetadata,
@@ -37,9 +38,15 @@ export interface SearchLibraryItemsInput {
   limit?: number;
 }
 
+export interface MatchedChunk {
+  chunk: ContentChunk;
+  chunkScore: number;
+}
+
 export interface ScoredLibraryItem {
   item: LibraryItem;
   score: number;
+  matchedChunks?: MatchedChunk[]; // top chunks for items with chunk metadata
 }
 
 export interface CreateSRSCardInput {
@@ -303,21 +310,43 @@ export const StorageService = {
     const scored = items
       .map((item) => {
         const title = item.title.toLowerCase();
-        const content = item.content.toLowerCase();
-        let score = 0;
+        let titleScore = 0;
 
         if (!query) {
-          score = 1;
-        } else {
-          if (title.includes(query)) score += 40;
-          if (content.includes(query)) score += 18;
-
-          for (const token of tokens) {
-            if (title.includes(token)) score += 8;
-            if (content.includes(token)) score += 3;
-          }
+          return { item, score: 1 };
         }
 
+        if (title.includes(query)) titleScore += 40;
+        for (const token of tokens) {
+          if (title.includes(token)) titleScore += 8;
+        }
+
+        const chunks = item.metadata?.chunks;
+        if (chunks && chunks.length > 0) {
+          // Score at chunk level for items with paragraph metadata
+          const scoredChunks: MatchedChunk[] = chunks.map((chunk) => {
+            const chunkText = chunk.text.toLowerCase();
+            let chunkScore = 0;
+            if (chunkText.includes(query)) chunkScore += 18;
+            for (const token of tokens) {
+              if (chunkText.includes(token)) chunkScore += 3;
+            }
+            return { chunk, chunkScore };
+          }).filter((c) => c.chunkScore > 0)
+            .sort((a, b) => b.chunkScore - a.chunkScore);
+
+          const topChunkScore = scoredChunks.slice(0, 3).reduce((sum, c) => sum + c.chunkScore, 0);
+          const score = titleScore + topChunkScore;
+          return { item, score, matchedChunks: scoredChunks };
+        }
+
+        // Fallback for legacy items without chunks
+        const content = item.content.toLowerCase();
+        let score = titleScore;
+        if (content.includes(query)) score += 18;
+        for (const token of tokens) {
+          if (content.includes(token)) score += 3;
+        }
         return { item, score };
       })
       .filter((entry) => (query ? entry.score > 0 : true))
@@ -469,7 +498,7 @@ export const StorageService = {
     const streak = getCurrentStreak(reviewDays);
 
     const activityByDay: Record<string, number> = {};
-    const heatStart = Date.now() - 70 * 86400000;
+    const heatStart = Date.now() - 180 * 86400000;
     srsReviewEvents
       .filter((e) => e.timestamp >= heatStart)
       .forEach((e) => {
@@ -521,28 +550,58 @@ export const StorageService = {
 
     const dueByLibrary = [...dueByLibraryCounter.values()]
       .sort((a, b) => b.dueCount - a.dueCount)
-      .slice(0, 3);
+      .slice(0, 4);
 
-    const upcomingReviews = Array.from({ length: 4 }, (_, idx) => {
-      const day = new Date();
-      day.setHours(0, 0, 0, 0);
-      day.setDate(day.getDate() + idx + 1);
-      const start = day.getTime();
-      const end = start + 86400000;
-      const dueCount = cards.filter(
+    const nowDate = new Date(now);
+    const tomorrowStart = new Date(nowDate);
+    tomorrowStart.setHours(24, 0, 0, 0);
+    const tomorrowStartTs = tomorrowStart.getTime();
+    const tomorrowEndTs = tomorrowStartTs + 86400000;
+
+    const startOfNextWeek = new Date(tomorrowStart);
+    const daysUntilSunday = (7 - startOfNextWeek.getDay()) % 7;
+    startOfNextWeek.setDate(startOfNextWeek.getDate() + daysUntilSunday);
+    const startOfNextWeekTs = startOfNextWeek.getTime();
+    const startOfFollowingWeekTs = startOfNextWeekTs + 7 * 86400000;
+
+    const countInRange = (start: number, end: number) =>
+      cards.filter(
         (card) => card.nextReviewDate >= start && card.nextReviewDate < end
       ).length;
 
-      let label = new Intl.DateTimeFormat("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      }).format(day);
-      label = label.replace(",", "");
-      if (idx === 0) label = "Tomorrow";
-
-      return { label, dueCount, timestamp: start };
-    });
+    const upcomingReviews = [
+      {
+        label: "In 1 hour",
+        dueCount: countInRange(now, now + 3600000),
+        timestamp: now,
+      },
+      {
+        label: "Later today",
+        dueCount: countInRange(now + 3600000, tomorrowStartTs),
+        timestamp: now + 3600000,
+      },
+      {
+        label: "Tomorrow",
+        dueCount: countInRange(tomorrowStartTs, tomorrowEndTs),
+        timestamp: tomorrowStartTs,
+      },
+      {
+        label: "This week",
+        dueCount: countInRange(
+          tomorrowEndTs,
+          Math.max(tomorrowEndTs, startOfNextWeekTs)
+        ),
+        timestamp: tomorrowEndTs,
+      },
+      {
+        label: "Next week",
+        dueCount: countInRange(
+          Math.max(tomorrowEndTs, startOfNextWeekTs),
+          Math.max(startOfFollowingWeekTs, tomorrowEndTs)
+        ),
+        timestamp: Math.max(tomorrowEndTs, startOfNextWeekTs),
+      },
+    ];
 
     const reviewEvents = events.filter((event) => event.type === "srs_review");
     const monthStart = new Date();

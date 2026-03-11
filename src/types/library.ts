@@ -10,6 +10,14 @@ export interface Library {
 
 export type LibraryItemType = "text" | "markdown" | "image" | "pdf" | "file";
 
+export interface ContentChunk {
+  text: string;
+  page: number;      // 1-based page number
+  index: number;     // 0-based paragraph index within page
+  startChar: number; // character offset in the full `content` string
+  endChar: number;
+}
+
 export interface LibraryItemMetadata {
   fileSize?: number;
   mimeType?: string;
@@ -17,6 +25,7 @@ export interface LibraryItemMetadata {
   pageCount?: number;
   dimensions?: { width: number; height: number };
   thumbnail?: string; // base64 data URL of first page (PDFs)
+  chunks?: ContentChunk[]; // paragraph-level chunks with position metadata (PDFs only)
 }
 
 export interface LibraryItem {

@@ -32,6 +32,7 @@ export function splitMessageAndCitations(
         libraryId: typeof value.libraryId === "string" ? value.libraryId : "",
         itemTitle: typeof value.itemTitle === "string" ? value.itemTitle : "",
         excerpt: typeof value.excerpt === "string" ? value.excerpt : "",
+        page: typeof value.page === "number" && value.page > 0 ? value.page : undefined,
       }))
       .filter(
         (citation) =>

@@ -220,6 +220,9 @@ function AIMessage({
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-[#1A1A1A]">
                         {citation.itemTitle}
+                        {citation.page != null && (
+                          <span className="ml-1.5 font-normal text-[#9CA3AF]">p. {citation.page}</span>
+                        )}
                       </p>
                       <p className="text-xs text-[#6B7280] mt-1 line-clamp-2 leading-relaxed">
                         {citation.excerpt}
