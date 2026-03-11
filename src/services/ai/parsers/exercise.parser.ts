@@ -255,22 +255,27 @@ export function detectExerciseIntent(
   return null;
 }
 
-const CLASSIFIER_SYSTEM_PROMPT = `You are a classifier. Determine if the user message is requesting a learning exercise to be created.
+const CLASSIFIER_SYSTEM_PROMPT = `You are a classifier. Determine if the user message is EXPLICITLY requesting that a learning exercise be CREATED or GENERATED.
 
 Reply ONLY with a raw JSON object — no markdown, no explanation:
-- If requesting an exercise: {"type":"flashcard","topic":"..."} (use the detected type and the full topic)
+- If explicitly requesting an exercise: {"type":"flashcard","topic":"..."} (use the detected type and the full topic)
 - If NOT requesting an exercise: {"type":null}
 
-Valid types: flashcard, quiz, sprint, connections, fillgap, crossword, bossfight
-- flashcard: wants flashcards / flash cards
-- quiz: wants a quiz, test, or questionnaire
-- sprint: wants a speed quiz or sprint mode
-- connections: wants a connections puzzle (group related words)
-- fillgap: wants fill-in-the-blank / fill the gap
-- crossword: wants a crossword puzzle
-- bossfight: wants a boss fight challenge
+IMPORTANT rules:
+- Factual questions ("what is X?", "how many X?", "explain Y") are NOT exercise requests → {"type":null}
+- Conversational messages, greetings, or instructions are NOT exercise requests → {"type":null}
+- Only return a type if the user is clearly asking to CREATE, GENERATE, MAKE, or BUILD an exercise.
 
-Extract the topic as the subject matter to study (e.g. "the feature plan for my Discentia app", "World War II", "photosynthesis").`;
+Valid types: flashcard, quiz, sprint, connections, fillgap, crossword, bossfight
+- flashcard: explicitly wants flashcards / flash cards to study
+- quiz: explicitly wants a quiz, test, or questionnaire to answer
+- sprint: explicitly wants a speed quiz or sprint mode
+- connections: explicitly wants a connections puzzle (group related words)
+- fillgap: explicitly wants a fill-in-the-blank / fill the gap exercise
+- crossword: explicitly wants a crossword puzzle
+- bossfight: explicitly wants a boss fight challenge
+
+Extract the topic as the subject matter to study (e.g. "World War II", "photosynthesis").`;
 
 /**
  * AI-based exercise intent classifier — used as fallback when regex detection fails.
