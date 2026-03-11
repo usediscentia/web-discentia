@@ -1,7 +1,15 @@
 import type { Citation } from "@/types/chat";
 
+// Handles </CITATIONS>, [/CITATIONS], or just end-of-block (AI formatting variants)
 const CITATIONS_BLOCK_REGEX =
-  /<CITATIONS>\s*([\s\S]*?)\s*<\/CITATIONS>/i;
+  /<CITATIONS>\s*([\s\S]*?)\s*(?:<\/CITATIONS>|\[\/CITATIONS\])/i;
+
+// Strip any remaining <CITATIONS>...</CITATIONS> or <CITATIONS>[...] leftovers from display text
+const CITATIONS_OPEN_REGEX = /<CITATIONS>[\s\S]*?(?:<\/CITATIONS>|\[\/CITATIONS\]|$)/gi;
+
+export function stripCitationsBlock(text: string): string {
+  return text.replace(CITATIONS_OPEN_REGEX, "").trim();
+}
 
 export function splitMessageAndCitations(
   text: string,
@@ -9,7 +17,9 @@ export function splitMessageAndCitations(
 ): { cleanContent: string; citations: Citation[] } {
   const match = text.match(CITATIONS_BLOCK_REGEX);
   if (!match) {
-    return { cleanContent: text.trim(), citations: [] };
+    // Strip any leftover <CITATIONS> block even if closing tag is missing/garbled
+    const cleanContent = stripCitationsBlock(text);
+    return { cleanContent, citations: [] };
   }
 
   const cleanContent = text.replace(CITATIONS_BLOCK_REGEX, "").trim();
