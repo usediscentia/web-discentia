@@ -34,6 +34,7 @@ export const anthropicProvider: AIServiceProvider = {
           model: config.model,
           max_tokens: 8096,
           ...(systemMessage ? { system: systemMessage.content } : {}),
+          ...(config.temperature !== undefined ? { temperature: config.temperature } : {}),
           messages: chatMessages.map((m) => ({
             role: m.role as "user" | "assistant",
             content: m.content,

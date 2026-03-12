@@ -38,6 +38,7 @@ export const openrouterProvider: AIServiceProvider = {
         model: config.model,
         messages,
         stream: true,
+        ...(config.temperature !== undefined ? { temperature: config.temperature } : {}),
       }),
       signal,
     });
