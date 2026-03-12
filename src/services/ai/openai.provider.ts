@@ -30,6 +30,7 @@ export const openaiProvider: AIServiceProvider = {
         model: config.model,
         messages,
         stream: true,
+        temperature: config.temperature ?? 1,
       }),
       signal,
     });
