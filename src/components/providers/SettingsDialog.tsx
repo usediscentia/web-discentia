@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-const providerOrder: AIProviderType[] = ["ollama", "openai", "openrouter", "anthropic", "gemini"];
+const providerOrder: AIProviderType[] = ["ollama", "openai", "openrouter", "github-models", "anthropic", "gemini"];
 
 export function SettingsDialog() {
   const { settingsOpen, setSettingsOpen } = useAppStore();
@@ -30,11 +30,12 @@ export function SettingsDialog() {
     gemini: "",
     ollama: "",
     openrouter: "",
+    "github-models": "",
   });
   const [testing, setTesting] = useState<AIProviderType | null>(null);
   const [results, setResults] = useState<
     Record<AIProviderType, "success" | "error" | null>
-  >({ openai: null, anthropic: null, gemini: null, ollama: null, openrouter: null });
+  >({ openai: null, anthropic: null, gemini: null, ollama: null, openrouter: null, "github-models": null });
 
   const handleOpenChange = (open: boolean) => {
     if (open) {
@@ -44,8 +45,9 @@ export function SettingsDialog() {
         gemini: providerConfigs.gemini.apiKey,
         ollama: "",
         openrouter: providerConfigs.openrouter.apiKey,
+        "github-models": providerConfigs["github-models"].apiKey,
       });
-      setResults({ openai: null, anthropic: null, gemini: null, ollama: null, openrouter: null });
+      setResults({ openai: null, anthropic: null, gemini: null, ollama: null, openrouter: null, "github-models": null });
       checkOllamaConnection();
     }
     setSettingsOpen(open);
@@ -211,6 +213,11 @@ export function SettingsDialog() {
                     {isTesting ? "Testing..." : "Save & Test"}
                   </Button>
                 </div>
+                {defaults.apiKeyDescription && (
+                  <p className="text-xs text-muted-foreground">
+                    {defaults.apiKeyDescription}
+                  </p>
+                )}
                 {result === "success" && (
                   <p className="text-xs text-green-600 flex items-center gap-1">
                     <span>&#10003;</span> Connected successfully

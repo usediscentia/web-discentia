@@ -30,7 +30,6 @@ const providers: ProviderMeta[] = [
     badgeLabel: "Anthropic",
     badgeBg: "#FEF3C7",
     badgeText: "#92400E",
-    comingSoon: true,
   },
   {
     id: "openai",
@@ -64,6 +63,14 @@ const providers: ProviderMeta[] = [
     badgeLabel: "Multi",
     badgeBg: "#FCE7F3",
     badgeText: "#9D174D",
+  },
+  {
+    id: "github-models" as AIProviderType,
+    name: "GitHub Models",
+    lobeProvider: "github",
+    badgeLabel: "GitHub",
+    badgeBg: "#F0FDF4",
+    badgeText: "#166534",
   },
 ];
 

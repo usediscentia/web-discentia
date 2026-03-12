@@ -1,4 +1,4 @@
-export type AIProviderType = "openai" | "anthropic" | "gemini" | "ollama" | "openrouter";
+export type AIProviderType = "openai" | "anthropic" | "gemini" | "ollama" | "openrouter" | "github-models";
 
 export interface ProviderConfig {
   type: AIProviderType;
@@ -34,7 +34,7 @@ export interface AIServiceProvider {
 
 export const PROVIDER_DEFAULTS: Record<
   AIProviderType,
-  { displayName: string; models: string[]; defaultModel: string; requiresApiKey: boolean }
+  { displayName: string; models: string[]; defaultModel: string; requiresApiKey: boolean; apiKeyDescription?: string }
 > = {
   openai: {
     displayName: "OpenAI",
@@ -70,5 +70,12 @@ export const PROVIDER_DEFAULTS: Record<
     ],
     defaultModel: "openai/gpt-4o",
     requiresApiKey: true,
+  },
+  "github-models": {
+    displayName: "GitHub Models",
+    models: ["gpt-4o", "gpt-4o-mini", "Meta-Llama-3.1-70B-Instruct", "Mistral-large"],
+    defaultModel: "gpt-4o",
+    requiresApiKey: true,
+    apiKeyDescription: "GitHub Personal Access Token — generate at github.com/settings/tokens",
   },
 };

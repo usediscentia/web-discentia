@@ -17,6 +17,7 @@ const defaultConfigs: Record<AIProviderType, ProviderConfigState> = {
   gemini: { apiKey: "", model: PROVIDER_DEFAULTS.gemini.defaultModel },
   ollama: { apiKey: "", model: PROVIDER_DEFAULTS.ollama.defaultModel },
   openrouter: { apiKey: "", model: PROVIDER_DEFAULTS.openrouter.defaultModel },
+  "github-models": { apiKey: "", model: PROVIDER_DEFAULTS["github-models"].defaultModel },
 };
 
 interface ProviderState {
