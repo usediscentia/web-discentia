@@ -7,6 +7,8 @@ import { STORAGE_KEYS, OLLAMA_API_URL } from "@/lib/constants";
 export interface ProviderConfigState {
   apiKey: string;
   model: string;
+  temperature?: number;
+  baseUrl?: string;
 }
 
 export type OllamaStatus = "unknown" | "connected" | "disconnected";
@@ -87,6 +89,8 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
       type: state.selectedProvider,
       apiKey: config.apiKey,
       model: state.selectedModel,
+      temperature: config.temperature,
+      baseUrl: config.baseUrl,
     };
   },
 
@@ -95,7 +99,7 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
       const raw = localStorage.getItem(STORAGE_KEYS.PROVIDER_CONFIGS);
       const configs = { ...defaultConfigs };
       if (raw) {
-        const encrypted: Record<string, { apiKey: string; model: string }> =
+        const encrypted: Record<string, { apiKey: string; model: string; temperature?: number; baseUrl?: string }> =
           JSON.parse(raw);
 
         for (const [key, value] of Object.entries(encrypted)) {
@@ -105,6 +109,8 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
           configs[type] = {
             apiKey: value.apiKey ? await decrypt(value.apiKey) : "",
             model: value.model || configs[type].model,
+            temperature: value.temperature,
+            baseUrl: value.baseUrl,
           };
         }
       }
@@ -130,12 +136,14 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
 
   saveProviderConfigs: async () => {
     const configs = get().providerConfigs;
-    const encrypted: Record<string, { apiKey: string; model: string }> = {};
+    const encrypted: Record<string, { apiKey: string; model: string; temperature?: number; baseUrl?: string }> = {};
 
     for (const [key, value] of Object.entries(configs)) {
       encrypted[key] = {
         apiKey: value.apiKey ? await encrypt(value.apiKey) : "",
         model: value.model,
+        temperature: value.temperature,
+        baseUrl: value.baseUrl,
       };
     }
 
@@ -147,7 +155,8 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
 
   checkOllamaConnection: async () => {
     try {
-      const response = await fetch(`${OLLAMA_API_URL}/api/tags`);
+      const ollamaBaseUrl = get().providerConfigs.ollama.baseUrl ?? OLLAMA_API_URL;
+      const response = await fetch(`${ollamaBaseUrl}/api/tags`);
       if (!response.ok) {
         set({ ollamaStatus: "disconnected", ollamaModels: [] });
         return;
@@ -171,7 +180,9 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
             ? { selectedModel: models[0] }
             : {}),
         });
-        localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, models[0]);
+        if (state.selectedProvider === "ollama") {
+          localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, models[0]);
+        }
         void get().saveProviderConfigs();
       }
     } catch {

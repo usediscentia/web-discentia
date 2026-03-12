@@ -4,6 +4,7 @@ export interface ProviderConfig {
   type: AIProviderType;
   apiKey: string;
   model: string;
+  temperature?: number;
   baseUrl?: string;
 }
 
