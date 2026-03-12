@@ -349,7 +349,7 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                   {ollamaStatus === "connected" && ollamaModels.length > 0 && (
                     <div>
                       <Label className="text-xs font-medium text-[#555] block mb-1.5">Model</Label>
-                      <Select value={config.model || ollamaModels[0]} onValueChange={handleModelChange}>
+                      <Select value={ollamaModels.includes(config.model) ? config.model : ollamaModels[0]} onValueChange={handleModelChange}>
                         <SelectTrigger className="text-sm">
                           <SelectValue />
                         </SelectTrigger>
