@@ -29,6 +29,14 @@ import { getAIProvider } from "@/services/ai";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
 import type { AIProviderType } from "@/types/ai";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { getDB } from "@/services/storage/database";
 
 // ── Types ──
@@ -74,7 +82,13 @@ const providerDisplays: ProviderDisplay[] = [
     type: "anthropic",
     lobeProvider: "anthropic",
     description: "Claude models by Anthropic for nuanced reasoning.",
-    comingSoon: true,
+    comingSoon: false,
+  },
+  {
+    type: "github-models",
+    lobeProvider: "github",
+    description: "Access models from GitHub's free AI model marketplace.",
+    comingSoon: false,
   },
   {
     type: "gemini",
@@ -126,6 +140,8 @@ const SHORTCUTS = {
 function ProviderRow({ display }: { display: ProviderDisplay }) {
   const {
     providerConfigs,
+    selectedProvider,
+    setSelectedModel,
     setProviderConfig,
     ollamaStatus,
     ollamaModels,
@@ -137,6 +153,8 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
   const config = providerConfigs[display.type];
   const [expanded, setExpanded] = useState(false);
   const [localKey, setLocalKey] = useState("");
+  const [localTemp, setLocalTemp] = useState("");
+  const [localBaseUrl, setLocalBaseUrl] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<"success" | "error" | null>(null);
@@ -147,6 +165,15 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
       setResult(null);
     }
   }, [expanded, config.apiKey]);
+
+  useEffect(() => {
+    if (expanded) {
+      setLocalTemp(config.temperature !== undefined ? String(config.temperature) : "");
+      setLocalBaseUrl(config.baseUrl ?? "");
+    }
+    // intentionally only runs on expand/collapse to avoid resetting mid-edit
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expanded]);
 
   const isOllama = display.type === "ollama";
   const hasKey = config.apiKey.length > 0;
@@ -186,6 +213,28 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
     }
 
     setTesting(false);
+  };
+
+  const handleModelChange = (model: string) => {
+    if (display.type === selectedProvider) {
+      setSelectedModel(model);
+    } else {
+      setProviderConfig(display.type, { ...config, model });
+      void saveProviderConfigs();
+    }
+  };
+
+  const handleTempBlur = () => {
+    const parsed = parseFloat(localTemp);
+    const value = !isNaN(parsed) ? Math.max(0, Math.min(2, parsed)) : undefined;
+    setProviderConfig(display.type, { ...config, temperature: value });
+    void saveProviderConfigs();
+  };
+
+  const handleBaseUrlBlur = () => {
+    const value = localBaseUrl.trim() || undefined;
+    setProviderConfig(display.type, { ...config, baseUrl: value });
+    void saveProviderConfigs();
   };
 
   const statusBadge = () => {
@@ -297,6 +346,50 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                       )}
                     </div>
                   </div>
+                  {ollamaStatus === "connected" && ollamaModels.length > 0 && (
+                    <div>
+                      <Label className="text-xs font-medium text-[#555] block mb-1.5">Model</Label>
+                      <Select value={config.model || ollamaModels[0]} onValueChange={handleModelChange}>
+                        <SelectTrigger className="text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ollamaModels.map((m) => (
+                            <SelectItem key={m} value={m}>{m}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-xs font-medium text-[#555] block mb-1.5">
+                      Temperature <span className="text-[#AAA] font-normal">(0.0 – 2.0)</span>
+                    </label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={2}
+                      step={0.1}
+                      value={localTemp}
+                      onChange={(e) => setLocalTemp(e.target.value)}
+                      onBlur={handleTempBlur}
+                      placeholder="Default"
+                      className="text-sm w-28"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-[#555] block mb-1.5">
+                      Base URL <span className="text-[#AAA] font-normal">(optional)</span>
+                    </label>
+                    <Input
+                      type="text"
+                      value={localBaseUrl}
+                      onChange={(e) => setLocalBaseUrl(e.target.value)}
+                      onBlur={handleBaseUrlBlur}
+                      placeholder="http://localhost:11434"
+                      className="text-sm font-mono"
+                    />
+                  </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleTest}
@@ -323,6 +416,9 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                   <div>
                     <label className="text-xs font-medium text-[#555] block mb-1.5">
                       API Key
+                      {defaults.apiKeyDescription && (
+                        <span className="text-[#AAA] font-normal ml-1">— {defaults.apiKeyDescription}</span>
+                      )}
                     </label>
                     <div className="relative">
                       <Input
@@ -344,6 +440,52 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                       </button>
                     </div>
                   </div>
+                  {defaults.models.length > 0 && (
+                    <div>
+                      <Label className="text-xs font-medium text-[#555] block mb-1.5">Model</Label>
+                      <Select value={config.model} onValueChange={handleModelChange}>
+                        <SelectTrigger className="text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {defaults.models.map((m) => (
+                            <SelectItem key={m} value={m}>{m}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-xs font-medium text-[#555] block mb-1.5">
+                      Temperature <span className="text-[#AAA] font-normal">(0.0 – 2.0)</span>
+                    </label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={2}
+                      step={0.1}
+                      value={localTemp}
+                      onChange={(e) => setLocalTemp(e.target.value)}
+                      onBlur={handleTempBlur}
+                      placeholder="Default"
+                      className="text-sm w-28"
+                    />
+                  </div>
+                  {display.type === "openai" && (
+                    <div>
+                      <label className="text-xs font-medium text-[#555] block mb-1.5">
+                        Base URL <span className="text-[#AAA] font-normal">(optional)</span>
+                      </label>
+                      <Input
+                        type="text"
+                        value={localBaseUrl}
+                        onChange={(e) => setLocalBaseUrl(e.target.value)}
+                        onBlur={handleBaseUrlBlur}
+                        placeholder="https://api.openai.com/v1"
+                        className="text-sm font-mono"
+                      />
+                    </div>
+                  )}
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleTest}
