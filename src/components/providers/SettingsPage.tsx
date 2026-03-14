@@ -87,7 +87,7 @@ const providerDisplays: ProviderDisplay[] = [
   },
   {
     type: "github-copilot",
-    lobeProvider: "github",
+    lobeProvider: "github-copilot",
     description: "GitHub Copilot Chat — GPT-4o, o1, Claude, Gemini and more with your Copilot subscription.",
     comingSoon: false,
   },
