@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { getDB } from "@/services/storage/database";
+import { GitHubCopilotConnect } from "@/components/providers/GitHubCopilotConnect";
 
 // ── Types ──
 
@@ -85,9 +86,9 @@ const providerDisplays: ProviderDisplay[] = [
     comingSoon: false,
   },
   {
-    type: "github-models",
+    type: "github-copilot",
     lobeProvider: "github",
-    description: "Access models from GitHub's free AI model marketplace.",
+    description: "GitHub Copilot Chat — GPT-4o, o1, Claude, Gemini and more with your Copilot subscription.",
     comingSoon: false,
   },
   {
@@ -411,7 +412,9 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                   </div>
                   {result && <ResultBadge result={result} type="ollama" />}
                 </div>
-              ) : (
+              ) : display.type === "github-copilot" ? (
+                  <GitHubCopilotConnect />
+                ) : (
                 <div className="space-y-3">
                   <div>
                     <label className="text-xs font-medium text-[#555] block mb-1.5">
