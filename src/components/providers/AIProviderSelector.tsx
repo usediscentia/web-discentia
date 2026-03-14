@@ -65,10 +65,10 @@ const providers: ProviderMeta[] = [
     badgeText: "#9D174D",
   },
   {
-    id: "github-models" as AIProviderType,
-    name: "GitHub Models",
+    id: "github-copilot" as AIProviderType,
+    name: "GitHub Copilot",
     lobeProvider: "github",
-    badgeLabel: "GitHub",
+    badgeLabel: "Copilot",
     badgeBg: "#F0FDF4",
     badgeText: "#166534",
   },
@@ -104,13 +104,18 @@ export function AIProviderSelector({
     setSelectedModel,
     ollamaModels,
     checkOllamaConnection,
+    githubCopilotModels,
+    fetchGithubCopilotModels,
   } = useProviderStore();
 
   useEffect(() => {
     if (isOpen) {
       checkOllamaConnection();
+      if (selectedProvider === "github-copilot") {
+        void fetchGithubCopilotModels();
+      }
     }
-  }, [isOpen, checkOllamaConnection]);
+  }, [isOpen, checkOllamaConnection, selectedProvider, fetchGithubCopilotModels]);
 
   const handleSelectProvider = (id: AIProviderType) => {
     setSelectedProvider(id);
@@ -132,6 +137,7 @@ export function AIProviderSelector({
 
   const getModelsForProvider = (id: AIProviderType): string[] => {
     if (id === "ollama") return ollamaModels;
+    if (id === "github-copilot") return githubCopilotModels;
     return PROVIDER_DEFAULTS[id].models;
   };
 
