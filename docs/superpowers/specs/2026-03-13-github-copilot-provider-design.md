@@ -186,10 +186,21 @@ interface UseGitHubDeviceFlowReturn {
 }
 ```
 
-- `startFlow()`: requests device code, transitions to `waiting`, opens `verificationUri`, starts polling loop
-- Polling uses `setInterval` respecting the `interval` from GitHub's response
-- `slow_down` response: increments interval by 5s
-- `cancel()`: clears interval, resets to `idle`
+- `startFlow()`: requests device code, transitions to `waiting`, opens `verificationUri`, starts polling
+- **Polling uses a recursive `setTimeout` pattern** (NOT `setInterval`) — this is required because the `slow_down` response mandates a dynamic interval increase. A fixed `setInterval` cannot be reconfigured in place; `setTimeout` restarts itself with the updated interval after each response:
+  ```ts
+  const poll = () => {
+    setTimeout(async () => {
+      const result = await checkToken();
+      if (result === "slow_down") { interval += 5; poll(); }
+      else if (result === "authorization_pending") { poll(); }
+      else if (result === "access_token") { onSuccess(result.token); }
+      else { onError(result); }
+    }, interval * 1000);
+  };
+  ```
+- `cancel()`: sets a `cancelled` ref to `true` (checked at the start of each `setTimeout` callback), resets state to `idle`
+- **`useEffect` cleanup must call `cancel()`** to prevent the timeout from firing after unmount
 - On `access_token`: saves via `setProviderConfig`, calls `fetchGithubCopilotModels`, transitions to `success`
 
 ---
@@ -260,6 +271,8 @@ In `src/components/providers/SettingsPage.tsx`:
 | Edit | `src/services/ai/index.ts` |
 | Edit | `src/stores/provider.store.ts` |
 | Edit | `src/components/providers/SettingsPage.tsx` |
+| Edit | `src/components/providers/SettingsDialog.tsx` — replace all `"github-models"` literals with `"github-copilot"` in `providerOrder`, `localKeys`, and `results` initialization |
+| Edit | `src/components/providers/AIProviderSelector.tsx` — update provider entry: `id: "github-copilot"`, updated name/badge |
 | Edit | `src/lib/constants.ts` |
 
 ---
