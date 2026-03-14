@@ -16,8 +16,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { GitHubCopilotConnect } from "@/components/providers/GitHubCopilotConnect";
 
-const providerOrder: AIProviderType[] = ["ollama", "openai", "openrouter", "github-models", "anthropic", "gemini"];
+const providerOrder: AIProviderType[] = ["ollama", "openai", "openrouter", "github-copilot", "anthropic", "gemini"];
 
 export function SettingsDialog() {
   const { settingsOpen, setSettingsOpen } = useAppStore();
@@ -30,12 +31,12 @@ export function SettingsDialog() {
     gemini: "",
     ollama: "",
     openrouter: "",
-    "github-models": "",
+    "github-copilot": "",
   });
   const [testing, setTesting] = useState<AIProviderType | null>(null);
   const [results, setResults] = useState<
     Record<AIProviderType, "success" | "error" | null>
-  >({ openai: null, anthropic: null, gemini: null, ollama: null, openrouter: null, "github-models": null });
+  >({ openai: null, anthropic: null, gemini: null, ollama: null, openrouter: null, "github-copilot": null });
 
   const handleOpenChange = (open: boolean) => {
     if (open) {
@@ -45,9 +46,9 @@ export function SettingsDialog() {
         gemini: providerConfigs.gemini.apiKey,
         ollama: "",
         openrouter: providerConfigs.openrouter.apiKey,
-        "github-models": providerConfigs["github-models"].apiKey,
+        "github-copilot": providerConfigs["github-copilot"].apiKey,
       });
-      setResults({ openai: null, anthropic: null, gemini: null, ollama: null, openrouter: null, "github-models": null });
+      setResults({ openai: null, anthropic: null, gemini: null, ollama: null, openrouter: null, "github-copilot": null });
       checkOllamaConnection();
     }
     setSettingsOpen(open);
@@ -170,6 +171,18 @@ export function SettingsDialog() {
                       </a>
                     </p>
                   )}
+                </div>
+              );
+            }
+
+            // GitHub Copilot: OAuth Device Flow — no API key input
+            if (type === "github-copilot") {
+              return (
+                <div key={type} className="flex flex-col gap-2">
+                  <Label className="text-sm font-medium">
+                    {PROVIDER_DEFAULTS[type].displayName}
+                  </Label>
+                  <GitHubCopilotConnect />
                 </div>
               );
             }
