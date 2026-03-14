@@ -98,57 +98,58 @@ export const githubCopilotProvider: AIServiceProvider = {
     callbacks: StreamCallbacks,
     signal?: AbortSignal
   ): Promise<void> {
-    const doFetch = async (token: string) =>
-      fetch(`${GITHUB_COPILOT_API_URL}/chat/completions`, {
-        method: "POST",
-        headers: {
-          ...COPILOT_HEADERS_BASE,
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          model: config.model,
-          messages,
-          stream: true,
-          ...(config.temperature !== undefined
-            ? { temperature: config.temperature }
-            : {}),
-        }),
-        signal,
-      });
-
-    let sessionToken = await getSessionToken(config.apiKey);
-    let response = await doFetch(sessionToken);
-
-    // 401 → clear cache and retry once with fresh token
-    if (response.status === 401) {
-      sessionCache = null;
-      sessionToken = await getSessionToken(config.apiKey);
-      response = await doFetch(sessionToken);
-    }
-
-    if (!response.ok) {
-      const errorBody = await response.text().catch(() => "");
-      let errorMessage = `GitHub Copilot API error: ${response.status}`;
-      try {
-        const parsed = JSON.parse(errorBody) as {
-          error?: { message?: string };
-        };
-        if (parsed.error?.message) errorMessage = parsed.error.message;
-      } catch {
-        // use default message
-      }
-      throw new Error(errorMessage);
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error("No response body");
-
-    const decoder = new TextDecoder();
     let fullText = "";
-    let buffer = "";
 
     try {
+      const doFetch = async (token: string) =>
+        fetch(`${GITHUB_COPILOT_API_URL}/chat/completions`, {
+          method: "POST",
+          headers: {
+            ...COPILOT_HEADERS_BASE,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            model: config.model,
+            messages,
+            stream: true,
+            ...(config.temperature !== undefined
+              ? { temperature: config.temperature }
+              : {}),
+          }),
+          signal,
+        });
+
+      let sessionToken = await getSessionToken(config.apiKey);
+      let response = await doFetch(sessionToken);
+
+      // 401 → clear cache and retry once with fresh token
+      if (response.status === 401) {
+        sessionCache = null;
+        sessionToken = await getSessionToken(config.apiKey);
+        response = await doFetch(sessionToken);
+      }
+
+      if (!response.ok) {
+        const errorBody = await response.text().catch(() => "");
+        let errorMessage = `GitHub Copilot API error: ${response.status}`;
+        try {
+          const parsed = JSON.parse(errorBody) as {
+            error?: { message?: string };
+          };
+          if (parsed.error?.message) errorMessage = parsed.error.message;
+        } catch {
+          // use default message
+        }
+        throw new Error(errorMessage);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -184,6 +185,7 @@ export const githubCopilotProvider: AIServiceProvider = {
 
       callbacks.onComplete(fullText);
     } catch (error) {
+      // Handle abort at any phase (pre-stream fetch, 401 retry, or during streaming)
       if (signal?.aborted) {
         callbacks.onComplete(fullText);
         return;
