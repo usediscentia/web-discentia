@@ -1,4 +1,10 @@
-export type AIProviderType = "openai" | "anthropic" | "gemini" | "ollama" | "openrouter" | "github-models";
+export type AIProviderType =
+  | "openai"
+  | "anthropic"
+  | "gemini"
+  | "ollama"
+  | "openrouter"
+  | "github-copilot";
 
 export interface ProviderConfig {
   type: AIProviderType;
@@ -31,11 +37,19 @@ export interface AIServiceProvider {
     signal?: AbortSignal
   ) => Promise<void>;
   validateApiKey: (apiKey: string) => Promise<boolean>;
+  /** Optional: providers with dynamic model lists implement this */
+  fetchModels?: (apiKey: string) => Promise<string[]>;
 }
 
 export const PROVIDER_DEFAULTS: Record<
   AIProviderType,
-  { displayName: string; models: string[]; defaultModel: string; requiresApiKey: boolean; apiKeyDescription?: string }
+  {
+    displayName: string;
+    models: string[];
+    defaultModel: string;
+    requiresApiKey: boolean;
+    apiKeyDescription?: string;
+  }
 > = {
   openai: {
     displayName: "OpenAI",
@@ -72,11 +86,11 @@ export const PROVIDER_DEFAULTS: Record<
     defaultModel: "openai/gpt-4o",
     requiresApiKey: true,
   },
-  "github-models": {
-    displayName: "GitHub Models",
-    models: ["gpt-4o", "gpt-4o-mini", "Meta-Llama-3.1-70B-Instruct", "Mistral-large"],
-    defaultModel: "gpt-4o",
+  "github-copilot": {
+    displayName: "GitHub Copilot",
+    models: [],       // populated dynamically via fetchModels
+    defaultModel: "", // set after first fetch
     requiresApiKey: true,
-    apiKeyDescription: "GitHub Personal Access Token — generate at github.com/settings/tokens",
+    apiKeyDescription: "Connect your GitHub account with an active Copilot subscription",
   },
 };
