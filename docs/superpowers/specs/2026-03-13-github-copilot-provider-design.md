@@ -272,7 +272,7 @@ In `src/components/providers/SettingsPage.tsx`:
 | Edit | `src/stores/provider.store.ts` |
 | Edit | `src/components/providers/SettingsPage.tsx` |
 | Edit | `src/components/providers/SettingsDialog.tsx` — replace all `"github-models"` literals with `"github-copilot"` in `providerOrder`, `localKeys`, and `results` initialization |
-| Edit | `src/components/providers/AIProviderSelector.tsx` — update provider entry: `id: "github-copilot"`, updated name/badge |
+| Edit | `src/components/providers/AIProviderSelector.tsx` — (1) update provider entry: `id: "github-copilot"`, updated name/badge; (2) add `"github-copilot"` branch to `getModelsForProvider`: `if (id === "github-copilot") return githubCopilotModels;` — identical to the existing `"ollama"` branch; (3) destructure `githubCopilotModels` from `useProviderStore()` alongside `ollamaModels` |
 | Edit | `src/lib/constants.ts` |
 
 ---
