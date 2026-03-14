@@ -21,9 +21,12 @@ export interface UseGitHubDeviceFlowReturn {
 }
 
 // ── GitHub Device Flow endpoints ──
+// Device code + token polling go through local API routes to avoid CORS
+// (github.com/login/* doesn't send Access-Control-Allow-Origin headers).
+// api.github.com/user is CORS-friendly and can be called directly.
 
-const DEVICE_CODE_URL = "https://github.com/login/device/code";
-const ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token";
+const DEVICE_CODE_URL = "/api/github/device/code";
+const ACCESS_TOKEN_URL = "/api/github/token";
 const GITHUB_USER_URL = "https://api.github.com/user";
 
 // ── Hook ──
