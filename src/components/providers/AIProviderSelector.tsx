@@ -67,7 +67,7 @@ const providers: ProviderMeta[] = [
   {
     id: "github-copilot" as AIProviderType,
     name: "GitHub Copilot",
-    lobeProvider: "github",
+    lobeProvider: "github-copilot",
     badgeLabel: "Copilot",
     badgeBg: "#F0FDF4",
     badgeText: "#166534",
