@@ -37,7 +37,10 @@ The current `github-models.provider.ts` hits `models.inference.ai.azure.com` (Gi
 ```
 User clicks "Conectar com GitHub"
   → POST https://github.com/login/device/code
-      body: { client_id: GITHUB_CLIENT_ID, scope: "copilot" }
+      body: { client_id: GITHUB_CLIENT_ID, scope: "read:user" }
+      Note: "copilot" is NOT a valid OAuth scope. Access to the Copilot API is
+      gated by the client_id being registered as a Copilot app + the user's
+      active subscription. scope: "read:user" is sufficient.
   ← { device_code, user_code, verification_uri, expires_in, interval }
 
 App shows user_code ("ABCD-1234") + "Abrir GitHub" button
@@ -66,7 +69,7 @@ GET https://api.github.com/copilot_internal/v2/token
 ```
 
 - Cache: `{ token, expiresAt }` in a module-level variable inside the provider
-- Refresh condition: `Date.now() > (expires_at - 5min) * 1000`
+- Refresh condition: `Date.now() >= (expires_at - 300) * 1000` — where `expires_at` is unix seconds and `300` = 5 minutes in seconds
 - The rest of the app (store, hooks, UI) never sees the session token
 
 ---
@@ -96,7 +99,22 @@ Public methods:
 - `sendMessage(messages, config, callbacks, signal)` — gets session token → `POST /chat/completions` → SSE streaming (identical pattern to current implementation)
 - `validateApiKey(accessToken)` — attempts session token exchange; returns `true` if successful
 
-**Streaming** stays identical to current `github-models.provider.ts` — the only change is the endpoint and the bearer token used.
+**Required headers on every request to `api.githubcopilot.com`:**
+
+```ts
+const COPILOT_HEADERS = {
+  "Content-Type": "application/json",
+  "Authorization": `Bearer ${sessionToken}`,
+  "Editor-Version": "vscode/1.95.0",
+  "Editor-Plugin-Version": "copilot/1.256.0",
+  "Copilot-Integration-Id": "vscode-chat",
+  "User-Agent": "GithubCopilot/1.256.0",
+};
+```
+
+Without these headers the API returns 400 or 403. Define as a module-level constant and use in `sendMessage`, `fetchModels`, and any other fetch call to `api.githubcopilot.com`.
+
+**Streaming** stays identical to current `github-models.provider.ts` — the changes are: endpoint, bearer token (session token instead of PAT), and the required Copilot headers above.
 
 ---
 
@@ -139,7 +157,12 @@ In `src/types/ai.ts`:
   }
   ```
 
-**Breaking change:** stored `selectedProvider: "github-models"` in localStorage becomes invalid. Migration: on `loadProviderConfigs`, if stored provider is `"github-models"`, treat as `"github-copilot"`.
+**Breaking change:** stored `selectedProvider: "github-models"` in localStorage becomes invalid.
+
+**Migration in `loadProviderConfigs`:**
+1. If `encrypted["github-models"]` exists and `encrypted["github-copilot"]` does not → copy the entry to `configs["github-copilot"]` before iteration
+2. If `savedProvider === "github-models"` → treat as `"github-copilot"`
+3. **Important:** the migrated `apiKey` was a plain PAT, not an OAuth access token — it is incompatible with the Device Flow auth. After migration, the component should detect that the stored token fails `validateApiKey` and render the "Reconecte sua conta" state instead of "Conectado", prompting the user to go through Device Flow once.
 
 ---
 
@@ -204,7 +227,7 @@ Rendered inside the GitHub Copilot `ProviderRow` in SettingsPage, replacing the 
 [ Desconectar ]
 ```
 
-`@username` is fetched once from `https://api.github.com/user` after connecting and stored in `providerConfigs["github-copilot"].baseUrl` (repurposed as a display field) — or optionally in a separate localStorage key.
+`@username` is fetched once from `https://api.github.com/user` after connecting and stored in a dedicated `localStorage` key (`discentia:github-copilot-username`). Do NOT use `providerConfigs["github-copilot"].baseUrl` for this — `baseUrl` has a structural meaning (API endpoint override) and repurposing it would corrupt routing logic for any consumer that checks it.
 
 ---
 
