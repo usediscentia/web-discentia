@@ -18,17 +18,19 @@ interface SessionCache {
 
 let sessionCache: SessionCache | null = null;
 
-// Required by api.githubcopilot.com — returns 400/403 without these
+// Required by api.githubcopilot.com
 const COPILOT_HEADERS_BASE = {
-  "Editor-Version": "vscode/1.95.0",
-  "Editor-Plugin-Version": "copilot/1.256.0",
-  "Copilot-Integration-Id": "vscode-chat",
-  "User-Agent": "GithubCopilot/1.256.0",
+  "copilot-integration-id": "vscode-chat",
+  "editor-version": "vscode/1.99.0",
+  "editor-plugin-version": "copilot-chat/0.26.7",
+  "user-agent": "GitHubCopilotChat/0.26.7",
+  "x-github-api-version": "2025-04-01",
 } as const;
 
 /**
  * Exchanges an OAuth access token for a short-lived Copilot session token.
  * Caches the result and auto-refreshes 5 minutes before expiry.
+ * Note: GitHub's copilot_internal endpoint requires "token" prefix, not "Bearer".
  */
 async function getSessionToken(accessToken: string): Promise<string> {
   // Use cache if valid (with 5-minute buffer)
@@ -42,9 +44,14 @@ async function getSessionToken(accessToken: string): Promise<string> {
   const response = await fetch(
     `${GITHUB_API_URL}/copilot_internal/v2/token`,
     {
+      method: "GET",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: "application/json",
+        "authorization": `token ${accessToken}`,
+        "accept": "application/json",
+        "editor-version": "vscode/1.99.0",
+        "editor-plugin-version": "copilot-chat/0.26.7",
+        "user-agent": "GitHubCopilotChat/0.26.7",
+        "x-github-api-version": "2025-04-01",
       },
     }
   );
@@ -73,13 +80,11 @@ export const githubCopilotProvider: AIServiceProvider = {
   defaultModel: PROVIDER_DEFAULTS["github-copilot"].defaultModel,
 
   async fetchModels(accessToken: string): Promise<string[]> {
-    const sessionToken = await getSessionToken(accessToken);
-    const response = await fetch(`${GITHUB_COPILOT_API_URL}/models`, {
-      headers: {
-        ...COPILOT_HEADERS_BASE,
-        Authorization: `Bearer ${sessionToken}`,
-        Accept: "application/json",
-      },
+    // Use a server-side proxy to avoid CORS restrictions on api.githubcopilot.com
+    const response = await fetch("/api/github/copilot/models", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accessToken }),
     });
 
     if (!response.ok) {
@@ -89,7 +94,8 @@ export const githubCopilotProvider: AIServiceProvider = {
     const data = (await response.json()) as {
       data: Array<{ id: string }>;
     };
-    return data.data.map((m) => m.id);
+    // Deduplicate — the Copilot API returns multiple entries with the same id
+    return [...new Set(data.data.map((m) => m.id))];
   },
 
   async sendMessage(
@@ -106,8 +112,9 @@ export const githubCopilotProvider: AIServiceProvider = {
           method: "POST",
           headers: {
             ...COPILOT_HEADERS_BASE,
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+            "authorization": `Bearer ${token}`,
+            "openai-intent": "conversation-panel",
           },
           body: JSON.stringify({
             model: config.model,

@@ -77,7 +77,14 @@ export function GitHubCopilotConnect() {
               Connected
             </span>
             {username && (
-              <span className="text-xs text-[#888]">@{username}</span>
+              <span className="flex items-center gap-1.5 text-xs text-[#888]">
+                <img
+                  src={`https://avatars.githubusercontent.com/${username}`}
+                  alt={username}
+                  className="w-4 h-4 rounded-full"
+                />
+                @{username}
+              </span>
             )}
           </div>
           <button
