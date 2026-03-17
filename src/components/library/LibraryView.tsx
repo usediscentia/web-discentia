@@ -15,6 +15,8 @@ import AddContentModal from "@/components/library/AddContentModal";
 import ItemCard from "@/components/library/ItemCard";
 import LibraryEmptyState from "@/components/library/LibraryEmptyState";
 import ItemDetailPanel from "@/components/library/ItemDetailPanel";
+import FlashcardGeneratorPanel from "@/components/library/FlashcardGeneratorPanel";
+import { AnimatePresence } from "motion/react";
 
 export default function LibraryView() {
   const {
@@ -39,6 +41,7 @@ export default function LibraryView() {
   const [createOpen, setCreateOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<LibraryItem | null>(null);
+  const [generatorItem, setGeneratorItem] = useState<LibraryItem | null>(null);
 
   const [newLibraryName, setNewLibraryName] = useState("");
   const [newLibraryColor, setNewLibraryColor] = useState("#34D399");
@@ -258,8 +261,18 @@ export default function LibraryView() {
             deleteItem(detailItem.id);
             setDetailItem(null);
           }}
+          onGenerateFlashcards={() => setGeneratorItem(detailItem)}
         />
       )}
+
+      <AnimatePresence>
+        {generatorItem && (
+          <FlashcardGeneratorPanel
+            item={generatorItem}
+            onClose={() => setGeneratorItem(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {activeLibraryId && (
         <button

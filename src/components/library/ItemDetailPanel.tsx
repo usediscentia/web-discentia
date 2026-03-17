@@ -26,6 +26,7 @@ interface ItemDetailPanelProps {
   library: Library | undefined;
   onBack: () => void;
   onDelete: () => void;
+  onGenerateFlashcards?: () => void;
 }
 
 function typeIcon(type: string) {
@@ -57,6 +58,7 @@ export default function ItemDetailPanel({
   library,
   onBack,
   onDelete,
+  onGenerateFlashcards,
 }: ItemDetailPanelProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -194,8 +196,9 @@ export default function ItemDetailPanel({
               </h3>
               <div className="space-y-2">
                 <button
-                  disabled
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#555] rounded-lg border border-[#E5E7EB] hover:bg-[#F9FAFB] transition-colors cursor-not-allowed opacity-60"
+                  onClick={onGenerateFlashcards}
+                  disabled={!onGenerateFlashcards}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#555] rounded-lg border border-[#E5E7EB] hover:bg-[#F9FAFB] transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <BookOpen size={14} />
                   Generate Flashcards

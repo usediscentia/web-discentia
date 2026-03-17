@@ -38,8 +38,8 @@ export function ReviewComplete({ reviewed, correct, streak, onRestart }: ReviewC
         <div className="grid grid-cols-3 gap-3 w-full">
           {[
             { value: String(reviewed), label: "Reviewed" },
-            { value: String(correct), label: "Correct", color: "text-[#1A7A6D]" },
-            { value: `${streak} 🔥`, label: "Day Streak" },
+            { value: `${correct}/${reviewed}`, label: "Correct", color: "text-[#1A7A6D]" },
+            { value: `${streak}`, label: "Day Streak" },
           ].map((s) => (
             <div key={s.label} className="flex flex-col items-center gap-1 py-4 bg-[#F9FAFB] rounded-xl border border-[#F3F4F6]">
               <span className={`text-2xl font-bold text-[#111] ${s.color ?? ""}`}>{s.value}</span>
