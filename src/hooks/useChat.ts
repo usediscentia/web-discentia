@@ -7,7 +7,7 @@ import { useAppStore } from "@/stores/app.store";
 import { StorageService } from "@/services/storage";
 import { getAIProvider } from "@/services/ai";
 import { SYSTEM_PROMPT } from "@/lib/constants";
-import { splitMessageAndCitations } from "@/lib/citations";
+import { stripCitationsBlock, extractCitationsFromChunks } from "@/lib/citations";
 import {
   detectExerciseIntent,
   parseExerciseFromResponse,
@@ -149,21 +149,11 @@ export function useChat() {
             limit: 24,
           })
         : [];
-      const { contextText, usedItems } = buildContextSnippet(
+      const { contextText, injectedChunks } = buildContextSnippet(
         relevantItems,
         DEFAULT_CONTEXT_TOKEN_BUDGET
       );
       const contextTokenEstimate = estimateTokenCountFromChars(contextText.length);
-
-      const citationInstruction = `If you used SOURCE context, append ONLY this block at the end:
-<CITATIONS>
-[{"libraryItemId":"...","libraryId":"...","itemTitle":"...","excerpt":"...","page":1}]
-</CITATIONS>
-Rules:
-- Use only source IDs provided in SOURCE context.
-- If no source was used, return <CITATIONS>[]</CITATIONS>.
-- Keep excerpt under 160 chars.
-- Include "page" only when the source block has a chunkPage field; omit it otherwise.`;
 
       // Save user message
       const userMessage = await StorageService.addMessage(
@@ -187,7 +177,7 @@ Rules:
         { role: "system", content: SYSTEM_PROMPT },
         ...(exercisePrompt
           ? [{ role: "system" as const, content: exercisePrompt }]
-          : [{ role: "system" as const, content: citationInstruction }]),
+          : []),
         ...(contextText
           ? [
               {
@@ -219,13 +209,11 @@ Rules:
               setStreamingContent((prev) => prev + token);
             },
             onComplete: async (fullText) => {
-              const allowedItemIds = new Set(
-                usedItems.map((entry) => entry.item.id)
-              );
-              const { cleanContent, citations } = splitMessageAndCitations(
-                fullText,
-                allowedItemIds
-              );
+              // Strip any <CITATIONS> block the AI might have emitted, then
+              // auto-extract citations by matching response text against the
+              // chunks we actually injected into the context.
+              const cleanContent = stripCitationsBlock(fullText);
+              const citations = extractCitationsFromChunks(cleanContent, injectedChunks);
 
               // Save the assistant message first to get a real messageId
               let exerciseId: string | undefined;
@@ -248,6 +236,7 @@ Rules:
               if (parsedExercise) {
                 try {
                   parsedExercise.messageId = savedMessage.id;
+                  parsedExercise.sourceItemId = injectedChunks[0]?.libraryItemId;
                   await getDB().exercises.add(parsedExercise);
                 } catch {
                   // Exercise storage failed — message is already saved

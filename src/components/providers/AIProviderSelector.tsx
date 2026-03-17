@@ -40,15 +40,6 @@ const providers: ProviderMeta[] = [
     badgeText: "#166534",
   },
   {
-    id: "gemini",
-    name: "Gemini",
-    lobeProvider: "google",
-    badgeLabel: "Google",
-    badgeBg: "#EEF2FF",
-    badgeText: "#4338CA",
-    comingSoon: true,
-  },
-  {
     id: "ollama",
     name: "Ollama",
     lobeProvider: "ollama",

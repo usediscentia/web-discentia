@@ -98,4 +98,6 @@ export interface Exercise {
     | BossFightData;
   results: ExerciseResult[];
   createdAt: number;
+  /** ID of the LibraryItem whose content generated this exercise (for SRS source attribution). */
+  sourceItemId?: string;
 }

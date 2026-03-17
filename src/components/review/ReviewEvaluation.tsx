@@ -1,5 +1,6 @@
 "use client";
 
+import { BookOpen } from "lucide-react";
 import type { SRSCard } from "@/types/srs";
 import type { ReviewRating } from "@/lib/sm2";
 
@@ -10,6 +11,7 @@ interface ReviewEvaluationProps {
   userAnswer: string;
   verdict: AIVerdict | null; // null = "I don't know" path
   explanation: string;
+  sourceItemTitle?: string;
   onRate: (rating: ReviewRating) => void;
 }
 
@@ -25,7 +27,7 @@ const RATINGS: { value: ReviewRating; label: string; sub: string; style: string 
   { value: "easy", label: "Easy", sub: "Review in ~7 days", style: "border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100" },
 ];
 
-export function ReviewEvaluation({ card, userAnswer, verdict, explanation, onRate }: ReviewEvaluationProps) {
+export function ReviewEvaluation({ card, userAnswer, verdict, explanation, sourceItemTitle, onRate }: ReviewEvaluationProps) {
   const cfg = verdict ? VERDICT_CONFIG[verdict] : null;
 
   return (
@@ -61,6 +63,16 @@ export function ReviewEvaluation({ card, userAnswer, verdict, explanation, onRat
             {explanation && (
               <p className="text-xs text-[#6B7280] flex-1">{explanation}</p>
             )}
+          </div>
+        )}
+
+        {/* Source attribution */}
+        {sourceItemTitle && (
+          <div className="flex items-center gap-2 px-6 py-2.5 border-t border-[#F3F4F6] bg-[#FAFAFA]">
+            <BookOpen size={12} className="text-[#9CA3AF] shrink-0" />
+            <span className="text-[11px] text-[#9CA3AF]">
+              From: <span className="font-medium text-[#6B7280]">{sourceItemTitle}</span>
+            </span>
           </div>
         )}
       </div>

@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { GitHubCopilotConnect } from "@/components/providers/GitHubCopilotConnect";
 
-const providerOrder: AIProviderType[] = ["ollama", "openai", "openrouter", "github-copilot", "anthropic", "gemini"];
+const providerOrder: AIProviderType[] = ["ollama", "openai", "openrouter", "github-copilot", "anthropic"];
 
 export function SettingsDialog() {
   const { settingsOpen, setSettingsOpen } = useAppStore();
@@ -28,7 +28,6 @@ export function SettingsDialog() {
   const [localKeys, setLocalKeys] = useState<Record<AIProviderType, string>>({
     openai: "",
     anthropic: "",
-    gemini: "",
     ollama: "",
     openrouter: "",
     "github-copilot": "",
@@ -36,19 +35,18 @@ export function SettingsDialog() {
   const [testing, setTesting] = useState<AIProviderType | null>(null);
   const [results, setResults] = useState<
     Record<AIProviderType, "success" | "error" | null>
-  >({ openai: null, anthropic: null, gemini: null, ollama: null, openrouter: null, "github-copilot": null });
+  >({ openai: null, anthropic: null, ollama: null, openrouter: null, "github-copilot": null });
 
   const handleOpenChange = (open: boolean) => {
     if (open) {
       setLocalKeys({
         openai: providerConfigs.openai.apiKey,
         anthropic: providerConfigs.anthropic.apiKey,
-        gemini: providerConfigs.gemini.apiKey,
         ollama: "",
         openrouter: providerConfigs.openrouter.apiKey,
         "github-copilot": providerConfigs["github-copilot"].apiKey,
       });
-      setResults({ openai: null, anthropic: null, gemini: null, ollama: null, openrouter: null, "github-copilot": null });
+      setResults({ openai: null, anthropic: null, ollama: null, openrouter: null, "github-copilot": null });
       checkOllamaConnection();
     }
     setSettingsOpen(open);
