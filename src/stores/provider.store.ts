@@ -17,7 +17,6 @@ export type OllamaStatus = "unknown" | "connected" | "disconnected";
 const defaultConfigs: Record<AIProviderType, ProviderConfigState> = {
   openai: { apiKey: "", model: PROVIDER_DEFAULTS.openai.defaultModel },
   anthropic: { apiKey: "", model: PROVIDER_DEFAULTS.anthropic.defaultModel },
-  gemini: { apiKey: "", model: PROVIDER_DEFAULTS.gemini.defaultModel },
   ollama: { apiKey: "", model: PROVIDER_DEFAULTS.ollama.defaultModel },
   openrouter: { apiKey: "", model: PROVIDER_DEFAULTS.openrouter.defaultModel },
   "github-copilot": { apiKey: "", model: PROVIDER_DEFAULTS["github-copilot"].defaultModel },

@@ -8,7 +8,6 @@ import {
   Loader2,
   BookOpen,
   HelpCircle,
-  Timer,
   Sparkles,
   Check,
   X,
@@ -509,13 +508,12 @@ export default function EditorView() {
   }, [setEditorItemId, resetAutosave]);
 
   const handleAIAction = useCallback(
-    (type: "flashcards" | "quiz" | "sprint") => {
+    (type: "flashcards" | "quiz") => {
       if (!hasContent) return;
 
       const labels = {
         flashcards: "flashcards",
         quiz: "a quiz",
-        sprint: "a sprint exercise",
       };
       const prompt = `Create ${labels[type]} about the following content:\n\n${editorMarkdown}`;
 
@@ -681,14 +679,6 @@ export default function EditorView() {
           >
             <HelpCircle size={14} />
             Quiz
-          </button>
-          <button
-            onClick={() => handleAIAction("sprint")}
-            disabled={!hasContent}
-            className="flex items-center gap-1.5 text-[13px] font-medium px-3.5 py-1.5 rounded-lg border border-[#E5E7EB] text-[#374151] bg-white hover:bg-[#F9FAFB] hover:border-[#D1D5DB] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Timer size={14} />
-            Sprint
           </button>
         </div>
       </div>
