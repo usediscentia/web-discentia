@@ -241,8 +241,9 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
         }
         void get().saveProviderConfigs();
       }
-    } catch {
-      set({ githubCopilotModels: [] }); // silent fail — UI shows retry option
+    } catch (err) {
+      console.error("[GitHub Copilot] fetchModels failed:", err);
+      set({ githubCopilotModels: [] });
     }
   },
 }));
