@@ -11,7 +11,8 @@ import { ReviewComplete } from "./ReviewComplete";
 import type { SRSCard } from "@/types/srs";
 import { useProviderStore } from "@/stores/provider.store";
 import { getAIProvider } from "@/services/ai";
-import { Loader2, Brain } from "lucide-react";
+import { buildEvaluationPrompt } from "@/services/ai/prompts/review.prompts";
+import { Loader2, Brain, Check, AlertTriangle, X as XIcon } from "lucide-react";
 
 type Phase = "input" | "evaluating" | "evaluated";
 
@@ -20,12 +21,14 @@ interface SessionCard {
   userAnswer: string;
   verdict: AIVerdict | null;
   explanation: string;
+  keyMissing: string | null;
 }
 
 export default function ReviewView() {
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState<SRSCard[]>([]);
   const [sourceItemTitles, setSourceItemTitles] = useState<Record<string, string>>({});
+  const [sourceContexts, setSourceContexts] = useState<Record<string, string>>({});
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("input");
   const [sessionCards, setSessionCards] = useState<SessionCard[]>([]);
@@ -43,13 +46,29 @@ export default function ReviewView() {
       setStreak(stats.streak);
       setLoading(false);
 
-      // Load source item titles for cards that have libraryItemId
+      // Load source item titles and contexts for cards that have libraryItemId
       const itemIds = [...new Set(due.map((c) => c.libraryItemId).filter(Boolean) as string[])];
       if (itemIds.length === 0) return;
       Promise.all(itemIds.map((id) => StorageService.getLibraryItem(id))).then((items) => {
-        const map: Record<string, string> = {};
-        items.forEach((item) => { if (item) map[item.id] = item.title; });
-        setSourceItemTitles(map);
+        const titleMap: Record<string, string> = {};
+        const contextMap: Record<string, string> = {};
+        for (const item of items) {
+          if (!item) continue;
+          titleMap[item.id] = item.title;
+          // Build source context for evaluation grading
+          if (item.metadata?.chunks && item.metadata.chunks.length > 0) {
+            let text = "";
+            for (const chunk of item.metadata.chunks) {
+              if (text.length + chunk.text.length > 1500) break;
+              text += (text ? "\n" : "") + chunk.text;
+            }
+            contextMap[item.id] = text;
+          } else if (item.content) {
+            contextMap[item.id] = item.content.slice(0, 1500);
+          }
+        }
+        setSourceItemTitles(titleMap);
+        setSourceContexts(contextMap);
       });
     });
   }, []);
@@ -62,21 +81,22 @@ export default function ReviewView() {
 
       let verdict: AIVerdict = "partial";
       let explanation = "";
+      let keyMissing: string | null = null;
 
       try {
         const config = getActiveProviderConfig();
         const provider = getAIProvider(config.type);
         if (provider) {
-          const prompt = `You are evaluating a student's flashcard answer.
+          const sourceCtx = current.libraryItemId
+            ? sourceContexts[current.libraryItemId]
+            : undefined;
 
-QUESTION: ${current.front}
-CORRECT ANSWER: ${current.back}
-STUDENT'S ANSWER: ${userAnswer}
-
-Respond with JSON only (no markdown):
-{"verdict":"correct"|"partial"|"incorrect","explanation":"one sentence max 20 words"}
-
-Be lenient with phrasing. Focus on conceptual accuracy.`;
+          const prompt = buildEvaluationPrompt({
+            front: current.front,
+            back: current.back,
+            userAnswer,
+            sourceContext: sourceCtx,
+          });
 
           const raw = await new Promise<string>((resolve, reject) => {
             provider.sendMessage(
@@ -90,19 +110,23 @@ Be lenient with phrasing. Focus on conceptual accuracy.`;
             );
           });
 
-          const json = JSON.parse(raw.replace(/```json|```/g, "").trim());
+          // Strip markdown fences and any text before the first {
+          const cleaned = raw.replace(/```json\n?|\n?```/g, "").trim();
+          const jsonStart = cleaned.indexOf("{");
+          const jsonStr = jsonStart >= 0 ? cleaned.slice(jsonStart) : cleaned;
+          const json = JSON.parse(jsonStr);
           verdict = json.verdict ?? "partial";
           explanation = json.explanation ?? "";
+          keyMissing = json.keyMissing ?? null;
         }
       } catch {
-        // Fallback: compare length heuristic
         verdict = userAnswer.length > 10 ? "partial" : "incorrect";
         explanation = "Could not evaluate — check the correct answer.";
       }
 
       setSessionCards((prev) => [
         ...prev,
-        { card: current, userAnswer, verdict, explanation },
+        { card: current, userAnswer, verdict, explanation, keyMissing },
       ]);
       setPhase("evaluated");
     },
@@ -112,7 +136,7 @@ Be lenient with phrasing. Focus on conceptual accuracy.`;
   const handleDontKnow = useCallback(() => {
     setSessionCards((prev) => [
       ...prev,
-      { card: current, userAnswer: "", verdict: null, explanation: "" },
+      { card: current, userAnswer: "", verdict: null, explanation: "", keyMissing: null },
     ]);
     setPhase("evaluated");
   }, [current]);
@@ -137,8 +161,10 @@ Be lenient with phrasing. Focus on conceptual accuracy.`;
     [current, index, cards.length]
   );
 
-  const correctCount = sessionCards.filter(
-    (s) => s.verdict === "correct" || s.verdict === "partial"
+  const correctCount = sessionCards.filter((s) => s.verdict === "correct").length;
+  const partialCount = sessionCards.filter((s) => s.verdict === "partial").length;
+  const incorrectCount = sessionCards.filter(
+    (s) => s.verdict === "incorrect" || s.verdict === null
   ).length;
 
   const handleRestart = useCallback(() => {
@@ -177,10 +203,10 @@ Be lenient with phrasing. Focus on conceptual accuracy.`;
   }
 
   if (complete) {
-    return <ReviewComplete reviewed={sessionCards.length} correct={correctCount} streak={streak} onRestart={handleRestart} />;
+    return <ReviewComplete reviewed={sessionCards.length} correct={correctCount + partialCount} streak={streak} onRestart={handleRestart} />;
   }
 
-  const pct = Math.round((index / cards.length) * 100);
+  const pct = Math.round((sessionCards.length / cards.length) * 100);
 
   return (
     <div className="flex flex-col h-full">
@@ -188,9 +214,27 @@ Be lenient with phrasing. Focus on conceptual accuracy.`;
       <div className="flex items-center justify-between px-8 py-5 bg-white border-b border-[#F3F4F6] shrink-0">
         <div>
           <h1 className="text-base font-semibold text-[#111]">Review Session</h1>
-          <p className="text-xs text-[#9CA3AF] mt-0.5">{cards.length - index} cards remaining today</p>
+          <p className="text-xs text-[#9CA3AF] mt-0.5">{cards.length - index} cards remaining</p>
         </div>
-        <span className="text-xs font-medium text-[#6B7280]">{index + 1} / {cards.length}</span>
+        <div className="flex items-center gap-3">
+          {/* Session verdict badges */}
+          {correctCount > 0 && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+              <Check size={10} /> {correctCount}
+            </span>
+          )}
+          {partialCount > 0 && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+              <AlertTriangle size={10} /> {partialCount}
+            </span>
+          )}
+          {incorrectCount > 0 && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
+              <XIcon size={10} /> {incorrectCount}
+            </span>
+          )}
+          <span className="text-xs font-medium text-[#6B7280]">{index + 1} / {cards.length}</span>
+        </div>
       </div>
 
       {/* Progress bar */}
@@ -251,6 +295,7 @@ Be lenient with phrasing. Focus on conceptual accuracy.`;
                 userAnswer={sessionCards[sessionCards.length - 1].userAnswer}
                 verdict={sessionCards[sessionCards.length - 1].verdict}
                 explanation={sessionCards[sessionCards.length - 1].explanation}
+                keyMissing={sessionCards[sessionCards.length - 1].keyMissing}
                 sourceItemTitle={
                   sessionCards[sessionCards.length - 1].card.libraryItemId
                     ? sourceItemTitles[sessionCards[sessionCards.length - 1].card.libraryItemId!]
