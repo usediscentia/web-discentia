@@ -11,6 +11,7 @@ interface ReviewEvaluationProps {
   userAnswer: string;
   verdict: AIVerdict | null; // null = "I don't know" path
   explanation: string;
+  keyMissing?: string | null;
   sourceItemTitle?: string;
   onRate: (rating: ReviewRating) => void;
 }
@@ -27,7 +28,7 @@ const RATINGS: { value: ReviewRating; label: string; sub: string; style: string 
   { value: "easy", label: "Easy", sub: "Review in ~7 days", style: "border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100" },
 ];
 
-export function ReviewEvaluation({ card, userAnswer, verdict, explanation, sourceItemTitle, onRate }: ReviewEvaluationProps) {
+export function ReviewEvaluation({ card, userAnswer, verdict, explanation, keyMissing, sourceItemTitle, onRate }: ReviewEvaluationProps) {
   const cfg = verdict ? VERDICT_CONFIG[verdict] : null;
 
   return (
@@ -53,15 +54,35 @@ export function ReviewEvaluation({ card, userAnswer, verdict, explanation, sourc
           </div>
         </div>
 
-        {/* AI verdict bar */}
+        {/* AI verdict section */}
         {cfg && (
-          <div className={`flex items-center gap-3 px-6 py-3 bg-[#F9FAFB] border-t border-[#F3F4F6]`}>
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${cfg.badge}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-              {cfg.label}
-            </span>
-            {explanation && (
-              <p className="text-xs text-[#6B7280] flex-1">{explanation}</p>
+          <div className="border-t border-[#F3F4F6] bg-[#F9FAFB]">
+            <div className="px-6 py-3 flex flex-col gap-2">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold w-fit ${cfg.badge}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                {cfg.label}
+              </span>
+              {explanation && (
+                <p className="text-sm text-[#4B5563] leading-relaxed">{explanation}</p>
+              )}
+            </div>
+            {keyMissing && verdict !== "correct" && (
+              <div className={`mx-6 mb-3 px-3 py-2 rounded-lg border-l-2 ${
+                verdict === "partial"
+                  ? "border-l-amber-400 bg-amber-50/60"
+                  : "border-l-red-400 bg-red-50/60"
+              }`}>
+                <p className={`text-xs font-medium ${
+                  verdict === "partial" ? "text-amber-800" : "text-red-800"
+                }`}>
+                  What was missing
+                </p>
+                <p className={`text-xs mt-0.5 ${
+                  verdict === "partial" ? "text-amber-700" : "text-red-700"
+                }`}>
+                  {keyMissing}
+                </p>
+              </div>
             )}
           </div>
         )}
