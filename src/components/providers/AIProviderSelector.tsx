@@ -151,6 +151,7 @@ export function AIProviderSelector({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.96 }}
             transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+            style={{ originY: 1 }}
             className="absolute bottom-20 left-1/2 -translate-x-1/2 z-50 w-[340px] bg-white rounded-xl border border-[#E5E7EB] shadow-[0_8px_12px_-4px_rgba(0,0,0,0.08),0_2px_4px_-2px_rgba(0,0,0,0.04)] py-3"
           >
             {/* Header */}
@@ -165,6 +166,7 @@ export function AIProviderSelector({
               {providers.map((provider) => {
                 const isSelected = selectedProvider === provider.id;
                 const models = getModelsForProvider(provider.id);
+                const hasModels = models.length > 0;
 
                 return (
                   <div key={provider.id}>
@@ -174,15 +176,15 @@ export function AIProviderSelector({
                         !provider.comingSoon &&
                         handleSelectProvider(provider.id)
                       }
-                      className={`flex items-center gap-2.5 w-full rounded-lg px-2.5 py-2 transition-colors ${
+                      className={`flex items-center gap-2.5 w-full rounded-lg px-2.5 py-2 transition-[background-color,transform] duration-150 ${
                         provider.comingSoon
                           ? "opacity-40 cursor-default"
-                          : "cursor-pointer hover:bg-[#fafafa]"
+                          : "cursor-pointer [@media(hover:hover)]:hover:bg-[#fafafa] active:scale-[0.98]"
                       } ${isSelected && !provider.comingSoon ? "bg-[#f5f5f5]" : ""}`}
                     >
                       {/* Radio */}
                       <div
-                        className={`flex items-center justify-center w-[18px] h-[18px] rounded-full border-2 shrink-0 transition-colors ${
+                        className={`flex items-center justify-center w-[18px] h-[18px] rounded-full border-2 shrink-0 transition-colors duration-150 ${
                           isSelected && !provider.comingSoon
                             ? "border-[#171717]"
                             : "border-[#e5e5e5]"
@@ -224,13 +226,15 @@ export function AIProviderSelector({
                         {provider.badgeLabel}
                       </span>
 
-                      {/* Spacer + Chevron for selected */}
-                      {isSelected && !provider.comingSoon && models.length > 0 && (
+                      {/* Spacer + Chevron (shown whenever there are models) */}
+                      {!provider.comingSoon && hasModels && (
                         <>
                           <div className="flex-1" />
                           <ChevronDown
                             size={14}
-                            className="text-[#737373] shrink-0"
+                            className={`text-[#737373] shrink-0 transition-transform duration-200 ${
+                              isSelected ? "rotate-180" : ""
+                            }`}
                           />
                         </>
                       )}
@@ -240,12 +244,12 @@ export function AIProviderSelector({
                     <AnimatePresence initial={false}>
                       {isSelected &&
                         !provider.comingSoon &&
-                        models.length > 0 && (
+                        hasModels && (
                           <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                            initial={{ height: 0 }}
+                            animate={{ height: "auto" }}
+                            exit={{ height: 0 }}
+                            transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
                             className="overflow-hidden"
                           >
                             <div className="flex flex-col gap-0.5 pl-[38px] pr-2.5 pt-1 pb-2">
@@ -275,10 +279,10 @@ export function AIProviderSelector({
                                         model
                                       )
                                     }
-                                    className={`flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-[13px] transition-colors cursor-pointer ${
+                                    className={`flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-[13px] transition-[background-color,transform] duration-150 cursor-pointer active:scale-[0.98] ${
                                       isModelSelected
                                         ? "bg-[#fafafa]"
-                                        : "hover:bg-[#fafafa]/60"
+                                        : "[@media(hover:hover)]:hover:bg-[#fafafa]/60"
                                     }`}
                                   >
                                     {/* Check or spacer */}
@@ -339,7 +343,7 @@ export function AIProviderSelector({
             {/* Footer */}
             <button
               onClick={handleManageKeys}
-              className="flex items-center gap-2 w-full px-4 py-1 cursor-pointer hover:bg-[#fafafa] transition-colors"
+              className="flex items-center gap-2 w-full px-4 py-1 cursor-pointer [@media(hover:hover)]:hover:bg-[#fafafa] active:scale-[0.98] transition-[background-color,transform] duration-150"
             >
               <span className="text-[13px] font-medium text-[#737373]">
                 Manage API Keys
