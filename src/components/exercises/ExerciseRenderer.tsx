@@ -127,6 +127,7 @@ export function ExerciseRenderer({ exercise }: ExerciseRendererProps) {
         {showBulkApprove && pendingCards.length > 0 && (
           <BulkApproveModal
             cards={pendingCards}
+            libraryItemId={exercise.sourceItemId}
             onDone={() => setShowBulkApprove(false)}
             onSkip={() => setShowBulkApprove(false)}
           />

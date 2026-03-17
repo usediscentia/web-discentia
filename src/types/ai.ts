@@ -1,7 +1,6 @@
 export type AIProviderType =
   | "openai"
   | "anthropic"
-  | "gemini"
   | "ollama"
   | "openrouter"
   | "github-copilot";
@@ -61,12 +60,6 @@ export const PROVIDER_DEFAULTS: Record<
     displayName: "Claude (Anthropic)",
     models: ["claude-sonnet-4-5-20250929"],
     defaultModel: "claude-sonnet-4-5-20250929",
-    requiresApiKey: true,
-  },
-  gemini: {
-    displayName: "Gemini (Google)",
-    models: ["gemini-2.0-flash"],
-    defaultModel: "gemini-2.0-flash",
     requiresApiKey: true,
   },
   ollama: {

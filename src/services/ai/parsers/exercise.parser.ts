@@ -13,6 +13,17 @@ const VALID_TYPES: ExerciseType[] = [
 ];
 
 /**
+ * Attempt to repair common JSON issues from LLM output:
+ * - Trailing commas before } or ]
+ * - Control characters inside strings
+ */
+function repairJSON(text: string): string {
+  return text
+    .replace(/,\s*([}\]])/g, "$1")   // trailing commas
+    .replace(/[\x00-\x1F\x7F]/g, " "); // control characters
+}
+
+/**
  * Attempt to extract an exercise JSON from an AI response.
  * Returns null if no valid exercise is found.
  */
@@ -59,9 +70,14 @@ export function parseExerciseFromResponse(
 function extractJSON(text: string): string | null {
   // Try ```json code blocks first
   const codeBlock = text.match(/```json\s*\n?([\s\S]+?)\n?\s*```/);
-  if (codeBlock) return codeBlock[1].trim();
+  if (codeBlock) {
+    const raw = codeBlock[1].trim();
+    try { JSON.parse(raw); return raw; } catch { /* try repaired */ }
+    const repaired = repairJSON(raw);
+    try { JSON.parse(repaired); return repaired; } catch { /* fall through */ }
+  }
 
-  // Try bare JSON object — use a balanced-brace approach to avoid over-matching
+  // Try bare JSON object — balanced-brace approach
   const startIdx = text.indexOf("{");
   if (startIdx !== -1) {
     let depth = 0;
@@ -78,7 +94,11 @@ function extractJSON(text: string): string | null {
     }
     if (endIdx !== -1) {
       const candidate = text.slice(startIdx, endIdx + 1);
-      if (/"type"\s*:/.test(candidate)) return candidate.trim();
+      if (/"type"\s*:/.test(candidate)) {
+        try { JSON.parse(candidate); return candidate.trim(); } catch { /* try repaired */ }
+        const repaired = repairJSON(candidate);
+        try { JSON.parse(repaired); return repaired.trim(); } catch { /* fall through */ }
+      }
     }
   }
 
@@ -154,41 +174,6 @@ export function detectExerciseIntent(
         "i"
       ),
     },
-    {
-      type: "sprint",
-      keywords: new RegExp(
-        String.raw`(?:create|make|generate|build|start)\s+(?:a\s+)?sprint\s+${PREP}\s+(.+)`,
-        "i"
-      ),
-    },
-    {
-      type: "connections",
-      keywords: new RegExp(
-        String.raw`(?:create|make|generate|build)\s+(?:a\s+)?connections?\s+(?:puzzle\s+)?${PREP}\s+(.+)`,
-        "i"
-      ),
-    },
-    {
-      type: "fillgap",
-      keywords: new RegExp(
-        String.raw`(?:create|make|generate|build)\s+(?:a\s+)?fill[\s-]?(?:the[\s-]?)?gap\s+${PREP}\s+(.+)`,
-        "i"
-      ),
-    },
-    {
-      type: "crossword",
-      keywords: new RegExp(
-        String.raw`(?:create|make|generate|build)\s+(?:a\s+)?crossword\s+${PREP}\s+(.+)`,
-        "i"
-      ),
-    },
-    {
-      type: "bossfight",
-      keywords: new RegExp(
-        String.raw`(?:create|make|generate|build|start)\s+(?:a\s+)?boss[\s-]?fight\s+${PREP}\s+(.+)`,
-        "i"
-      ),
-    },
     // Without action verb: "flashcards about X", "quiz based on Y"
     {
       type: "flashcard",
@@ -197,32 +182,6 @@ export function detectExerciseIntent(
     {
       type: "quiz",
       keywords: new RegExp(String.raw`quiz\s+${PREP}\s+(.+)`, "i"),
-    },
-    {
-      type: "sprint",
-      keywords: new RegExp(String.raw`sprint\s+${PREP}\s+(.+)`, "i"),
-    },
-    {
-      type: "connections",
-      keywords: new RegExp(
-        String.raw`connections?\s+(?:puzzle\s+)?${PREP}\s+(.+)`,
-        "i"
-      ),
-    },
-    {
-      type: "fillgap",
-      keywords: new RegExp(
-        String.raw`fill[\s-]?(?:the[\s-]?)?gap\s+${PREP}\s+(.+)`,
-        "i"
-      ),
-    },
-    {
-      type: "crossword",
-      keywords: new RegExp(String.raw`crossword\s+${PREP}\s+(.+)`, "i"),
-    },
-    {
-      type: "bossfight",
-      keywords: new RegExp(String.raw`boss[\s-]?fight\s+${PREP}\s+(.+)`, "i"),
     },
   ];
 
@@ -235,11 +194,6 @@ export function detectExerciseIntent(
   const typeKeywords: { type: ExerciseType; words: string[] }[] = [
     { type: "flashcard", words: ["flashcard", "flash card"] },
     { type: "quiz", words: ["quiz"] },
-    { type: "sprint", words: ["sprint"] },
-    { type: "connections", words: ["connections game", "connections puzzle"] },
-    { type: "fillgap", words: ["fill the gap", "fill gap", "fillgap", "fill-gap", "fill in the blank"] },
-    { type: "crossword", words: ["crossword"] },
-    { type: "bossfight", words: ["boss fight", "bossfight"] },
   ];
 
   for (const { type, words } of typeKeywords) {
@@ -266,14 +220,9 @@ IMPORTANT rules:
 - Conversational messages, greetings, or instructions are NOT exercise requests → {"type":null}
 - Only return a type if the user is clearly asking to CREATE, GENERATE, MAKE, or BUILD an exercise.
 
-Valid types: flashcard, quiz, sprint, connections, fillgap, crossword, bossfight
+Valid types: flashcard, quiz
 - flashcard: explicitly wants flashcards / flash cards to study
 - quiz: explicitly wants a quiz, test, or questionnaire to answer
-- sprint: explicitly wants a speed quiz or sprint mode
-- connections: explicitly wants a connections puzzle (group related words)
-- fillgap: explicitly wants a fill-in-the-blank / fill the gap exercise
-- crossword: explicitly wants a crossword puzzle
-- bossfight: explicitly wants a boss fight challenge
 
 Extract the topic as the subject matter to study (e.g. "World War II", "photosynthesis").`;
 

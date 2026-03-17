@@ -8,11 +8,12 @@ import type { FlashcardData } from "@/types/exercise";
 
 interface BulkApproveModalProps {
   cards: FlashcardData["cards"];
+  libraryItemId?: string;
   onDone: () => void;
   onSkip: () => void;
 }
 
-export function BulkApproveModal({ cards, onDone, onSkip }: BulkApproveModalProps) {
+export function BulkApproveModal({ cards, libraryItemId, onDone, onSkip }: BulkApproveModalProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
 
@@ -30,7 +31,7 @@ export function BulkApproveModal({ cards, onDone, onSkip }: BulkApproveModalProp
     setSaving(true);
     try {
       await StorageService.createSRSCards(
-        kept.map((c) => ({ front: c.front, back: c.back }))
+        kept.map((c) => ({ front: c.front, back: c.back, libraryItemId }))
       );
       await StorageService.logActivityEvent(
         "exercise_completed",

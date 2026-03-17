@@ -5,7 +5,6 @@ import {
   AcademicCapIcon,
   Square3Stack3DIcon,
   QuestionMarkCircleIcon,
-  Squares2X2Icon,
 } from "@heroicons/react/24/outline";
 
 interface ChatEmptyProps {
@@ -21,10 +20,6 @@ export function ChatEmpty({ onPromptClick }: ChatEmptyProps) {
     {
       icon: QuestionMarkCircleIcon,
       text: "Create a quiz on...",
-    },
-    {
-      icon: Squares2X2Icon,
-      text: "Build a crossword for...",
     },
   ];
 
@@ -43,7 +38,7 @@ export function ChatEmpty({ onPromptClick }: ChatEmptyProps) {
           Start learning. Ask anything.
         </h1>
         <p className="text-[15px] text-[#9CA3AF]">
-          Generate flashcards, quizzes, crosswords, and more from any topic.
+          Chat with your documents. Generate flashcards and quizzes. Review with spaced repetition.
         </p>
       </motion.div>
 

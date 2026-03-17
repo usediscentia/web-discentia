@@ -91,12 +91,6 @@ const providerDisplays: ProviderDisplay[] = [
     description: "GitHub Copilot Chat — GPT-4o, o1, Claude, Gemini and more with your Copilot subscription.",
     comingSoon: false,
   },
-  {
-    type: "gemini",
-    lobeProvider: "google",
-    description: "Google Gemini models with multimodal capabilities.",
-    comingSoon: true,
-  },
 ];
 
 // ── Nav items ──

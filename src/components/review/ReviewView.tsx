@@ -25,6 +25,7 @@ interface SessionCard {
 export default function ReviewView() {
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState<SRSCard[]>([]);
+  const [sourceItemTitles, setSourceItemTitles] = useState<Record<string, string>>({});
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("input");
   const [sessionCards, setSessionCards] = useState<SessionCard[]>([]);
@@ -34,11 +35,23 @@ export default function ReviewView() {
   const { getActiveProviderConfig } = useProviderStore();
 
   useEffect(() => {
-    StorageService.getDueCards(20).then((due) => {
+    Promise.all([
+      StorageService.getDueCards(20),
+      StorageService.getDashboardStats(),
+    ]).then(([due, stats]) => {
       setCards(due);
+      setStreak(stats.streak);
       setLoading(false);
+
+      // Load source item titles for cards that have libraryItemId
+      const itemIds = [...new Set(due.map((c) => c.libraryItemId).filter(Boolean) as string[])];
+      if (itemIds.length === 0) return;
+      Promise.all(itemIds.map((id) => StorageService.getLibraryItem(id))).then((items) => {
+        const map: Record<string, string> = {};
+        items.forEach((item) => { if (item) map[item.id] = item.title; });
+        setSourceItemTitles(map);
+      });
     });
-    StorageService.getDashboardStats().then((s) => setStreak(s.streak));
   }, []);
 
   const current = cards[index];
@@ -238,6 +251,11 @@ Be lenient with phrasing. Focus on conceptual accuracy.`;
                 userAnswer={sessionCards[sessionCards.length - 1].userAnswer}
                 verdict={sessionCards[sessionCards.length - 1].verdict}
                 explanation={sessionCards[sessionCards.length - 1].explanation}
+                sourceItemTitle={
+                  sessionCards[sessionCards.length - 1].card.libraryItemId
+                    ? sourceItemTitles[sessionCards[sessionCards.length - 1].card.libraryItemId!]
+                    : undefined
+                }
                 onRate={handleRate}
               />
             </motion.div>
