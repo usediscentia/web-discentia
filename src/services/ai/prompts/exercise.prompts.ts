@@ -7,31 +7,42 @@ export function buildFlashcardPrompt(
   context?: string,
   count = 8
 ): string {
+  const hasContext = Boolean(context);
   return `${JSON_WRAPPER}
-Generate ${count} flashcards about: "${topic}"
-${context ? `\nUse this material as source:\n${context}\n` : ""}
-IMPORTANT: All ${count} cards must be inside ONE single JSON object, in the "cards" array. Do NOT create separate JSON objects per card.
+${hasContext
+  ? `Generate ${count} flashcards grounded in the source material below about: "${topic}"
+
+Source material:
+${context}
+
+Rules for cards:
+- Every card must be based on a specific fact, concept, or relationship found in the source text
+- Do NOT generate generic knowledge cards — only what appears in the material
+- Front: a precise question that targets a single fact or concept from the text
+- Back: the exact answer as it appears or can be inferred from the material (concise, 1-3 sentences max)
+- Hint: one keyword from the source text (optional)`
+  : `Generate ${count} flashcards about: "${topic}"
+
+Rules for cards:
+- Front: a clear, specific question or term
+- Back: a concise, accurate answer (1-3 sentences max)
+- Hint: one-word or short-phrase clue (optional)
+- Vary difficulty from basic recall to applied understanding`}
+
+ALL ${count} cards must be inside ONE single JSON object. Do NOT split into multiple blocks.
 
 \`\`\`json
 {
   "type": "flashcard",
-  "title": "short title here",
+  "title": "short descriptive title",
   "data": {
     "cards": [
-      { "id": "c1", "front": "first question", "back": "first answer", "hint": "optional hint" },
-      { "id": "c2", "front": "second question", "back": "second answer", "hint": "optional hint" },
-      { "id": "c3", "front": "third question", "back": "third answer", "hint": "optional hint" }
+      { "id": "c1", "front": "question", "back": "answer", "hint": "optional" },
+      { "id": "c2", "front": "question", "back": "answer" }
     ]
   }
 }
-\`\`\`
-Rules:
-- ALL ${count} cards in ONE JSON object — never split into multiple JSON blocks
-- Each card must have unique id (c1, c2, ... c${count})
-- Front: clear question or term
-- Back: concise but complete answer
-- Hint: one-word or short phrase clue (optional)
-- Vary difficulty across cards`;
+\`\`\``;
 }
 
 export function buildQuizPrompt(
@@ -39,13 +50,33 @@ export function buildQuizPrompt(
   context?: string,
   count = 6
 ): string {
+  const hasContext = Boolean(context);
   return `${JSON_WRAPPER}
-Generate a ${count}-question multiple choice quiz about: "${topic}"
-${context ? `\nUse this material as source:\n${context}\n` : ""}
+${hasContext
+  ? `Generate a ${count}-question multiple choice quiz grounded in the source material below about: "${topic}"
+
+Source material:
+${context}
+
+Rules for questions:
+- Every question must test something specific from the source text
+- Wrong options (distractors) should be plausible but clearly wrong to someone who read the material
+- Explanation must reference what the material says`
+  : `Generate a ${count}-question multiple choice quiz about: "${topic}"
+
+Rules for questions:
+- Test understanding, not just memorization
+- Wrong options should be plausible distractors
+- Explanation should be educational and brief`}
+
+- Each question must have exactly 4 options
+- correctIndex is 0-based
+- Vary difficulty and randomize correct answer position
+
 \`\`\`json
 {
   "type": "quiz",
-  "title": "short title here",
+  "title": "short descriptive title",
   "data": {
     "questions": [
       {
@@ -58,13 +89,7 @@ ${context ? `\nUse this material as source:\n${context}\n` : ""}
     ]
   }
 }
-\`\`\`
-Rules:
-- Each question must have exactly 4 options
-- correctIndex is 0-based
-- explanation should be educational and brief
-- Vary question difficulty
-- Randomize correct answer position across questions`;
+\`\`\``;
 }
 
 export function buildSprintPrompt(
