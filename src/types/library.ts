@@ -16,6 +16,7 @@ export interface ContentChunk {
   index: number;     // 0-based paragraph index within page
   startChar: number; // character offset in the full `content` string
   endChar: number;
+  heading?: string;  // nearest section heading above this chunk (PDFs only)
 }
 
 export interface LibraryItemMetadata {

@@ -22,7 +22,7 @@ Discentia is a **local-first study app** — an SPA built on Next.js 16 + React 
 
 There are **no Next.js file routes**. `src/app/page.tsx` renders `AppShell`, which switches views based on Zustand's `activeView` state:
 
-- `"chat"` | `"library"` | `"dashboard"` | `"editor"` | `"review"` | `"settings"`
+- `"chat"` | `"library"` | `"dashboard"` | `"review"` | `"settings"`
 - Navigation happens by calling `useAppStore.getState().setActiveView(view)`
 
 ### State Management (Zustand, split stores)
@@ -42,15 +42,16 @@ There are **no Next.js file routes**. `src/app/page.tsx` renders `AppShell`, whi
 
 - `src/services/ai/` — provider abstraction with `AIServiceProvider` interface
 - Implementations: `openai.provider.ts`, `ollama.provider.ts`, `openrouter.provider.ts`
-- Provider types defined in `src/types/ai.ts` (AIProviderType, PROVIDER_DEFAULTS)
+- Provider types: OpenAI, Anthropic, Ollama, OpenRouter, GitHub Copilot (defined in `src/types/ai.ts`)
 - API keys encrypted in localStorage via `src/lib/crypto.ts`
+- Prompts: `src/services/ai/prompts/exercise.prompts.ts` (flashcard/quiz), `review.prompts.ts` (SRS evaluation)
 
 ### Key Directories
 
 - `src/components/layout/` — AppShell (view router) and Sidebar
 - `src/components/chat/` — Chat UI, message rendering, exercise generation
 - `src/components/library/` — Library CRUD, file upload, content viewer
-- `src/components/editor/` — Tiptap v3 markdown editor with code blocks, tables
+- `src/components/editor/` — Tiptap v3 markdown editor (no nav entry, accessed from Library)
 - `src/components/review/` — SRS spaced-repetition review
 - `src/components/dashboard/` — Dashboard with stats, heatmap, forecasts
 - `src/components/ui/` — shadcn/ui primitives (radix-ui + CVA)
@@ -82,7 +83,7 @@ Todo o fluxo roda no cliente (browser), sem backend próprio.
 - Zustand (estado global)
 - Dexie sobre IndexedDB (persistência local)
 - TipTap + tiptap-markdown (editor)
-- Providers de IA: OpenAI, OpenRouter, Ollama (streaming)
+- Providers de IA: OpenAI, OpenRouter, Ollama, Anthropic, GitHub Copilot (streaming)
 
 ## Arquitetura macro
 
@@ -106,9 +107,12 @@ UI (React Views)
 | Chat / IA | `src/hooks/useChat.ts`, `src/services/ai/*` |
 | Parser exercício | `src/services/ai/parsers/exercise.parser.ts` |
 | Prompts exercício | `src/services/ai/prompts/exercise.prompts.ts` |
-| Citações | `src/lib/citations.ts` |
+| Prompts review | `src/services/ai/prompts/review.prompts.ts` |
+| Citações | `src/lib/citations.ts` (auto-extraction via word-overlap) |
+| Context/Chunks | `src/lib/tokens.ts` (InjectedChunk, buildContextSnippet) |
 | Persistência | `src/services/storage/database.ts`, `src/services/storage/index.ts` |
 | Biblioteca | `src/hooks/useLibrary.ts`, `src/components/library/LibraryView.tsx` |
+| Flashcard Generator | `src/hooks/useFlashcardGenerator.ts`, `src/components/library/FlashcardGeneratorPanel.tsx` |
 | Editor | `src/components/editor/EditorView.tsx`, `useEditorAutosave.ts` |
 | Review / SRS | `src/components/review/ReviewView.tsx`, `src/lib/sm2.ts` |
 | Dashboard | `src/components/dashboard/DashboardView.tsx` |
@@ -119,34 +123,27 @@ UI (React Views)
 - `Conversation` → tem `libraryIds` vinculados
 - `Message` → tem `exerciseId` opcional e `citations`
 - `LibraryItem` → tipos: text, markdown, image, pdf, file
-- `Exercise` → tipos: flashcard, quiz, sprint, fillgap, connections, bossfight
+- `Exercise` → tipos ativos: flashcard, quiz | `sourceItemId?` link ao LibraryItem de origem
 - `SRSCard` → ease factor, repetições, intervalo, próxima revisão (SM-2)
 - `ActivityEvent` → srs_review, exercise_completed
 
-## Foco atual — Fase 1 (melhorar o fluxo principal)
+## Estado atual do ciclo core
 
-O fluxo prioritário é:
-**PDF → chat com citações → geração de flashcards → revisão SRS**
+O fluxo principal está funcional e sólido:
+**PDF → chat com citações → geração de flashcards (chat ou standalone) → revisão SRS com avaliação IA → progresso**
 
-Esse fluxo funciona end-to-end mas está frágil. A ordem de prioridade para melhorar:
+### Concluído
+- ✅ Citações automáticas por chunks (word-overlap scoring, sem depender da IA)
+- ✅ Flashcard prompt bifurcado (com/sem contexto), parser com JSON repair
+- ✅ Standalone flashcard generator (Library → botão → prompt → cards editáveis → SRS)
+- ✅ SRS source attribution (Exercise → SRSCard → ReviewEvaluation)
+- ✅ Review SRS com avaliação por contexto (correct/partial/incorrect + keyMissing + progress badges)
+- ✅ Corte de features: Gemini, Editor nav, sprint/fillgap/connections/bossfight/crossword
 
-### 1. Citações do PDF (maior impacto)
-- O chunking atual extrai texto bruto — melhorar para dividir por parágrafos/seções com metadados de posição
-- O scoring de busca no StorageService é simples — melhorar relevância dos trechos recuperados
-- Citação deve apontar para o trecho exato, não só o item
-
-### 2. Geração de flashcards
-- Reescrever prompt para gerar frente/verso mais cirúrgicos e específicos
-- Tornar o parser mais resiliente a respostas malformadas da IA
-- Adicionar passo de edição antes de aprovar cards para o SRS
-
-### 3. Qualidade do review SRS
-- Melhorar prompt de avaliação de resposta do usuário (correct/partial/incorrect)
-- Melhorar feedback pós-card (explicação mais útil e contextual)
-- Melhorar progresso visual da sessão
-
-### 4. UI/UX (deixar por último)
-- Só mexer depois que o comportamento estiver estável
+### Próximos passos
+1. **Chunking do PDF** — melhorar divisão por parágrafos semânticos (hoje é por tamanho fixo)
+2. **UI/UX polish** — visual refinement do fluxo completo
+3. **Testes manuais end-to-end** — validar todo o ciclo com PDFs reais
 
 ## Decisões já tomadas — não questionar
 
@@ -157,10 +154,8 @@ Esse fluxo funciona end-to-end mas está frágil. A ordem de prioridade para mel
 
 ## O que NÃO fazer agora
 
-- Não adicionar novos tipos de exercício
-- Não implementar providers Anthropic/Gemini
+- Não adicionar novos tipos de exercício (só flashcard + quiz)
 - Não implementar sync multi-dispositivo
-- Não mexer em UI/visual antes do comportamento estar estável
 - Não adicionar features novas — profundidade antes de largura
 
 ## Posicionamento (contexto de produto)
@@ -190,7 +185,7 @@ chore)
 - Paleta de cores neutra, com destaque para cores suaves em botões e interações
 - Tipografia clara e legível (Inter)
 - UI responsiva, mas foco principal em desktop (a experiência mobile é secundária por enquanto
-- framer-motion para animações suaves, mas sem exageros — o foco é funcionalidade e clareza, não efeitos visuais
+- motion/react (v12) para animações suaves, mas sem exageros — o foco é funcionalidade e clareza, não efeitos visuais
 - Usar ícones de forma funcional para guiar o usuário, não apenas decorativa (ex: ícones de IA, status de mensagens, tipos de exercício)
 - UX deve ser intuitiva, com fluxo claro e feedback consistente — evitar confusão, especialmente em partes críticas como geração de flashcards e revisão SRS
 - Evitar sobrecarregar o usuário com opções — foco em simplicidade e clareza, especialmente para usuários não técnicos ou menos experientes com tecnologia
