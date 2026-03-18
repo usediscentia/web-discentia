@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Search } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useLibrary } from "@/hooks/useLibrary";
 import { useAppStore } from "@/stores/app.store";
 import { StorageService } from "@/services/storage";
@@ -14,9 +15,7 @@ import ColorPicker from "@/components/library/ColorPicker";
 import AddContentModal from "@/components/library/AddContentModal";
 import ItemCard from "@/components/library/ItemCard";
 import LibraryEmptyState from "@/components/library/LibraryEmptyState";
-import ItemDetailPanel from "@/components/library/ItemDetailPanel";
-import FlashcardGeneratorPanel from "@/components/library/FlashcardGeneratorPanel";
-import { AnimatePresence } from "motion/react";
+import DocumentDetailPage from "@/components/document/DocumentDetailPage";
 
 export default function LibraryView() {
   const {
@@ -41,11 +40,9 @@ export default function LibraryView() {
   const [createOpen, setCreateOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<LibraryItem | null>(null);
-  const [generatorItem, setGeneratorItem] = useState<LibraryItem | null>(null);
 
   const [newLibraryName, setNewLibraryName] = useState("");
   const [newLibraryColor, setNewLibraryColor] = useState("#34D399");
-
 
   const selectedLibraryName = useMemo(() => {
     if (!activeLibraryId) return "All libraries";
@@ -90,6 +87,20 @@ export default function LibraryView() {
     await addFiles(activeLibraryId, files);
   };
 
+  // When a detail item is selected, show the document detail page instead of the grid
+  if (detailItem) {
+    return (
+      <DocumentDetailPage
+        item={detailItem}
+        library={librariesMap[detailItem.libraryId]}
+        onBack={() => setDetailItem(null)}
+        onDelete={() => {
+          deleteItem(detailItem.id);
+          setDetailItem(null);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col h-full w-full bg-[#FAFAFA]">
@@ -182,30 +193,37 @@ export default function LibraryView() {
               onCreateLibrary={() => setCreateOpen(true)}
             />
           ) : (
-            <div className="columns-1 md:columns-2 xl:columns-3 gap-4">
-              {items.map((item, i) => {
-                const library = librariesMap[item.libraryId];
-                return (
-                  <ItemCard
-                    key={item.id}
-                    item={item}
-                    libraryName={library?.name || "Unknown library"}
-                    libraryColor={library?.color || "#CCC"}
-                    index={i}
-                    onOpen={() => setDetailItem(item)}
-                    onDelete={() => deleteItem(item.id)}
-                    onOpenInEditor={
-                      item.type === "markdown" || item.type === "text"
-                        ? () => {
-                            setEditorItemId(item.id);
-                            setActiveView("editor");
-                          }
-                        : undefined
-                    }
-                  />
-                );
-              })}
-            </div>
+            <AnimatePresence>
+              <motion.div
+                initial={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="columns-1 md:columns-2 xl:columns-3 gap-4"
+              >
+                {items.map((item, i) => {
+                  const library = librariesMap[item.libraryId];
+                  return (
+                    <ItemCard
+                      key={item.id}
+                      item={item}
+                      libraryName={library?.name || "Unknown library"}
+                      libraryColor={library?.color || "#CCC"}
+                      index={i}
+                      onOpen={() => setDetailItem(item)}
+                      onDelete={() => deleteItem(item.id)}
+                      onOpenInEditor={
+                        item.type === "markdown" || item.type === "text"
+                          ? () => {
+                              setEditorItemId(item.id);
+                              setActiveView("editor");
+                            }
+                          : undefined
+                      }
+                    />
+                  );
+                })}
+              </motion.div>
+            </AnimatePresence>
           )}
         </div>
       </div>
@@ -251,28 +269,6 @@ export default function LibraryView() {
         onAddNote={handleAddNote}
         onAddFiles={handleAddFiles}
       />
-
-      {detailItem && (
-        <ItemDetailPanel
-          item={detailItem}
-          library={librariesMap[detailItem.libraryId]}
-          onBack={() => setDetailItem(null)}
-          onDelete={() => {
-            deleteItem(detailItem.id);
-            setDetailItem(null);
-          }}
-          onGenerateFlashcards={() => setGeneratorItem(detailItem)}
-        />
-      )}
-
-      <AnimatePresence>
-        {generatorItem && (
-          <FlashcardGeneratorPanel
-            item={generatorItem}
-            onClose={() => setGeneratorItem(null)}
-          />
-        )}
-      </AnimatePresence>
 
       {activeLibraryId && (
         <button
