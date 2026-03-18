@@ -99,8 +99,8 @@ export default function ReviewStep({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.2 }}
-      className="flex flex-col"
+      transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
+      className="flex flex-col min-w-0"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
@@ -124,7 +124,7 @@ export default function ReviewStep({
             {activeCards.map((card, index) => (
               <div
                 key={card.id}
-                className="flex-shrink-0 w-[296px] px-2 transition-all duration-200"
+                className="flex-shrink-0 w-[296px] px-2 transition-[opacity,transform] duration-200"
                 style={{
                   opacity: index === selectedIndex ? 1 : 0.5,
                   transform: index === selectedIndex ? "scale(1)" : "scale(0.92)",
@@ -169,7 +169,7 @@ export default function ReviewStep({
               <button
                 key={card.id}
                 onClick={() => emblaApi?.scrollTo(index)}
-                className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
+                className={`w-2 h-2 rounded-full transition-[transform,background-color] duration-150 cursor-pointer ${
                   index === selectedIndex
                     ? "bg-[#3D3B38] scale-110"
                     : "bg-[#D3D1CE] hover:bg-[#A8A5A0]"

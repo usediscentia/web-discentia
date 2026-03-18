@@ -19,6 +19,7 @@ export default function SuccessStep({ cardCount, onAutoClose }: SuccessStepProps
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
       transition={{ type: "spring", stiffness: 400, damping: 20 }}
       className="flex flex-col items-center justify-center py-16"
     >
