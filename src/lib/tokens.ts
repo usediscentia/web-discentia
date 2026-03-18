@@ -44,11 +44,12 @@ export function buildContextSnippet(
           `libraryItemId: ${item.id}`,
           `libraryId: ${item.libraryId}`,
           `title: ${item.title}`,
+          chunk.heading ? `section: ${chunk.heading}` : null,
           `chunkPage: ${chunk.page}`,
           `chunkIndex: ${chunk.index}`,
           `content: ${chunk.text}`,
           `[SOURCE_END]`,
-        ].join("\n");
+        ].filter(Boolean).join("\n");
 
         if (usedChars + section.length > maxChars) {
           const remaining = Math.max(maxChars - usedChars, 0);

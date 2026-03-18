@@ -331,6 +331,14 @@ export const StorageService = {
             for (const token of tokens) {
               if (chunkText.includes(token)) chunkScore += 3;
             }
+            // Boost chunks whose section heading matches the query
+            if (chunk.heading) {
+              const headingText = chunk.heading.toLowerCase();
+              if (headingText.includes(query)) chunkScore += 12;
+              for (const token of tokens) {
+                if (headingText.includes(token)) chunkScore += 4;
+              }
+            }
             return { chunk, chunkScore };
           }).filter((c) => c.chunkScore > 0)
             .sort((a, b) => b.chunkScore - a.chunkScore);
