@@ -99,7 +99,7 @@ export function ReviewComplete({
               className="flex items-center gap-3"
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.33 + i * 0.05 }}
+              transition={{ delay: 0.15 + i * 0.04 }}
             >
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${bg}`}
@@ -127,9 +127,9 @@ export function ReviewComplete({
         {streak > 0 && (
           <motion.div
             className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-4 py-2.5"
-            initial={{ scale: 0, opacity: 0 }}
+            initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 500, damping: 15, delay: 0.48 }}
+            transition={{ type: "spring", stiffness: 500, damping: 15, delay: 0.30 }}
           >
             <Flame size={15} className="text-orange-500 shrink-0" />
             <span className="text-sm font-medium text-orange-700">
@@ -143,7 +143,7 @@ export function ReviewComplete({
           className="flex flex-col gap-3 w-full"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.52 }}
+          transition={{ delay: 0.35 }}
         >
           <button
             onClick={() => setActiveView("dashboard")}

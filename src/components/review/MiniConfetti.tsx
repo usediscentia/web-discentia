@@ -52,15 +52,15 @@ export function MiniConfetti({
           key={p.id}
           className="absolute rounded-sm"
           style={{ backgroundColor: p.color, width: p.size, height: p.size }}
-          initial={{ x: 0, y: 0, opacity: 1, scale: 0, rotate: 0 }}
+          initial={{ x: 0, y: 0, opacity: 1, scale: 0.3, rotate: 0 }}
           animate={{
             x: p.x,
             y: p.y,
             opacity: [1, 1, 0],
-            scale: [0, 1, 0.6],
+            scale: [0.3, 1, 0.6],
             rotate: p.rotate,
           }}
-          transition={{ duration: 0.65, ease: "easeOut" }}
+          transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
         />
       ))}
     </div>
