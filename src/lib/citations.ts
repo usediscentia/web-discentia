@@ -70,7 +70,9 @@ export function extractCitationsFromChunks(
       libraryItemId: injected.libraryItemId,
       libraryId: injected.libraryId,
       itemTitle: injected.itemTitle,
-      excerpt: injected.chunk.text.slice(0, 200).trim(),
+      excerpt: injected.chunk.heading
+        ? `[${injected.chunk.heading}] ${injected.chunk.text.slice(0, 180).trim()}`
+        : injected.chunk.text.slice(0, 200).trim(),
       page: injected.chunk.page > 0 ? injected.chunk.page : undefined,
     }));
 }
