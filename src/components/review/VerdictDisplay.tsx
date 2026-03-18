@@ -95,8 +95,8 @@ export function VerdictDisplay({
           <motion.div
             className={`w-10 h-10 rounded-full flex items-center justify-center ${cfg.iconBg}`}
             initial={{ scale: 0.72, opacity: 0 }}
-            animate={{ scale: [0.72, 1.15, 1], opacity: 1 }}
-            transition={{ type: "spring", stiffness: 400, damping: 18 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", duration: 0.45, bounce: 0.4 }}
           >
             <Icon size={18} className={cfg.iconColor} />
           </motion.div>

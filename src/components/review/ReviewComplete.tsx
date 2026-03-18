@@ -67,8 +67,8 @@ export function ReviewComplete({
         {/* Progress ring — fully filled, celebration pulse */}
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: [0.8, 1.06, 1], opacity: 1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 18 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", duration: 0.5, bounce: 0.35 }}
         >
           <ProgressRing current={total} total={total} accentColor={accentColor} size={96} />
         </motion.div>
