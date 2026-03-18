@@ -80,8 +80,8 @@ export default function FlashcardSlide({
     <motion.div
       layout
       onClick={() => !revealed && setRevealed(true)}
-      className={`w-full max-w-[280px] mx-auto h-[380px] rounded-xl bg-white border border-[#E4E3E1] shadow-md flex flex-col items-center justify-center px-6 relative select-none ${
-        !revealed ? "cursor-pointer" : ""
+      className={`w-full max-w-[280px] mx-auto h-[380px] rounded-xl bg-white border border-[#E4E3E1] shadow-md flex flex-col items-center justify-center px-6 relative select-none transition-transform duration-150 ${
+        !revealed ? "cursor-pointer active:scale-[0.98]" : ""
       }`}
     >
       <AnimatePresence mode="wait">
@@ -90,7 +90,7 @@ export default function FlashcardSlide({
             key="front"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 0.15 }}
+            transition={{ duration: 0.15, ease: [0.32, 0, 0.67, 0] }}
             className="flex flex-col items-center justify-center text-center flex-1 w-full"
           >
             <p className="text-lg font-medium text-[#0C0C0C] leading-relaxed">
@@ -105,6 +105,7 @@ export default function FlashcardSlide({
             key="back"
             initial={{ opacity: 0, scale: 1.01 }}
             animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.01 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             className="flex flex-col items-center justify-center text-center flex-1 w-full"
           >
