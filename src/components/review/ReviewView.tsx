@@ -5,16 +5,21 @@ import { AnimatePresence, motion } from "motion/react";
 import { StorageService } from "@/services/storage";
 import { sm2 } from "@/lib/sm2";
 import type { ReviewRating } from "@/lib/sm2";
-import { ReviewCard } from "./ReviewCard";
-import { ReviewEvaluation, type AIVerdict } from "./ReviewEvaluation";
 import { ReviewComplete } from "./ReviewComplete";
+import { ProgressRing } from "./ProgressRing";
+import { FlashcardFront } from "./FlashcardFront";
+import { AnswerInput } from "./AnswerInput";
+import { EvaluatingIndicator } from "./EvaluatingIndicator";
+import { VerdictDisplay } from "./VerdictDisplay";
+import { RatingButtons } from "./RatingButtons";
 import type { SRSCard } from "@/types/srs";
 import { useProviderStore } from "@/stores/provider.store";
 import { getAIProvider } from "@/services/ai";
 import { buildEvaluationPrompt } from "@/services/ai/prompts/review.prompts";
-import { Loader2, Brain, Check, AlertTriangle, X as XIcon } from "lucide-react";
+import { Loader2, Brain } from "lucide-react";
 
 type Phase = "input" | "evaluating" | "evaluated";
+type AIVerdict = "correct" | "partial" | "incorrect";
 
 interface SessionCard {
   card: SRSCard;
@@ -24,16 +29,40 @@ interface SessionCard {
   keyMissing: string | null;
 }
 
+const DEFAULT_ACCENT = "#34D399";
+
+// Card enter/exit variants — exit direction depends on rating
+const cardVariants = {
+  enter: { opacity: 0, y: 40, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring" as const, stiffness: 400, damping: 28 },
+  },
+  exit: (rating: ReviewRating | null) => ({
+    opacity: 0,
+    y: rating === "easy" ? -120 : rating === "hard" ? 30 : -100,
+    x: rating === "easy" ? 20 : 0,
+    rotate: rating === "easy" ? 3 : 0,
+    scale: rating === "hard" ? 0.97 : 0.95,
+    transition: { duration: 0.25, ease: "easeOut" as const },
+  }),
+};
+
 export default function ReviewView() {
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState<SRSCard[]>([]);
-  const [sourceItemTitles, setSourceItemTitles] = useState<Record<string, string>>({});
   const [sourceContexts, setSourceContexts] = useState<Record<string, string>>({});
+  const [accentColors, setAccentColors] = useState<Record<string, string>>({}); // itemId → library color
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("input");
   const [sessionCards, setSessionCards] = useState<SessionCard[]>([]);
   const [complete, setComplete] = useState(false);
   const [streak, setStreak] = useState(0);
+  const [lastRating, setLastRating] = useState<ReviewRating | null>(null);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [sessionStartTime] = useState(() => Date.now());
 
   const { getActiveProviderConfig } = useProviderStore();
 
@@ -46,16 +75,19 @@ export default function ReviewView() {
       setStreak(stats.streak);
       setLoading(false);
 
-      // Load source item titles and contexts for cards that have libraryItemId
-      const itemIds = [...new Set(due.map((c) => c.libraryItemId).filter(Boolean) as string[])];
+      const itemIds = [
+        ...new Set(due.map((c) => c.libraryItemId).filter(Boolean) as string[]),
+      ];
       if (itemIds.length === 0) return;
+
       Promise.all(itemIds.map((id) => StorageService.getLibraryItem(id))).then((items) => {
-        const titleMap: Record<string, string> = {};
         const contextMap: Record<string, string> = {};
+        const libraryIdToItemIds: Record<string, string[]> = {};
+
         for (const item of items) {
           if (!item) continue;
-          titleMap[item.id] = item.title;
-          // Build source context for evaluation grading
+
+          // Build source context for AI evaluation
           if (item.metadata?.chunks && item.metadata.chunks.length > 0) {
             let text = "";
             for (const chunk of item.metadata.chunks) {
@@ -66,14 +98,39 @@ export default function ReviewView() {
           } else if (item.content) {
             contextMap[item.id] = item.content.slice(0, 1500);
           }
+
+          // Group item IDs by library ID
+          if (!libraryIdToItemIds[item.libraryId]) {
+            libraryIdToItemIds[item.libraryId] = [];
+          }
+          libraryIdToItemIds[item.libraryId].push(item.id);
         }
-        setSourceItemTitles(titleMap);
+
         setSourceContexts(contextMap);
+
+        // Load library colors
+        const libraryIds = Object.keys(libraryIdToItemIds);
+        Promise.all(libraryIds.map((id) => StorageService.getLibrary(id))).then((libraries) => {
+          const colorMap: Record<string, string> = {};
+          for (const library of libraries) {
+            if (!library) continue;
+            for (const itemId of libraryIdToItemIds[library.id] ?? []) {
+              colorMap[itemId] = library.color;
+            }
+          }
+          setAccentColors(colorMap);
+        });
       });
     });
   }, []);
 
   const current = cards[index];
+  const accentColor = current?.libraryItemId
+    ? (accentColors[current.libraryItemId] ?? DEFAULT_ACCENT)
+    : DEFAULT_ACCENT;
+
+  // Alternate subtle tilt per card
+  const cardRotation = index % 2 === 0 ? 0.7 : -0.7;
 
   const handleCheck = useCallback(
     async (userAnswer: string) => {
@@ -110,7 +167,6 @@ export default function ReviewView() {
             );
           });
 
-          // Strip markdown fences and any text before the first {
           const cleaned = raw.replace(/```json\n?|\n?```/g, "").trim();
           const jsonStart = cleaned.indexOf("{");
           const jsonStr = jsonStart >= 0 ? cleaned.slice(jsonStart) : cleaned;
@@ -130,7 +186,7 @@ export default function ReviewView() {
       ]);
       setPhase("evaluated");
     },
-    [current, getActiveProviderConfig]
+    [current, getActiveProviderConfig, sourceContexts]
   );
 
   const handleDontKnow = useCallback(() => {
@@ -143,6 +199,7 @@ export default function ReviewView() {
 
   const handleRate = useCallback(
     async (rating: ReviewRating) => {
+      setLastRating(rating);
       const updated = sm2(current, rating);
       await StorageService.updateSRSCard(current.id, updated);
       await StorageService.logActivityEvent(
@@ -156,16 +213,11 @@ export default function ReviewView() {
       } else {
         setIndex((i) => i + 1);
         setPhase("input");
+        setIsInputFocused(false);
       }
     },
     [current, index, cards.length]
   );
-
-  const correctCount = sessionCards.filter((s) => s.verdict === "correct").length;
-  const partialCount = sessionCards.filter((s) => s.verdict === "partial").length;
-  const incorrectCount = sessionCards.filter(
-    (s) => s.verdict === "incorrect" || s.verdict === null
-  ).length;
 
   const handleRestart = useCallback(() => {
     setLoading(true);
@@ -174,138 +226,145 @@ export default function ReviewView() {
     setPhase("input");
     setSessionCards([]);
     setComplete(false);
+    setLastRating(null);
     StorageService.getDueCards(20).then((due) => {
       setCards(due);
       setLoading(false);
     });
   }, []);
 
+  const correctCount = sessionCards.filter((s) => s.verdict === "correct").length;
+  const partialCount = sessionCards.filter((s) => s.verdict === "partial").length;
+  const incorrectCount = sessionCards.filter(
+    (s) => s.verdict === "incorrect" || s.verdict === null
+  ).length;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 size={20} className="animate-spin text-[#9CA3AF]" />
+        <Loader2 size={20} className="animate-spin text-gray-300" />
       </div>
     );
   }
 
   if (cards.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-[#E6F5F3] flex items-center justify-center">
-          <Brain size={24} className="text-[#1A7A6D]" />
+      <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-4">
+        <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center">
+          <Brain size={24} className="text-emerald-600" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-[#111]">All caught up!</p>
-          <p className="text-xs text-[#9CA3AF] mt-1">No cards due for review right now.</p>
+          <p className="text-sm font-semibold text-gray-900">All caught up!</p>
+          <p className="text-xs text-gray-400 mt-1">No cards due for review right now.</p>
         </div>
       </div>
     );
   }
 
   if (complete) {
-    return <ReviewComplete reviewed={sessionCards.length} correct={correctCount + partialCount} streak={streak} onRestart={handleRestart} />;
+    return (
+      <ReviewComplete
+        total={cards.length}
+        correctCount={correctCount}
+        partialCount={partialCount}
+        incorrectCount={incorrectCount}
+        streak={streak}
+        sessionDuration={Date.now() - sessionStartTime}
+        accentColor={accentColor}
+        onRestart={handleRestart}
+      />
+    );
   }
 
-  const pct = Math.round((sessionCards.length / cards.length) * 100);
+  const lastSessionCard = sessionCards[sessionCards.length - 1];
+
+  // Verdict shown on the card (glow + shake effect)
+  const currentVerdict: AIVerdict | null | undefined =
+    phase === "evaluated" ? (lastSessionCard?.verdict ?? null) : undefined;
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-8 py-5 bg-white border-b border-[#F3F4F6] shrink-0">
-        <div>
-          <h1 className="text-base font-semibold text-[#111]">Review Session</h1>
-          <p className="text-xs text-[#9CA3AF] mt-0.5">{cards.length - index} cards remaining</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Session verdict badges */}
-          {correctCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-              <Check size={10} /> {correctCount}
-            </span>
-          )}
-          {partialCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
-              <AlertTriangle size={10} /> {partialCount}
-            </span>
-          )}
-          {incorrectCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
-              <XIcon size={10} /> {incorrectCount}
-            </span>
-          )}
-          <span className="text-xs font-medium text-[#6B7280]">{index + 1} / {cards.length}</span>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="w-full h-1 bg-[#F3F4F6] shrink-0">
-        <motion.div
-          className="h-full bg-[#1A7A6D]"
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
+    <div className="flex flex-col h-full bg-[#FAFAFA]">
+      <div className="flex-1 overflow-auto flex flex-col items-center justify-center gap-6 px-4 py-8">
+        {/* Progress ring */}
+        <ProgressRing
+          current={sessionCards.length}
+          total={cards.length}
+          accentColor={accentColor}
         />
-      </div>
 
-      {/* Body */}
-      <div className="flex-1 overflow-auto flex items-start justify-center px-8 py-10">
-        <AnimatePresence mode="wait">
-          {phase === "input" && (
+        {/* Flashcard — always visible, exits with direction based on rating */}
+        <div className="w-full max-w-xl">
+          <AnimatePresence mode="wait" custom={lastRating}>
             <motion.div
-              key={`input-${index}`}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.2 }}
-              className="w-full max-w-2xl"
+              key={`card-${index}`}
+              custom={lastRating}
+              variants={cardVariants}
+              initial="enter"
+              animate="visible"
+              exit="exit"
             >
-              <ReviewCard
-                card={current}
-                index={index}
-                total={cards.length}
-                onCheck={handleCheck}
-                onDontKnow={handleDontKnow}
+              <FlashcardFront
+                front={current.front}
+                accentColor={accentColor}
+                isEvaluating={phase === "evaluating"}
+                rotation={cardRotation}
+                isFocused={isInputFocused}
+                verdict={currentVerdict}
               />
             </motion.div>
-          )}
+          </AnimatePresence>
+        </div>
 
-          {phase === "evaluating" && (
-            <motion.div
-              key="evaluating"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center gap-3 pt-20"
-            >
-              <Loader2 size={20} className="animate-spin text-[#1A7A6D]" />
-              <p className="text-xs text-[#9CA3AF]">Evaluating your answer…</p>
-            </motion.div>
-          )}
+        {/* Below-card content — swaps by phase */}
+        <div className="w-full max-w-xl">
+          <AnimatePresence mode="wait">
+            {phase === "input" && (
+              <motion.div
+                key="input"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ type: "spring", stiffness: 400, damping: 28 }}
+              >
+                <AnswerInput
+                  onSubmit={handleCheck}
+                  onSkip={handleDontKnow}
+                  onFocusChange={setIsInputFocused}
+                />
+              </motion.div>
+            )}
 
-          {phase === "evaluated" && sessionCards.length > 0 && (
-            <motion.div
-              key={`eval-${index}`}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.2 }}
-              className="w-full max-w-2xl"
-            >
-              <ReviewEvaluation
-                card={sessionCards[sessionCards.length - 1].card}
-                userAnswer={sessionCards[sessionCards.length - 1].userAnswer}
-                verdict={sessionCards[sessionCards.length - 1].verdict}
-                explanation={sessionCards[sessionCards.length - 1].explanation}
-                keyMissing={sessionCards[sessionCards.length - 1].keyMissing}
-                sourceItemTitle={
-                  sessionCards[sessionCards.length - 1].card.libraryItemId
-                    ? sourceItemTitles[sessionCards[sessionCards.length - 1].card.libraryItemId!]
-                    : undefined
-                }
-                onRate={handleRate}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+            {phase === "evaluating" && (
+              <motion.div
+                key="evaluating"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <EvaluatingIndicator accentColor={accentColor} />
+              </motion.div>
+            )}
+
+            {phase === "evaluated" && lastSessionCard && (
+              <motion.div
+                key={`verdict-${index}`}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 28 }}
+              >
+                <VerdictDisplay
+                  verdict={lastSessionCard.verdict}
+                  userAnswer={lastSessionCard.userAnswer}
+                  explanation={lastSessionCard.explanation}
+                  correctAnswer={lastSessionCard.card.back}
+                  keyMissing={lastSessionCard.keyMissing}
+                />
+                <RatingButtons card={current} onRate={handleRate} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
