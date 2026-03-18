@@ -94,8 +94,8 @@ export function VerdictDisplay({
         <div className="relative">
           <motion.div
             className={`w-10 h-10 rounded-full flex items-center justify-center ${cfg.iconBg}`}
-            initial={{ scale: 0 }}
-            animate={{ scale: [0, 1.2, 1] }}
+            initial={{ scale: 0.72, opacity: 0 }}
+            animate={{ scale: [0.72, 1.15, 1], opacity: 1 }}
             transition={{ type: "spring", stiffness: 400, damping: 18 }}
           >
             <Icon size={18} className={cfg.iconColor} />

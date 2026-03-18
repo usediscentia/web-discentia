@@ -46,7 +46,7 @@ const cardVariants = {
     x: rating === "easy" ? 20 : 0,
     rotate: rating === "easy" ? 3 : 0,
     scale: rating === "hard" ? 0.97 : 0.95,
-    transition: { duration: 0.25, ease: "easeOut" as const },
+    transition: { duration: 0.22, ease: [0.32, 0, 0.67, 0] as const },
   }),
 };
 
@@ -128,9 +128,6 @@ export default function ReviewView() {
   const accentColor = current?.libraryItemId
     ? (accentColors[current.libraryItemId] ?? DEFAULT_ACCENT)
     : DEFAULT_ACCENT;
-
-  // Alternate subtle tilt per card
-  const cardRotation = index % 2 === 0 ? 0.7 : -0.7;
 
   const handleCheck = useCallback(
     async (userAnswer: string) => {
@@ -306,10 +303,12 @@ export default function ReviewView() {
               <FlashcardFront
                 front={current.front}
                 accentColor={accentColor}
+                remaining={cards.length - index - 1}
                 isEvaluating={phase === "evaluating"}
-                rotation={cardRotation}
                 isFocused={isInputFocused}
                 verdict={currentVerdict}
+                isDraggable={phase === "input"}
+                onSwipeLeft={handleDontKnow}
               />
             </motion.div>
           </AnimatePresence>
