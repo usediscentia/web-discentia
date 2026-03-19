@@ -5,10 +5,24 @@ import { Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import { StorageService } from "@/services/storage";
 import type { DashboardStats, DashboardInsights } from "@/types/dashboard";
+import { ActivityChartCard } from "@/components/ui/activity-chart-card";
 import DashboardStatsRow from "./DashboardStats";
 import ReviewHeatmap from "./ReviewHeatmap";
 import LibraryReviews from "./LibraryReviews";
 import ReviewForecast from "./ReviewForecast";
+
+const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+function buildWeeklyData(activityByDay: Record<string, number>) {
+  const result = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    result.push({ day: DAY_LABELS[d.getDay()], value: activityByDay[key] ?? 0 });
+  }
+  return result;
+}
 
 function formatHeaderDate(ts: number): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -86,7 +100,29 @@ export default function DashboardView() {
         </motion.div>
 
         <DashboardStatsRow stats={stats} insights={insights} />
-        <ReviewHeatmap activityByDay={stats.activityByDay} />
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="flex w-full gap-4"
+        >
+          <div className="flex-1">
+            <ReviewHeatmap activityByDay={stats.activityByDay} />
+          </div>
+          <div className="w-64 shrink-0">
+            <ActivityChartCard
+              title="This week"
+              totalValue={String(stats.reviewedToday)}
+              sublabel={`${insights.reviewedLast7Days} reviews last 7 days`}
+              trendPositive={insights.reviewedLast7Days >= insights.reviewedPrev7Days}
+              data={buildWeeklyData(stats.activityByDay)}
+              dropdownOptions={["This week", "Last 7 days"]}
+              className="h-full rounded-[12px] border-[#E8E5E0]"
+            />
+          </div>
+        </motion.div>
+
         <div className="flex w-full gap-4">
           <LibraryReviews libraries={insights.dueByLibrary} />
           <ReviewForecast upcoming={insights.upcomingReviews} />
