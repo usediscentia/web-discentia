@@ -486,6 +486,11 @@ export const StorageService = {
     });
   },
 
+  async listExercisesBySourceItem(sourceItemId: string) {
+    const all = await getDB().exercises.orderBy("createdAt").reverse().toArray();
+    return all.filter((e) => e.sourceItemId === sourceItemId);
+  },
+
   async getDashboardStats(): Promise<DashboardStats> {
     const db = getDB();
     const now = Date.now();
