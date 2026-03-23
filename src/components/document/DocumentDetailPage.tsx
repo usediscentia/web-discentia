@@ -166,7 +166,7 @@ export default function DocumentDetailPage({
           )}
 
           {/* Study history */}
-          <StudyHistory />
+          <StudyHistory documentId={item.id} />
         </div>
       </motion.div>
 
