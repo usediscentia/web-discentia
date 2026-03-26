@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { Check } from "lucide-react";
 import { motion } from "motion/react";
 
 interface SuccessStepProps {
@@ -17,36 +16,41 @@ export default function SuccessStep({ cardCount, onAutoClose }: SuccessStepProps
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ type: "spring", stiffness: 400, damping: 20 }}
-      className="flex flex-col items-center justify-center py-16"
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      className="flex flex-col items-start justify-center py-10"
     >
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 500, damping: 25, delay: 0.1 }}
-        className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mb-5"
-      >
-        <Check size={28} className="text-green-600" />
-      </motion.div>
+      {/* Display number */}
       <motion.p
-        initial={{ opacity: 0, y: 4 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="text-lg font-medium text-[#0C0C0C]"
+        transition={{ delay: 0.05 }}
+        className="text-[88px] font-bold leading-none text-[#0C0C0C] tracking-tight"
       >
-        {cardCount} card{cardCount !== 1 ? "s" : ""} added
+        {cardCount}
       </motion.p>
+
+      {/* Subtitle */}
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="text-sm text-[#7C7974] mt-1"
+        transition={{ delay: 0.15 }}
+        className="text-[15px] text-[#7C7974] mt-2 mb-8"
       >
-        to your deck
+        cards added to your deck
       </motion.p>
+
+      {/* Green pill */}
+      <motion.span
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        className="text-xs font-medium bg-green-50 border border-green-200 text-green-700 rounded-full px-3 py-1.5"
+      >
+        Review starts tomorrow
+      </motion.span>
     </motion.div>
   );
 }
