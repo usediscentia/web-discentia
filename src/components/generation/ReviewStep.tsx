@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Pencil, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Sparkles, X } from "lucide-react";
 import { motion } from "motion/react";
 import useEmblaCarousel from "embla-carousel-react";
 import { Button } from "@/components/ui/button";
