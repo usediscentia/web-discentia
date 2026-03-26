@@ -21,7 +21,7 @@ interface GenerationState {
 
   // Configure
   focusPrompt: string;
-  cardCount: 4 | 8 | 12 | 16;
+  cardCount: number;
 
   // Generating
   generatedCards: FlashcardDraft[];
@@ -37,7 +37,7 @@ interface GenerationState {
   close: () => void;
   setStep: (step: GenerationStep) => void;
   setFocusPrompt: (prompt: string) => void;
-  setCardCount: (count: 4 | 8 | 12 | 16) => void;
+  setCardCount: (count: number) => void;
   setGeneratedCards: (cards: FlashcardDraft[]) => void;
   setGenerationProgress: (progress: number, index: number) => void;
   removeCard: (id: string) => void;
@@ -53,7 +53,7 @@ const initialState = {
   documentId: null as string | null,
   documentTitle: "",
   focusPrompt: "",
-  cardCount: 8 as 4 | 8 | 12 | 16,
+  cardCount: 10,
   generatedCards: [] as FlashcardDraft[],
   generationProgress: 0,
   currentGeneratingIndex: 0,
@@ -72,7 +72,7 @@ export const useGenerationStore = create<GenerationState>((set) => ({
       documentId,
       documentTitle,
       focusPrompt: "",
-      cardCount: 8,
+      cardCount: 10,
       generatedCards: [],
       generationProgress: 0,
       currentGeneratingIndex: 0,

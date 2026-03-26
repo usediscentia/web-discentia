@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "dialkit/styles.css";
+import { DialRoot } from "dialkit";
 
 export const metadata: Metadata = {
   title: "discentia",
@@ -15,6 +17,7 @@ export default function RootLayout({
     <html lang="en" className="h-full">
       <body className="font-sans antialiased h-full">
         {children}
+        <DialRoot />
       </body>
     </html>
   );

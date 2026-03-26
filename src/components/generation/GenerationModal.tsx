@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   Dialog,
   DialogContent,
@@ -160,7 +160,21 @@ export default function GenerationModal({ item }: GenerationModalProps) {
   }, [close, reset]);
 
   return (
+    <>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          key="generation-backdrop"
+          className="fixed inset-0 z-[49] bg-black/50 pointer-events-none"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        />
+      )}
+    </AnimatePresence>
     <Dialog
+      modal={false}
       open={isOpen}
       onOpenChange={(open) => {
         if (!open) {
@@ -173,6 +187,7 @@ export default function GenerationModal({ item }: GenerationModalProps) {
     >
       <DialogContent
         showCloseButton
+        onInteractOutside={(e) => e.preventDefault()}
         className="sm:max-w-2xl rounded-2xl p-6 bg-white border-[#E4E3E1] shadow-[0_24px_48px_-8px_rgba(0,0,0,0.12),0_8px_16px_-4px_rgba(0,0,0,0.06)]"
       >
         <DialogTitle className="sr-only">Generate Exercises</DialogTitle>
@@ -212,5 +227,6 @@ export default function GenerationModal({ item }: GenerationModalProps) {
         )}
       </DialogContent>
     </Dialog>
+    </>
   );
 }
