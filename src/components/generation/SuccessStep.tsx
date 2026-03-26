@@ -39,7 +39,7 @@ export default function SuccessStep({ cardCount, onAutoClose }: SuccessStepProps
         transition={{ delay: 0.15 }}
         className="text-[15px] text-[#7C7974] mt-2 mb-8"
       >
-        cards added to your deck
+        {cardCount === 1 ? "card added to your deck" : "cards added to your deck"}
       </motion.p>
 
       {/* Green pill */}
