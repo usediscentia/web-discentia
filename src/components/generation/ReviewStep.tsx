@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Pencil, X, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, X } from "lucide-react";
 import { motion } from "motion/react";
 import useEmblaCarousel from "embla-carousel-react";
 import { Button } from "@/components/ui/button";
@@ -103,19 +103,22 @@ export default function ReviewStep({
       className="flex flex-col min-w-0"
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-1">
-        <h2 className="text-lg font-semibold text-[#0C0C0C]">
-          Review Flashcards
-        </h2>
-        <span className="text-xs font-medium text-[#A8A5A0]">
-          {activeCards.length} card{activeCards.length !== 1 ? "s" : ""}
-        </span>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h2 className="text-[36px] font-bold leading-none text-[#0C0C0C] tracking-tight">
+            Review
+          </h2>
+          <h2 className="text-[36px] font-bold leading-none text-[#D3D1CE] tracking-tight">
+            {activeCards.length} cards
+          </h2>
+        </div>
+        <div className="text-right">
+          <p className="text-[36px] font-bold leading-none text-[#0C0C0C] tracking-tight">
+            {selectedIndex + 1}
+          </p>
+          <p className="text-xs text-[#A8A5A0]">/ {activeCards.length}</p>
+        </div>
       </div>
-      <p className="text-sm text-[#7C7974] mb-4">
-        Edit or remove cards before saving.
-      </p>
-
-      <Separator className="mb-5" />
 
       {/* Carousel */}
       <div className="relative mb-4">
@@ -177,9 +180,6 @@ export default function ReviewStep({
               />
             ))}
           </div>
-          <span className="text-xs text-[#A8A5A0]">
-            {selectedIndex + 1} / {activeCards.length}
-          </span>
         </div>
       )}
 
@@ -217,7 +217,6 @@ export default function ReviewStep({
             disabled={saving}
             className="w-full h-11 rounded-lg bg-[#171614] hover:bg-[#252422] text-white text-sm font-medium cursor-pointer"
           >
-            <Sparkles size={14} className="mr-2" />
             {saving ? "Saving..." : `Add ${activeCards.length} card${activeCards.length !== 1 ? "s" : ""} to deck`}
           </Button>
 
