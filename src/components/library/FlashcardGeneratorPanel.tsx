@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { X, Sparkles, Loader2, BookOpen, ChevronRight } from "lucide-react";
+import { X, Layers, Loader2, BookOpen, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
+import { CardSelector } from "@/components/ui/card-selector";
 import type { LibraryItem } from "@/types/library";
 import { useFlashcardGenerator } from "@/hooks/useFlashcardGenerator";
 import { StorageService } from "@/services/storage";
@@ -15,8 +16,6 @@ interface FlashcardGeneratorPanelProps {
   onClose: () => void;
 }
 
-const COUNT_OPTIONS = [4, 8, 12, 16];
-
 export default function FlashcardGeneratorPanel({
   item,
   onClose,
@@ -24,7 +23,7 @@ export default function FlashcardGeneratorPanel({
   const [prompt, setPrompt] = useState(
     `Generate flashcards about the key concepts in this document`
   );
-  const [count, setCount] = useState(8);
+  const [count, setCount] = useState<number | null>(10);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -37,6 +36,7 @@ export default function FlashcardGeneratorPanel({
   const needsSetup = requiresKey && !hasKey;
 
   const handleGenerate = () => {
+    if (!count) return;
     setSaved(false);
     void generate(prompt, count);
   };
@@ -84,7 +84,9 @@ export default function FlashcardGeneratorPanel({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#ECECEC] shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <Sparkles size={16} className="text-[#6366F1] shrink-0" />
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#F3F4F6]">
+              <Layers size={14} className="text-[#555]" aria-hidden="true" />
+            </div>
             <div className="min-w-0">
               <p className="text-xs text-[#999] leading-none mb-0.5">Generate Flashcards</p>
               <h2 className="text-sm font-semibold text-[#1A1A1A] truncate">{item.title}</h2>
@@ -93,8 +95,9 @@ export default function FlashcardGeneratorPanel({
           <button
             onClick={onClose}
             className="text-[#999] hover:text-[#333] transition-colors cursor-pointer shrink-0 ml-3"
+            aria-label="Close"
           >
-            <X size={18} />
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
@@ -122,31 +125,20 @@ export default function FlashcardGeneratorPanel({
                 placeholder="e.g. key concepts, definitions, important dates..."
               />
 
-              <div className="mt-3">
-                <label className="block text-xs font-medium text-[#555] mb-1.5">
-                  Number of cards
+              <div className="mt-4">
+                <label className="block text-xs font-medium text-[#555] mb-2.5">
+                  How many cards?
                 </label>
-                <div className="flex gap-2">
-                  {COUNT_OPTIONS.map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => setCount(n)}
-                      disabled={isLoading}
-                      className={`flex-1 py-1.5 text-sm font-medium rounded-lg border transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                        count === n
-                          ? "border-[#6366F1] bg-[#6366F1]/10 text-[#6366F1]"
-                          : "border-[#E5E7EB] text-[#555] hover:bg-[#F9FAFB]"
-                      }`}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
+                <CardSelector
+                  selectedAmount={count}
+                  onSelect={setCount}
+                  disabled={isLoading}
+                />
               </div>
 
               <Button
                 onClick={handleGenerate}
-                disabled={isLoading || needsSetup || !prompt.trim()}
+                disabled={isLoading || needsSetup || !prompt.trim() || !count}
                 className="mt-4 w-full cursor-pointer bg-[#6366F1] hover:bg-[#5558D9] text-white"
                 size="sm"
               >
@@ -157,8 +149,8 @@ export default function FlashcardGeneratorPanel({
                   </>
                 ) : (
                   <>
-                    <Sparkles size={14} className="mr-2" />
-                    Generate {count} Flashcards
+                    <Layers size={14} className="mr-2" aria-hidden="true" />
+                    Generate {count ?? "…"} Flashcards
                   </>
                 )}
               </Button>
