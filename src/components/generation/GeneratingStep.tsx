@@ -8,62 +8,44 @@ export default function GeneratingStep() {
   const { generationProgress, currentGeneratingIndex, cardCount } =
     useGenerationStore();
 
+  const isPreparing = generationProgress === 0;
+  const displayIndex = Math.max(1, currentGeneratingIndex);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-      className="flex flex-col items-center py-8"
+      className="flex flex-col py-4"
     >
-      {/* Skeleton card */}
-      <div className="w-52 h-72 rounded-xl bg-[#F1F0EF] relative overflow-hidden mb-8">
-        {/* Shimmer animation */}
-        <div className="absolute inset-0 shimmer-sweep" />
+      {/* Label */}
+      <p className="text-[10px] font-medium tracking-widest uppercase text-[#A8A5A0] mb-3">
+        Generating
+      </p>
 
-        {/* Skeleton lines */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6">
-          <div className="w-full h-3 bg-[#E4E3E1] rounded-full" />
-          <div className="w-3/4 h-3 bg-[#E4E3E1] rounded-full" />
-          <div className="w-5/6 h-3 bg-[#E4E3E1] rounded-full" />
-          <div className="w-2/3 h-3 bg-[#E4E3E1] rounded-full" />
-        </div>
-      </div>
+      {/* Display number */}
+      <p className="text-[88px] font-bold leading-none text-[#0C0C0C] tracking-tight">
+        {displayIndex}
+      </p>
 
-      {/* Progress text */}
-      <p className="text-sm text-[#7C7974] mb-3">
-        {generationProgress > 0
-          ? `Generating card ${currentGeneratingIndex} of ${cardCount}...`
-          : "Preparing flashcards..."}
+      {/* "of N cards" */}
+      <p className="text-[22px] font-light text-[#7C7974] mb-10">
+        of {cardCount} cards
       </p>
 
       {/* Progress bar */}
-      <div className="w-full max-w-xs">
-        <Progress
-          value={generationProgress}
-          className="h-1.5 bg-[#F1F0EF]"
-        />
-      </div>
+      <Progress
+        value={generationProgress}
+        className="h-[2px] bg-[#F1F0EF] mb-3"
+      />
 
-      <style jsx>{`
-        .shimmer-sweep {
-          background: linear-gradient(
-            90deg,
-            transparent 0%,
-            rgba(255, 255, 255, 0.4) 50%,
-            transparent 100%
-          );
-          animation: shimmer 1.8s infinite;
-        }
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-      `}</style>
+      {/* Status */}
+      <p className="text-xs text-[#A8A5A0]">
+        {isPreparing
+          ? "Preparing..."
+          : "Analyzing content and building cards..."}
+      </p>
     </motion.div>
   );
 }
