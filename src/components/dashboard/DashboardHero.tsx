@@ -70,7 +70,7 @@ export default function DashboardHero({ stats, streak }: DashboardHeroProps) {
         <Button
           className="rounded-xl bg-white px-5 py-2.5 text-[13px] font-medium text-[#171717] shadow-none transition-all hover:bg-white/90 active:scale-[0.97]"
           disabled={stats.dueToday === 0}
-          onClick={() => setActiveView("review")}
+          onClick={() => setActiveView("study")}
         >
           Start Review
           <span className="ml-1 opacity-50">→</span>

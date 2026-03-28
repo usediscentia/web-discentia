@@ -3,9 +3,7 @@ import { create } from "zustand";
 export type ActiveView =
   | "chat"
   | "library"
-  | "dashboard"
   | "editor"
-  | "review"
   | "settings"
   | "study"
   | "stats";
@@ -26,7 +24,7 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  activeView: "chat",
+  activeView: "study",
   settingsOpen: false,
   commandPaletteOpen: false,
   sidebarCollapsed: false,

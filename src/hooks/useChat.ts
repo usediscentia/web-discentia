@@ -157,6 +157,34 @@ export function useChat() {
       );
       const contextTokenEstimate = estimateTokenCountFromChars(contextText.length);
 
+      // Detect exercise generation intent — regex only (AI classifier removed: too many false positives)
+      const exerciseIntent = detectExerciseIntent(content);
+
+      // Start stats fetch early (parallel with message save) — don't await yet.
+      // Skipped for exercise generation where stats context is not needed.
+      const statsPromise = !exerciseIntent
+        ? Promise.all([
+            StorageService.getDashboardStats(),
+            StorageService.getDashboardInsights(),
+          ])
+            .then(([stats, insights]) =>
+              [
+                "USER STUDY STATS (current, from local database):",
+                `- Cards due today: ${stats.dueToday}`,
+                `- Reviewed today: ${stats.reviewedToday}`,
+                `- Total cards: ${stats.totalCards}`,
+                `- Mastered cards: ${stats.masteredCards}`,
+                `- Current streak: ${stats.streak} days`,
+                `- Reviewed last 7 days: ${insights.reviewedLast7Days}`,
+                `- Reviewed previous 7 days: ${insights.reviewedPrev7Days}`,
+                `- Best streak ever: ${insights.bestStreak} days`,
+                `- Due by library: ${insights.dueByLibrary.map((l) => `${l.name}: ${l.dueCount}`).join(", ") || "none"}`,
+                `- Upcoming reviews: ${insights.upcomingReviews.map((r) => `${r.label}: ${r.dueCount}`).join(", ") || "none"}`,
+              ].join("\n")
+            )
+            .catch(() => "")
+        : Promise.resolve("");
+
       // Save user message
       const userMessage = await StorageService.addMessage(
         convId,
@@ -165,8 +193,6 @@ export function useChat() {
       );
       appendMessage(userMessage);
 
-      // Detect exercise generation intent — regex only (AI classifier removed: too many false positives)
-      const exerciseIntent = detectExerciseIntent(content);
       const exercisePrompt = exerciseIntent
         ? buildExercisePrompt(exerciseIntent.type, exerciseIntent.topic, contextText || undefined)
         : null;
@@ -177,9 +203,13 @@ export function useChat() {
       // For normal chat: include citation instruction + library context.
       const genuiPrompt = !exerciseIntent ? generateGenUIPrompt() : "";
 
+      // Resolve stats fetch (runs in parallel with message save above)
+      const statsContext = await statsPromise;
+
       const aiMessages: AIMessage[] = [
         { role: "system", content: SYSTEM_PROMPT },
         ...(genuiPrompt ? [{ role: "system" as const, content: genuiPrompt }] : []),
+        ...(statsContext ? [{ role: "system" as const, content: statsContext }] : []),
         ...(exercisePrompt
           ? [{ role: "system" as const, content: exercisePrompt }]
           : []),
