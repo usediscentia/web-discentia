@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback, type ReactNode } from "react"
 import { motion } from "motion/react";
 import { GraduationCap, BookOpen } from "lucide-react";
 import MarkdownRenderer from "@/components/chat/MarkdownRenderer";
+import { GenUIRenderer } from "@/components/chat/GenUIRenderer";
 import { ExerciseGeneratingIndicator } from "@/components/chat/ExerciseGeneratingIndicator";
 import type { Citation } from "@/types/chat";
 import { stripCitationsBlock } from "@/lib/citations";
@@ -184,7 +185,14 @@ function AIMessage({
       <div className="flex flex-col gap-2 flex-1 min-w-0">
         <div className="px-1">
           {content && !morphContent ? (
-            <MarkdownRenderer content={content} />
+            isStreaming ? (
+              <MarkdownRenderer content={content} />
+            ) : (
+              <GenUIRenderer
+                content={content}
+                textRenderer={(text) => <MarkdownRenderer content={text} />}
+              />
+            )
           ) : !morphContent && isStreaming ? (
             <div className="py-2">
               <StreamingIndicator />

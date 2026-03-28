@@ -309,7 +309,7 @@ function StepProvider({
   const {
     setSelectedProvider,
     setProviderConfig,
-    saveProviderConfigs,
+    saveProviderConfig,
     checkOllamaConnection,
     ollamaStatus,
     providerConfigs,
@@ -351,15 +351,15 @@ function StepProvider({
         apiKey: apiKey.trim(),
         model: providerConfigs[selected].model,
       });
+      await saveProviderConfig(selected, apiKey.trim());
     }
-    await saveProviderConfigs();
     onNext();
   }, [
     selected,
     apiKey,
     setSelectedProvider,
     setProviderConfig,
-    saveProviderConfigs,
+    saveProviderConfig,
     providerConfigs,
     onNext,
   ]);
