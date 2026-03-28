@@ -146,10 +146,10 @@ export function ReviewComplete({
           transition={{ delay: 0.35 }}
         >
           <button
-            onClick={() => setActiveView("dashboard")}
+            onClick={() => setActiveView("stats")}
             className="w-full h-11 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors cursor-pointer"
           >
-            Back to Dashboard
+            View Statistics
           </button>
           <button
             onClick={onRestart}

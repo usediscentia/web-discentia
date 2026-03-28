@@ -69,7 +69,7 @@ export default function LibraryReviews({ libraries }: LibraryReviewsProps) {
       <div className="h-1" />
       <Button
         className="h-auto w-fit rounded-[8px] bg-[#1A1814] px-5 py-2.5 text-[14px] font-medium text-[#FAFAF8] shadow-none transition-colors hover:bg-[#2A2722]"
-        onClick={() => setActiveView("review")}
+        onClick={() => setActiveView("study")}
       >
         Start Reviewing
         <span className="ml-1">→</span>

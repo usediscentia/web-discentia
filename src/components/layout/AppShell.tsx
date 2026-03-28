@@ -10,9 +10,7 @@ import ChatView from "@/components/chat/ChatView"
 import LibraryView from "@/components/library/LibraryView"
 import SettingsPage from "@/components/providers/SettingsPage"
 import EditorView from "@/components/editor/EditorView"
-import ReviewView from "@/components/review/ReviewView"
 import StudyView from "@/components/study/StudyView"
-import DashboardView from "@/components/dashboard/DashboardView"
 import StatsView from "@/components/stats/StatsView"
 import AuthScreen from "@/components/auth/AuthScreen"
 import { CommandPalette } from "@/components/search/CommandPalette"
@@ -56,9 +54,7 @@ export default function AppShell() {
         <main className="flex-1 min-w-0 overflow-hidden">
           {activeView === "chat" && <ChatView />}
           {activeView === "library" && <LibraryView />}
-          {activeView === "dashboard" && <DashboardView />}
           {activeView === "editor" && <EditorView />}
-          {activeView === "review" && <ReviewView />}
           {activeView === "study" && <StudyView />}
           {activeView === "settings" && <SettingsPage />}
           {activeView === "stats" && <StatsView />}
