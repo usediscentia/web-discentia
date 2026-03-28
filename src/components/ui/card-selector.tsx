@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
+import { Check } from "lucide-react";
 import { useDialKit } from "dialkit";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +31,13 @@ const OPTIONS: CardSelectorOption[] = [
   { amount: 20, label: "Full stack", cards: 4 },
 ];
 
-function MiniCardStack({ count, hovered }: { count: number; hovered: boolean }) {
+function MiniCardStack({
+  count,
+  hovered,
+}: {
+  count: number;
+  hovered: boolean;
+}) {
   return (
     <div className="relative flex h-28 items-center justify-center">
       {Array.from({ length: count }).map((_, index) => {
@@ -104,35 +111,42 @@ function CardOption({
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
       className={cn(
-        "relative flex h-full w-full flex-col items-center gap-3 rounded-xl border-2 p-4 transition-colors",
+        "relative flex h-full w-full flex-col items-center gap-3 rounded-xl border-2 p-4 transition-colors duration-200",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A1814]/30",
         "disabled:cursor-not-allowed disabled:opacity-50",
         selected
-          ? "border-[#1A1814] bg-[#F9FAFB]"
+          ? "border-[#E8E5E0] bg-[#F5F2EE]"
           : "border-[#E8E5E0] bg-white hover:border-[#C4BFB8]"
       )}
-      whileHover={
-        !disabled
-          ? { scale: anim.hoverScale, boxShadow: shadowValue }
-          : undefined
-      }
+      whileHover={!disabled && !selected ? { scale: anim.hoverScale, boxShadow: shadowValue } : undefined}
       whileTap={!disabled ? { scale: 0.98 } : undefined}
       transition={anim.spring}
     >
+      {/* Checkmark badge */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+            transition={{ type: "spring", visualDuration: 0.2, bounce: 0.3 }}
+            className="absolute right-2 top-2 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#1A1814]"
+          >
+            <Check size={10} className="text-white" strokeWidth={2.5} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <MiniCardStack count={option.cards} hovered={hovered && !disabled} />
 
       <div className="text-center">
-        <div className="text-[14px] font-semibold text-[#1A1814]">{option.label}</div>
-        <div className="text-[12px] text-[#9C9690]">{option.amount} cards</div>
+        <div className="text-[14px] font-semibold text-[#1A1814]">
+          {option.label}
+        </div>
+        <div className="text-[12px] text-[#9C9690]">
+          {option.amount} cards
+        </div>
       </div>
-
-      {selected && (
-        <motion.div
-          layoutId="card-selector-indicator"
-          className="pointer-events-none absolute inset-0 rounded-[10px] border-2 border-[#1A1814]"
-          transition={{ type: "spring", duration: 0.4, bounce: 0.15 }}
-        />
-      )}
     </motion.button>
   );
 }
@@ -140,7 +154,7 @@ function CardOption({
 export function CardSelector({ selectedAmount, onSelect, disabled, className }: CardSelectorProps) {
   const dial = useDialKit("Card Hover", {
     spring: { type: "spring" as const, visualDuration: 0.4, bounce: 0.25 },
-    hoverScale: [1.03, 1.0, 1.1, 0.01] as [number, number, number, number],
+    hoverScale: [1.03, 1.0, 1.05, 0.01] as [number, number, number, number],
     shadowBlur: [12, 0, 40, 1] as [number, number, number, number],
   });
 
