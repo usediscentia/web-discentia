@@ -82,7 +82,7 @@ export function SettingsDialog() {
 
     if (valid && type !== "ollama") {
       setTimeout(() => {
-        useProviderStore.getState().saveProviderConfigs();
+        void useProviderStore.getState().saveProviderConfig(type, apiKey);
       }, 0);
     }
 

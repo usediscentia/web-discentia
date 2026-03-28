@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { AIProviderType, ProviderConfig } from "@/types/ai";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
-import { encrypt, decrypt } from "@/lib/crypto";
+import { apiFetch } from "@/lib/api-client";
 import { STORAGE_KEYS, OLLAMA_API_URL } from "@/lib/constants";
 import { githubCopilotProvider } from "@/services/ai/github-copilot.provider";
 
@@ -13,6 +13,8 @@ export interface ProviderConfigState {
 }
 
 export type OllamaStatus = "unknown" | "connected" | "disconnected";
+
+const SERVER_KEY_PROVIDERS: AIProviderType[] = ["openai", "anthropic", "openrouter", "github-copilot"];
 
 const defaultConfigs: Record<AIProviderType, ProviderConfigState> = {
   openai: { apiKey: "", model: PROVIDER_DEFAULTS.openai.defaultModel },
@@ -35,7 +37,7 @@ interface ProviderState {
   setProviderConfig: (type: AIProviderType, config: ProviderConfigState) => void;
   getActiveProviderConfig: () => ProviderConfig;
   loadProviderConfigs: () => Promise<void>;
-  saveProviderConfigs: () => Promise<void>;
+  saveProviderConfig: (type: AIProviderType, apiKey: string) => Promise<void>;
   checkOllamaConnection: () => Promise<void>;
   fetchGithubCopilotModels: () => Promise<void>;
 }
@@ -68,7 +70,6 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
       },
     });
     localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, model);
-    void get().saveProviderConfigs();
   },
 
   setProviderConfig: (type, config) =>
@@ -96,81 +97,47 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
 
   loadProviderConfigs: async () => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEYS.PROVIDER_CONFIGS);
       const configs = { ...defaultConfigs };
 
-      if (raw) {
-        const encrypted: Record<
-          string,
-          { apiKey: string; model: string; temperature?: number; baseUrl?: string }
-        > = JSON.parse(raw);
+      const results = await Promise.allSettled(
+        SERVER_KEY_PROVIDERS.map((provider) =>
+          apiFetch<{ provider: string; key: string }>(`/keys/${provider}`)
+        )
+      );
 
-        // ── Migration: github-models → github-copilot ──
-        // The old PAT is incompatible with Device Flow — the user will be
-        // prompted to reconnect. We copy the key so the config slot exists;
-        // validateApiKey will return false and the UI will show "reconnect".
-        if (encrypted["github-models"] && !encrypted["github-copilot"]) {
-          encrypted["github-copilot"] = encrypted["github-models"];
-        }
-
-        for (const [key, value] of Object.entries(encrypted)) {
-          const type = key as AIProviderType;
-          if (!configs[type]) continue;
-
-          configs[type] = {
-            apiKey: value.apiKey ? await decrypt(value.apiKey) : "",
-            model: value.model || configs[type].model,
-            temperature: value.temperature,
-            baseUrl: value.baseUrl,
+      results.forEach((result, i) => {
+        const provider = SERVER_KEY_PROVIDERS[i];
+        if (result.status === "fulfilled") {
+          configs[provider] = {
+            ...configs[provider],
+            apiKey: result.value.key,
           };
         }
-      }
+        // 404 = key not configured — leave apiKey as ""
+      });
 
-      const rawProvider = localStorage.getItem(STORAGE_KEYS.SELECTED_PROVIDER);
-      // Migrate stored "github-models" → "github-copilot"
-      const migratedProvider =
-        rawProvider === "github-models" ? "github-copilot" : rawProvider;
-      const savedProvider = migratedProvider as AIProviderType | null;
-      const selectedProvider =
-        savedProvider && configs[savedProvider] ? savedProvider : "openai";
+      const savedProvider = localStorage.getItem(STORAGE_KEYS.SELECTED_PROVIDER) as AIProviderType | null;
+      const selectedProvider = savedProvider && configs[savedProvider] ? savedProvider : "openai";
       const selectedModel =
         localStorage.getItem(STORAGE_KEYS.SELECTED_MODEL) ||
         configs[selectedProvider].model;
 
       set({ providerConfigs: configs, selectedProvider, selectedModel });
 
-      // Auto-fetch Copilot models if already connected on app load
-      if (
-        selectedProvider === "github-copilot" &&
-        configs["github-copilot"].apiKey
-      ) {
+      if (selectedProvider === "github-copilot" && configs["github-copilot"].apiKey) {
         void get().fetchGithubCopilotModels();
       }
     } catch {
-      // corrupted storage — start fresh
+      // network error — continue with empty keys
     }
   },
 
-  saveProviderConfigs: async () => {
-    const configs = get().providerConfigs;
-    const encrypted: Record<
-      string,
-      { apiKey: string; model: string; temperature?: number; baseUrl?: string }
-    > = {};
-
-    for (const [key, value] of Object.entries(configs)) {
-      encrypted[key] = {
-        apiKey: value.apiKey ? await encrypt(value.apiKey) : "",
-        model: value.model,
-        temperature: value.temperature,
-        baseUrl: value.baseUrl,
-      };
-    }
-
-    localStorage.setItem(
-      STORAGE_KEYS.PROVIDER_CONFIGS,
-      JSON.stringify(encrypted)
-    );
+  saveProviderConfig: async (type: AIProviderType, apiKey: string) => {
+    if (!apiKey) return;
+    await apiFetch("/keys", {
+      method: "POST",
+      body: JSON.stringify({ provider: type, key: apiKey }),
+    });
   },
 
   checkOllamaConnection: async () => {
@@ -204,7 +171,6 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
         if (state.selectedProvider === "ollama") {
           localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, models[0]);
         }
-        void get().saveProviderConfigs();
       }
     } catch {
       set({ ollamaStatus: "disconnected", ollamaModels: [] });
@@ -238,7 +204,6 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
         if (state.selectedProvider === "github-copilot") {
           localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, models[0]);
         }
-        void get().saveProviderConfigs();
       }
     } catch (err) {
       console.error("[GitHub Copilot] fetchModels failed:", err);
