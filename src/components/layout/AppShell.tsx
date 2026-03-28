@@ -13,6 +13,7 @@ import EditorView from "@/components/editor/EditorView"
 import ReviewView from "@/components/review/ReviewView"
 import StudyView from "@/components/study/StudyView"
 import DashboardView from "@/components/dashboard/DashboardView"
+import StatsView from "@/components/stats/StatsView"
 import AuthScreen from "@/components/auth/AuthScreen"
 import { CommandPalette } from "@/components/search/CommandPalette"
 
@@ -60,6 +61,7 @@ export default function AppShell() {
           {activeView === "review" && <ReviewView />}
           {activeView === "study" && <StudyView />}
           {activeView === "settings" && <SettingsPage />}
+          {activeView === "stats" && <StatsView />}
         </main>
       </div>
     </>

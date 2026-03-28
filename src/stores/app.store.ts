@@ -7,7 +7,8 @@ export type ActiveView =
   | "editor"
   | "review"
   | "settings"
-  | "study";
+  | "study"
+  | "stats";
 
 interface AppState {
   activeView: ActiveView;

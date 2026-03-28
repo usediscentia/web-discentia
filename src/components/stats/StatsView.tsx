@@ -6,32 +6,14 @@ import { motion } from "motion/react";
 import { StorageService } from "@/services/storage";
 import type { DashboardStats, DashboardInsights } from "@/types/dashboard";
 import { ActivityChartCard } from "@/components/ui/activity-chart-card";
-import DashboardStatsRow from "./DashboardStats";
-import ReviewHeatmap from "./ReviewHeatmap";
-import LibraryReviews from "./LibraryReviews";
-import ReviewForecast from "./ReviewForecast";
+import ReviewHeatmap from "@/components/dashboard/ReviewHeatmap";
+import LibraryReviews from "@/components/dashboard/LibraryReviews";
+import ReviewForecast from "@/components/dashboard/ReviewForecast";
 import { buildWeeklyData } from "@/lib/dashboard-utils";
 
-function formatHeaderDate(ts: number): string {
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  })
-    .format(new Date(ts))
-    .toUpperCase();
-}
-
-function getGreeting(hour: number): string {
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
-}
-
-export default function DashboardView() {
+export default function StatsView() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [insights, setInsights] = useState<DashboardInsights | null>(null);
-  const [now] = useState(() => Date.now());
 
   useEffect(() => {
     let cancelled = false;
@@ -44,9 +26,7 @@ export default function DashboardView() {
         setInsights(i);
       }
     });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   if (!stats || !insights) {
@@ -57,7 +37,10 @@ export default function DashboardView() {
     );
   }
 
-  const greeting = getGreeting(new Date(now).getHours());
+  const retentionRate =
+    stats.totalCards > 0
+      ? Math.round((stats.masteredCards / stats.totalCards) * 100)
+      : 0;
 
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-[#FAFAF8]">
@@ -69,26 +52,37 @@ export default function DashboardView() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="flex w-full items-center justify-between"
         >
-          <div className="flex flex-col gap-1.5">
-            <h1 className="text-[28px] font-semibold text-[#1A1814]">
-              {greeting}.
-            </h1>
-            <p className="text-[16px] text-[#6B6560]">
-              You have {stats.dueToday} cards to review today.
-            </p>
-          </div>
-          <span
-            className="text-[13px] font-medium text-[#9C9690]"
-            style={{ letterSpacing: 0.1 }}
-          >
-            {formatHeaderDate(now)}
-          </span>
+          <h1 className="text-[28px] font-semibold text-[#1A1814]">Estatísticas</h1>
+          <p className="text-[16px] text-[#6B6560] mt-1">
+            Seu progresso de aprendizado
+          </p>
         </motion.div>
 
-        <DashboardStatsRow stats={stats} insights={insights} />
+        {/* Summary row */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.05 }}
+          className="grid grid-cols-2 gap-4 sm:grid-cols-4"
+        >
+          {[
+            { label: "Cards dominados", value: stats.masteredCards },
+            { label: "Taxa de retenção", value: `${retentionRate}%` },
+            { label: "Total de cards", value: stats.totalCards },
+            { label: "Revisados hoje", value: stats.reviewedToday },
+          ].map(({ label, value }) => (
+            <div
+              key={label}
+              className="rounded-[12px] border border-[#E8E5E0] bg-white px-5 py-4"
+            >
+              <p className="text-[13px] text-[#9C9690]">{label}</p>
+              <p className="mt-1 text-[24px] font-semibold text-[#1A1814]">{value}</p>
+            </div>
+          ))}
+        </motion.div>
 
+        {/* Heatmap + weekly chart */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -100,17 +94,18 @@ export default function DashboardView() {
           </div>
           <div className="w-64 shrink-0">
             <ActivityChartCard
-              title="This week"
+              title="Esta semana"
               totalValue={String(stats.reviewedToday)}
-              sublabel={`${insights.reviewedLast7Days} reviews last 7 days`}
+              sublabel={`${insights.reviewedLast7Days} revisões últimos 7 dias`}
               trendPositive={insights.reviewedLast7Days >= insights.reviewedPrev7Days}
               data={buildWeeklyData(stats.activityByDay)}
-              dropdownOptions={["This week", "Last 7 days"]}
+              dropdownOptions={["Esta semana", "Últimos 7 dias"]}
               className="h-full rounded-[12px] border-[#E8E5E0]"
             />
           </div>
         </motion.div>
 
+        {/* Library breakdown + forecast */}
         <div className="flex w-full gap-4">
           <LibraryReviews libraries={insights.dueByLibrary} />
           <ReviewForecast upcoming={insights.upcomingReviews} />
