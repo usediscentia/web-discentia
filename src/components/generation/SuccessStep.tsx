@@ -36,7 +36,7 @@ export default function SuccessStep({ cardCount, onAutoClose }: SuccessStepProps
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.15 }}
+        transition={{ delay: 0.08 }}
         className="text-[15px] text-[#7C7974] mt-2 mb-8"
       >
         {cardCount === 1 ? "card added to your deck" : "cards added to your deck"}
@@ -46,7 +46,7 @@ export default function SuccessStep({ cardCount, onAutoClose }: SuccessStepProps
       <motion.span
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
+        transition={{ delay: 0.12 }}
         className="text-xs font-medium bg-green-50 border border-green-200 text-green-700 rounded-full px-3 py-1.5"
       >
         Review starts tomorrow

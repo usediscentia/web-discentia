@@ -21,25 +21,28 @@ export default function ConfigureStep({ onGenerate }: ConfigureStepProps) {
   const hasKey = Boolean(providerConfigs[selectedProvider]?.apiKey);
   const needsSetup = requiresKey && !hasKey;
 
+  const displayTitle = documentTitle
+    .replace(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_?/i, "")
+    .replace(/\.[a-z0-9]{2,6}$/i, "")
+    .replace(/_+/g, " ")
+    .trim() || documentTitle;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
+      exit={{ opacity: 0, y: -8, transition: { duration: 0.12, ease: [0.55, 0, 1, 0.45] } }}
       transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
       className="flex flex-col"
     >
       {/* Doc label */}
       <p className="text-[10px] font-medium tracking-widest uppercase text-[#A8A5A0] truncate mb-3">
-        {documentTitle}
+        {displayTitle}
       </p>
 
       {/* Display title */}
-      <h2 className="text-[44px] font-bold leading-none text-[#0C0C0C] tracking-tight">
-        Generate
-      </h2>
       <h2 className="text-[44px] font-bold leading-none text-[#0C0C0C] tracking-tight mb-7">
-        Flashcards
+        Generate<br />Flashcards
       </h2>
 
       {/* Focus prompt */}
@@ -73,7 +76,7 @@ export default function ConfigureStep({ onGenerate }: ConfigureStepProps) {
       <Button
         onClick={onGenerate}
         disabled={needsSetup}
-        className="w-full h-11 rounded-lg bg-[#171614] hover:bg-[#252422] text-white text-sm font-medium cursor-pointer"
+        className="w-full h-11 rounded-lg bg-gradient-to-b from-[#222018] to-[#171614] hover:brightness-110 text-white text-sm font-medium cursor-pointer shadow-[0_0_0_0.5px_rgba(0,0,0,0.4),inset_0_0_0_1px_rgba(255,255,255,0.04),inset_0_1px_0_rgba(255,255,255,0.07),0_1px_2px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.08),0_4px_8px_rgba(0,0,0,0.04)] [text-shadow:0_1px_1px_rgba(0,0,0,0.2)]"
       >
         Generate {cardCount} Flashcards
       </Button>

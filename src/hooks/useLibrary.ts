@@ -120,6 +120,16 @@ async function extractPdfText(file: File): Promise<{ text: string; chunks: Conte
   }
 }
 
+function cleanFileTitle(filename: string): string {
+  return (
+    filename
+      .replace(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_?/i, "")
+      .replace(/\.[a-z0-9]{2,6}$/i, "")
+      .replace(/_+/g, " ")
+      .trim() || filename
+  );
+}
+
 async function buildItemFromFile(libraryId: string, file: File) {
   const lower = file.name.toLowerCase();
   const nowType = file.type.toLowerCase();
@@ -129,7 +139,7 @@ async function buildItemFromFile(libraryId: string, file: File) {
     return {
       libraryId,
       type: "markdown" as const,
-      title: file.name,
+      title: cleanFileTitle(file.name),
       content,
       preview: previewFromContent(content),
       rawFile: file,
@@ -146,7 +156,7 @@ async function buildItemFromFile(libraryId: string, file: File) {
     return {
       libraryId,
       type: "text" as const,
-      title: file.name,
+      title: cleanFileTitle(file.name),
       content,
       preview: previewFromContent(content),
       rawFile: file,
@@ -164,7 +174,7 @@ async function buildItemFromFile(libraryId: string, file: File) {
     return {
       libraryId,
       type: "pdf" as const,
-      title: file.name,
+      title: cleanFileTitle(file.name),
       content,
       preview: previewFromContent(content),
       rawFile: file,
@@ -185,9 +195,9 @@ async function buildItemFromFile(libraryId: string, file: File) {
     return {
       libraryId,
       type: "image" as const,
-      title: file.name,
+      title: cleanFileTitle(file.name),
       content: dataUrl,
-      preview: file.name,
+      preview: cleanFileTitle(file.name),
       rawFile: file,
       metadata: {
         fileSize: file.size,
