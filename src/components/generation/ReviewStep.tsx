@@ -98,7 +98,7 @@ export default function ReviewStep({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
+      exit={{ opacity: 0, y: -8, transition: { duration: 0.12, ease: [0.55, 0, 1, 0.45] } }}
       transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
       className="flex flex-col min-w-0"
     >
@@ -149,6 +149,7 @@ export default function ReviewStep({
         {!isEditing && canScrollPrev && (
           <button
             onClick={() => emblaApi?.scrollPrev()}
+            aria-label="Previous card"
             className="absolute left-1 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-[#E4E3E1] shadow-sm flex items-center justify-center text-[#7C7974] hover:text-[#3D3B38] transition-colors cursor-pointer"
           >
             <ChevronLeft size={16} />
@@ -157,6 +158,7 @@ export default function ReviewStep({
         {!isEditing && canScrollNext && (
           <button
             onClick={() => emblaApi?.scrollNext()}
+            aria-label="Next card"
             className="absolute right-1 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-[#E4E3E1] shadow-sm flex items-center justify-center text-[#7C7974] hover:text-[#3D3B38] transition-colors cursor-pointer"
           >
             <ChevronRight size={16} />
@@ -167,17 +169,22 @@ export default function ReviewStep({
       {/* Dots + counter */}
       {!isEditing && (
         <div className="flex flex-col items-center gap-1.5 mb-4">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center">
             {activeCards.map((card, index) => (
               <button
                 key={card.id}
                 onClick={() => emblaApi?.scrollTo(index)}
-                className={`w-2 h-2 rounded-full transition-[transform,background-color] duration-150 cursor-pointer ${
-                  index === selectedIndex
-                    ? "bg-[#3D3B38] scale-110"
-                    : "bg-[#D3D1CE] hover:bg-[#A8A5A0]"
-                }`}
-              />
+                aria-label={`Go to card ${index + 1}`}
+                className="flex items-center justify-center w-8 h-8 cursor-pointer"
+              >
+                <span
+                  className={`w-2 h-2 rounded-full transition-[transform,background-color] duration-150 ${
+                    index === selectedIndex
+                      ? "bg-[#3D3B38] scale-110"
+                      : "bg-[#D3D1CE] hover:bg-[#A8A5A0]"
+                  }`}
+                />
+              </button>
             ))}
           </div>
         </div>
@@ -215,7 +222,7 @@ export default function ReviewStep({
           <Button
             onClick={onSave}
             disabled={saving}
-            className="w-full h-11 rounded-lg bg-[#171614] hover:bg-[#252422] text-white text-sm font-medium cursor-pointer"
+            className="w-full h-11 rounded-lg bg-gradient-to-b from-[#222018] to-[#171614] hover:brightness-110 text-white text-sm font-medium cursor-pointer shadow-[0_0_0_0.5px_rgba(0,0,0,0.4),inset_0_0_0_1px_rgba(255,255,255,0.04),inset_0_1px_0_rgba(255,255,255,0.07),0_1px_2px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.08),0_4px_8px_rgba(0,0,0,0.04)] [text-shadow:0_1px_1px_rgba(0,0,0,0.2)]"
           >
             {saving ? "Saving..." : `Add ${activeCards.length} card${activeCards.length !== 1 ? "s" : ""} to deck`}
           </Button>
