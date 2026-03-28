@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { useAppStore } from "@/stores/app.store"
 import { useProviderStore } from "@/stores/provider.store"
 import { useAuthStore } from "@/stores/auth.store"
+import { sendBackup } from "@/lib/backup"
 import Sidebar from "@/components/layout/Sidebar"
 import ChatView from "@/components/chat/ChatView"
 import LibraryView from "@/components/library/LibraryView"
@@ -26,6 +27,7 @@ export default function AppShell() {
   useEffect(() => {
     if (user) {
       loadProviderConfigs()
+      sendBackup().catch(console.error) // fire-and-forget, non-fatal
     }
   }, [user, loadProviderConfigs])
 
