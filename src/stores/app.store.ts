@@ -6,7 +6,8 @@ export type ActiveView =
   | "dashboard"
   | "editor"
   | "review"
-  | "settings";
+  | "settings"
+  | "study";
 
 interface AppState {
   activeView: ActiveView;

@@ -7,6 +7,7 @@ import {
   MessageSquare,
   BookOpen,
   GraduationCap,
+  Sparkles,
   ChevronLeft,
   Search,
   Settings,
@@ -28,6 +29,7 @@ const navItems: {
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "chat", label: "Chat", icon: MessageSquare },
   { id: "library", label: "Library", icon: BookOpen },
+  { id: "study", label: "Study", icon: Sparkles },
   { id: "review", label: "Review", icon: GraduationCap },
 ];
 
