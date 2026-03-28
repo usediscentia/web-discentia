@@ -145,7 +145,7 @@ export function useGitHubDeviceFlow(): UseGitHubDeviceFlowReturn {
                 ...currentConfig,
                 apiKey: data.access_token,
               });
-              await store.saveProviderConfigs();
+              await store.saveProviderConfig("github-copilot", data.access_token);
               await store.fetchGithubCopilotModels();
 
               setState({ status: "success" });

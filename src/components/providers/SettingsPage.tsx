@@ -25,6 +25,7 @@ import {
 import { ProviderIcon } from "@lobehub/icons";
 import { useProviderStore } from "@/stores/provider.store";
 import { useAppStore } from "@/stores/app.store";
+import { useAuthStore } from "@/stores/auth.store";
 import { getAIProvider } from "@/services/ai";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
 import type { AIProviderType } from "@/types/ai";
@@ -141,7 +142,7 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
     ollamaStatus,
     ollamaModels,
     checkOllamaConnection,
-    saveProviderConfigs,
+    saveProviderConfig,
   } = useProviderStore();
 
   const defaults = PROVIDER_DEFAULTS[display.type];
@@ -202,7 +203,7 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
 
       if (valid) {
         setTimeout(() => {
-          saveProviderConfigs();
+          void saveProviderConfig(display.type, key);
         }, 0);
       }
     }
@@ -215,7 +216,6 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
       setSelectedModel(model);
     } else {
       setProviderConfig(display.type, { ...config, model });
-      void saveProviderConfigs();
     }
   };
 
@@ -223,13 +223,11 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
     const parsed = parseFloat(localTemp);
     const value = !isNaN(parsed) ? Math.max(0, Math.min(2, parsed)) : undefined;
     setProviderConfig(display.type, { ...config, temperature: value });
-    void saveProviderConfigs();
   };
 
   const handleBaseUrlBlur = () => {
     const value = localBaseUrl.trim() || undefined;
     setProviderConfig(display.type, { ...config, baseUrl: value });
-    void saveProviderConfigs();
   };
 
   const statusBadge = () => {
@@ -1075,6 +1073,7 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingsSection>("providers");
 
   const { checkOllamaConnection } = useProviderStore();
+  const { signOut } = useAuthStore();
 
   useEffect(() => {
     checkOllamaConnection();
@@ -1083,7 +1082,7 @@ export default function SettingsPage() {
   return (
     <div className="flex h-full w-full bg-[#FAFAFA]">
       {/* Left nav */}
-      <nav className="w-52 shrink-0 border-r border-[#ECECEC] bg-white px-3 py-8">
+      <nav className="w-52 shrink-0 border-r border-[#ECECEC] bg-white px-3 py-8 flex flex-col">
         <h1 className="text-lg font-bold text-[#111] px-3 mb-6">Settings</h1>
         <div className="flex flex-col gap-0.5">
           {navItems.map((item) => {
@@ -1106,6 +1105,14 @@ export default function SettingsPage() {
               </button>
             );
           })}
+        </div>
+        <div className="mt-auto pt-4 border-t border-[#ECECEC] px-3">
+          <button
+            onClick={() => void signOut()}
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+          >
+            Sign out
+          </button>
         </div>
       </nav>
 

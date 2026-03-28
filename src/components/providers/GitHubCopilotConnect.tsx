@@ -26,7 +26,7 @@ export function GitHubCopilotConnect() {
     setProviderConfig,
     githubCopilotModels,
     fetchGithubCopilotModels,
-    saveProviderConfigs,
+    saveProviderConfig,
   } = useProviderStore();
 
   const config = providerConfigs["github-copilot"];
@@ -58,12 +58,10 @@ export function GitHubCopilotConnect() {
     localStorage.removeItem(GITHUB_COPILOT_USERNAME_KEY);
     // Clear the dynamic model list so the provider selector shows no models
     useProviderStore.setState({ githubCopilotModels: [] });
-    void saveProviderConfigs();
   };
 
   const handleModelChange = (model: string) => {
     setProviderConfig("github-copilot", { ...config, model });
-    void saveProviderConfigs();
   };
 
   // ── Connected ──
