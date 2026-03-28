@@ -10,19 +10,7 @@ import DashboardStatsRow from "./DashboardStats";
 import ReviewHeatmap from "./ReviewHeatmap";
 import LibraryReviews from "./LibraryReviews";
 import ReviewForecast from "./ReviewForecast";
-
-const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-
-function buildWeeklyData(activityByDay: Record<string, number>) {
-  const result = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    result.push({ day: DAY_LABELS[d.getDay()], value: activityByDay[key] ?? 0 });
-  }
-  return result;
-}
+import { buildWeeklyData } from "@/lib/dashboard-utils";
 
 function formatHeaderDate(ts: number): string {
   return new Intl.DateTimeFormat("en-US", {
