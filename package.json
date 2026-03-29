@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.78.0",
     "@heroicons/react": "^2.2.0",
     "@lobehub/icons": "^4.6.0",
+    "@openuidev/react-lang": "^0.1.4",
     "@tiptap/extension-code-block-lowlight": "^3.20.0",
     "@tiptap/extension-placeholder": "^3.20.0",
     "@tiptap/extension-table": "^3.20.0",
@@ -50,6 +51,7 @@
     "tailwind-merge": "^3.4.0",
     "tiptap-markdown": "^0.9.0",
     "turndown": "^7.2.2",
+    "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
