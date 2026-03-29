@@ -1,6 +1,7 @@
 "use client";
 
 import { Calendar } from "lucide-react";
+import { useAppStore } from "@/stores/app.store";
 
 interface ReviewScheduleProps {
   props: {
@@ -9,6 +10,7 @@ interface ReviewScheduleProps {
 }
 
 export function ReviewSchedule({ props }: ReviewScheduleProps) {
+  const { setActiveView } = useAppStore();
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-2 max-w-xs">
       <div className="flex items-center gap-1.5 mb-2">
@@ -21,6 +23,12 @@ export function ReviewSchedule({ props }: ReviewScheduleProps) {
           <span className="font-medium text-gray-900">{item.count} cards</span>
         </div>
       ))}
+      <button
+        onClick={() => setActiveView("study")}
+        className="w-full mt-1 cursor-pointer rounded-lg border border-gray-200 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+      >
+        Estudar agora →
+      </button>
     </div>
   );
 }
