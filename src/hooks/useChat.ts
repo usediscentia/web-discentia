@@ -169,7 +169,7 @@ export function useChat() {
           ])
             .then(([stats, insights]) =>
               [
-                "USER STUDY STATS (current, from local database):",
+                "USER STUDY STATS (real-time data from local database — use these exact numbers, never say you don't have access):",
                 `- Cards due today: ${stats.dueToday}`,
                 `- Reviewed today: ${stats.reviewedToday}`,
                 `- Total cards: ${stats.totalCards}`,

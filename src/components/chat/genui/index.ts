@@ -2,6 +2,8 @@ import { registerComponent } from "@/lib/genui/registry";
 import { StatCard } from "./StatCard";
 import { ReviewSchedule } from "./ReviewSchedule";
 import { FlashcardPreview } from "./FlashcardPreview";
+import { DeckDiagnostic } from "./DeckDiagnostic";
+import { FlashCardBatch } from "./FlashCardBatch";
 
 registerComponent({
   name: "StatCard",
@@ -36,4 +38,33 @@ registerComponent({
     category: { type: "string", description: "The category or topic name", required: true },
   },
   component: FlashcardPreview,
+});
+
+registerComponent({
+  name: "DeckDiagnostic",
+  description: "Shows decks that need attention with overdue card counts and retention rate. Use when user asks what they are falling behind on.",
+  propsSchema: {
+    decks: {
+      type: "array",
+      description: "Array of { name: string, overdueCards: number, retentionRate: number }. retentionRate is 0-100.",
+      required: true,
+      items: { name: "string", overdueCards: "number", retentionRate: "number" },
+    },
+  },
+  component: DeckDiagnostic,
+});
+
+registerComponent({
+  name: "FlashCardBatch",
+  description: "Shows a batch of AI-generated flashcards with a button to save them to the SRS deck. Use when user asks to generate flashcards.",
+  propsSchema: {
+    cards: {
+      type: "array",
+      description: "Array of { question: string, answer: string } objects.",
+      required: true,
+      items: { question: "string", answer: "string" },
+    },
+    deckName: { type: "string", description: "Topic or deck name shown on the save button.", required: true },
+  },
+  component: FlashCardBatch,
 });

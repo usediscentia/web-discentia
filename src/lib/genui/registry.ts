@@ -51,15 +51,22 @@ export function generateGenUIPrompt(): string {
 
   return `
 GENERATIVE UI COMPONENTS
-You can embed visual components in your responses using the following syntax.
-Place them on their own line. The JSON inside must be valid.
+When reporting study data or generating flashcards, embed visual components in your response.
+Syntax: place the tag on its own line with valid JSON inside. You can mix components with regular text.
+
+RULES:
+- If user asks about cards due, reviewed, streak, or schedule — use components. Do NOT ask for clarification when you already have the data in USER STUDY STATS.
+- dueToday = cards still to review; reviewedToday = cards already reviewed today. Use the right one.
+- For flashcard generation requests, use FlashCardBatch so the user can save them with one click.
 
 Available components:
 
 ${componentDocs}
 
-Example usage:
-<GenUI:StatCard>{ "label": "Cards due", "value": "12", "sublabel": "3 overdue" }</GenUI:StatCard>
-
-You can mix regular text with components. Use components when they add clarity — don't force them into every response.`;
+Examples:
+<GenUI:StatCard>{ "label": "Cards due today", "value": "12", "sublabel": "3 overdue" }</GenUI:StatCard>
+<GenUI:StatCard>{ "label": "Current streak", "value": "7 days" }</GenUI:StatCard>
+<GenUI:ReviewSchedule>{ "items": [{ "label": "Today", "count": 12 }, { "label": "Tomorrow", "count": 5 }] }</GenUI:ReviewSchedule>
+<GenUI:DeckDiagnostic>{ "decks": [{ "name": "Algoritmos", "overdueCards": 8, "retentionRate": 74 }] }</GenUI:DeckDiagnostic>
+<GenUI:FlashCardBatch>{ "cards": [{ "question": "O que é Big O?", "answer": "Complexidade assintótica" }], "deckName": "Algoritmos" }</GenUI:FlashCardBatch>`;
 }
