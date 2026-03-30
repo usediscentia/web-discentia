@@ -22,8 +22,7 @@ import {
 import type { Library } from "@/types/library";
 import type { AIMessage } from "@/types/ai";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
-import { generateGenUIPrompt } from "@/lib/genui/registry";
-import "@/components/chat/genui"; // registers genui components
+import { openuiLibrary, openuiPromptOptions } from "@/services/ai/openui";
 
 export function useChat() {
   const [streamingContent, setStreamingContent] = useState("");
@@ -201,7 +200,7 @@ export function useChat() {
       // For exercises: include exercise prompt + library context (no citation block —
       //   it conflicts with the JSON-only instruction and produces malformed output).
       // For normal chat: include citation instruction + library context.
-      const genuiPrompt = !exerciseIntent ? generateGenUIPrompt() : "";
+      const genuiPrompt = !exerciseIntent ? openuiLibrary.prompt(openuiPromptOptions) : "";
 
       // Resolve stats fetch (runs in parallel with message save above)
       const statsContext = await statsPromise;
