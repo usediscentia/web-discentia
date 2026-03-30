@@ -3,6 +3,7 @@ import { openaiProvider } from "./openai.provider";
 import { ollamaProvider } from "./ollama.provider";
 import { openrouterProvider } from "./openrouter.provider";
 import { anthropicProvider } from "./anthropic.provider";
+import { openuiProvider } from "./openui/provider";
 import { githubCopilotProvider } from "./github-copilot.provider";
 
 const providers: Map<AIProviderType, AIServiceProvider> = new Map([

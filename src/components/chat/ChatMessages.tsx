@@ -9,12 +9,15 @@ import { ExerciseGeneratingIndicator } from "@/components/chat/ExerciseGeneratin
 import type { Citation } from "@/types/chat";
 import { stripCitationsBlock } from "@/lib/citations";
 
+import { OpenUIRenderer } from "@/components/chat/OpenUIRenderer";
+
 export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   citations?: Citation[];
   morphContent?: ReactNode;
+  provider?: string;
 }
 
 interface ChatMessagesProps {
@@ -107,6 +110,7 @@ export function ChatMessages({
                 content={stripCitationsBlock(message.content)}
                 citations={message.citations}
                 morphContent={message.morphContent}
+                provider={message.provider}
                 onOpenCitation={onOpenCitation}
               />
             )}
@@ -165,6 +169,7 @@ function AIMessage({
   citations,
   morphContent,
   isStreaming,
+  provider,
   onOpenCitation,
   children,
 }: {
@@ -172,6 +177,7 @@ function AIMessage({
   citations?: Citation[];
   morphContent?: ReactNode;
   isStreaming?: boolean;
+  provider?: string;
   onOpenCitation?: (citation: Citation) => void;
   children?: ReactNode;
 }) {
@@ -187,6 +193,8 @@ function AIMessage({
           {content && !morphContent ? (
             isStreaming ? (
               <MarkdownRenderer content={content} />
+            ) : provider === "openui" ? (
+              <OpenUIRenderer response={content} />
             ) : (
               <GenUIRenderer
                 content={content}

@@ -16,9 +16,12 @@ import { getAIProvider } from "@/services/ai";
 import { useProviderStore } from "@/stores/provider.store";
 import type { FlashcardData } from "@/types/exercise";
 import type { LibraryItem } from "@/types/library";
+import { distributeCards } from "@/lib/distribute-cards";
+import { useAppStore } from "@/stores/app.store";
 import ConfigureStep from "./ConfigureStep";
 import GeneratingStep from "./GeneratingStep";
 import ReviewStep from "./ReviewStep";
+import ScheduleStep from "./ScheduleStep";
 import SuccessStep from "./SuccessStep";
 
 interface GenerationModalProps {
@@ -37,6 +40,8 @@ export default function GenerationModal({ item }: GenerationModalProps) {
     setGenerationProgress,
     generatedCards,
     removedCardIds,
+    savedCardIds,
+    setSavedCardIds,
     reset,
   } = useGenerationStore();
 
@@ -141,22 +146,34 @@ export default function GenerationModal({ item }: GenerationModalProps) {
     if (activeCards.length === 0) return;
     setSaving(true);
     try {
-      await StorageService.createSRSCards(
+      const created = await StorageService.createSRSCards(
         activeCards.map((c) => ({
           front: c.front,
           back: c.back,
           libraryItemId: item.id,
         }))
       );
-      setStep("success");
+      setSavedCardIds(created.map((c) => c.id));
+      setStep("schedule");
     } finally {
       setSaving(false);
     }
-  }, [generatedCards, removedCardIds, item.id, setStep]);
+  }, [generatedCards, removedCardIds, item.id, setStep, setSavedCardIds]);
+
+  const handleScheduleConfirm = useCallback(async (targetDate: Date) => {
+    const timestamps = distributeCards(savedCardIds.length, targetDate);
+    await Promise.all(
+      savedCardIds.map((id, i) =>
+        StorageService.updateSRSCard(id, { nextReviewDate: timestamps[i] })
+      )
+    );
+    setStep("success");
+  }, [savedCardIds, setStep]);
 
   const handleAutoClose = useCallback(() => {
     close();
     setTimeout(reset, 300);
+    useAppStore.getState().setActiveView("study");
   }, [close, reset]);
 
   return (
@@ -178,6 +195,12 @@ export default function GenerationModal({ item }: GenerationModalProps) {
       open={isOpen}
       onOpenChange={(open) => {
         if (!open) {
+          // If closing during schedule step, apply 2-week fallback
+          if (step === "schedule" && savedCardIds.length > 0) {
+            const fallbackDate = new Date();
+            fallbackDate.setDate(fallbackDate.getDate() + 14);
+            void handleScheduleConfirm(fallbackDate);
+          }
           close();
           if (step !== "generating") {
             setTimeout(reset, 300);
@@ -209,6 +232,15 @@ export default function GenerationModal({ item }: GenerationModalProps) {
                 setStep("configure");
                 setGenError(null);
               }}
+            />
+          )}
+          {step === "schedule" && (
+            <ScheduleStep
+              key="schedule"
+              cardCount={
+                generatedCards.filter((c) => !removedCardIds.has(c.id)).length
+              }
+              onConfirm={handleScheduleConfirm}
             />
           )}
           {step === "success" && (

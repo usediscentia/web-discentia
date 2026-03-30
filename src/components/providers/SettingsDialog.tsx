@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { GitHubCopilotConnect } from "@/components/providers/GitHubCopilotConnect";
 
-const providerOrder: AIProviderType[] = ["ollama", "openai", "openrouter", "github-copilot", "anthropic"];
+const providerOrder: AIProviderType[] = ["ollama", "openai", "openrouter", "github-copilot", "anthropic", "openui"];
 
 export function SettingsDialog() {
   const { settingsOpen, setSettingsOpen } = useAppStore();
@@ -31,11 +31,12 @@ export function SettingsDialog() {
     ollama: "",
     openrouter: "",
     "github-copilot": "",
+    openui: "",
   });
   const [testing, setTesting] = useState<AIProviderType | null>(null);
   const [results, setResults] = useState<
     Record<AIProviderType, "success" | "error" | null>
-  >({ openai: null, anthropic: null, ollama: null, openrouter: null, "github-copilot": null });
+  >({ openai: null, anthropic: null, ollama: null, openrouter: null, "github-copilot": null, openui: null });
 
   const handleOpenChange = (open: boolean) => {
     if (open) {
@@ -45,8 +46,9 @@ export function SettingsDialog() {
         ollama: "",
         openrouter: providerConfigs.openrouter.apiKey,
         "github-copilot": providerConfigs["github-copilot"].apiKey,
+        openui: providerConfigs.openui?.apiKey || "",
       });
-      setResults({ openai: null, anthropic: null, ollama: null, openrouter: null, "github-copilot": null });
+      setResults({ openai: null, anthropic: null, ollama: null, openrouter: null, "github-copilot": null, openui: null });
       checkOllamaConnection();
     }
     setSettingsOpen(open);

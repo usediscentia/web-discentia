@@ -161,7 +161,7 @@ export default function ReviewView() {
                 onComplete: (fullText) => resolve(fullText),
                 onError: (err) => reject(err),
               }
-            );
+            ).catch(reject);
           });
 
           const cleaned = raw.replace(/```json\n?|\n?```/g, "").trim();
