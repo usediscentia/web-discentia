@@ -92,7 +92,7 @@ export const ReviewSchedule = defineComponent({
             variant="outline"
             size="sm"
             className="w-full mt-1"
-            onClick={() => setActiveView("study")}
+            onClick={() => setActiveView("review")}
           >
             Estudar agora →
           </Button>
@@ -138,7 +138,7 @@ export const DeckDiagnostic = defineComponent({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setActiveView("study")}
+                onClick={() => setActiveView("review")}
               >
                 Revisar
               </Button>

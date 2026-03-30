@@ -205,21 +205,20 @@ export function useChat() {
       // Resolve stats fetch (runs in parallel with message save above)
       const statsContext = await statsPromise;
 
-      const aiMessages: AIMessage[] = [
-        { role: "system", content: SYSTEM_PROMPT },
-        ...(genuiPrompt ? [{ role: "system" as const, content: genuiPrompt }] : []),
-        ...(statsContext ? [{ role: "system" as const, content: statsContext }] : []),
-        ...(exercisePrompt
-          ? [{ role: "system" as const, content: exercisePrompt }]
-          : []),
+      // Merge all system instructions into one message so models that ignore
+      // subsequent system messages (e.g. Kimi K2) still follow every directive.
+      const systemParts = [
+        SYSTEM_PROMPT,
+        ...(genuiPrompt ? [genuiPrompt] : []),
+        ...(statsContext ? [statsContext] : []),
+        ...(exercisePrompt ? [exercisePrompt] : []),
         ...(contextText
-          ? [
-              {
-                role: "system" as const,
-                content: `SOURCE CONTEXT (estimated ${contextTokenEstimate} tokens):\n${contextText}`,
-              },
-            ]
+          ? [`SOURCE CONTEXT (estimated ${contextTokenEstimate} tokens):\n${contextText}`]
           : []),
+      ];
+
+      const aiMessages: AIMessage[] = [
+        { role: "system", content: systemParts.join("\n\n---\n\n") },
         ...messages.map((m) => ({
           role: m.role as "user" | "assistant",
           content: m.content,
