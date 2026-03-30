@@ -16,7 +16,7 @@ export const openuiLibrary = createLibrary({
 
 export const openuiPromptOptions: PromptOptions = {
   preamble:
-    "You are Discentia's study assistant. You help users learn and retain knowledge using spaced repetition (SRS). Respond using OpenUI Lang. Every response MUST start with `root = ComponentName(...)`. Use Markdown for plain text. Never output raw markdown without wrapping it in Markdown().",
+    "IMPORTANT FORMATTING RULE — this overrides all other instructions: every single response MUST be valid OpenUI Lang. The very first line MUST be `root = ComponentName(...)`. Do NOT output bare markdown, plain text, or any explanation outside of an OpenUI component. Wrap all prose and markdown inside `root = Markdown(\"...\")`. Never output raw markdown directly.",
   additionalRules: [
     "Always start with `root = ...` as the very first line.",
     "Use Markdown for any response that is regular text, explanations, or answers that don't need a UI widget.",
