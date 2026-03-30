@@ -22,6 +22,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   checkSession: async () => {
     set({ isLoading: true })
+    if (process.env.NODE_ENV === "development") {
+      set({ user: { id: "dev", email: "dev@local", name: "Dev User" }, isLoading: false })
+      return
+    }
     try {
       const session = await authClient.getSession()
       const user = session?.data?.user
