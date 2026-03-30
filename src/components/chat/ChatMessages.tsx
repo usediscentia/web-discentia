@@ -4,12 +4,16 @@ import { useEffect, useRef, useState, useCallback, type ReactNode } from "react"
 import { motion } from "motion/react";
 import { GraduationCap, BookOpen } from "lucide-react";
 import MarkdownRenderer from "@/components/chat/MarkdownRenderer";
-import { GenUIRenderer } from "@/components/chat/GenUIRenderer";
+import { Renderer } from "@openuidev/react-lang";
+import { openuiLibrary } from "@/services/ai/openui";
 import { ExerciseGeneratingIndicator } from "@/components/chat/ExerciseGeneratingIndicator";
 import type { Citation } from "@/types/chat";
 import { stripCitationsBlock } from "@/lib/citations";
 
-import { OpenUIRenderer } from "@/components/chat/OpenUIRenderer";
+/** Returns true if the text contains a valid OpenUI Lang root statement. */
+function hasOpenUIContent(text: string): boolean {
+  return /^\s*root\s*=/m.test(text);
+}
 
 export interface Message {
   id: string;
@@ -110,7 +114,6 @@ export function ChatMessages({
                 content={stripCitationsBlock(message.content)}
                 citations={message.citations}
                 morphContent={message.morphContent}
-                provider={message.provider}
                 onOpenCitation={onOpenCitation}
               />
             )}
@@ -169,7 +172,6 @@ function AIMessage({
   citations,
   morphContent,
   isStreaming,
-  provider,
   onOpenCitation,
   children,
 }: {
@@ -177,7 +179,6 @@ function AIMessage({
   citations?: Citation[];
   morphContent?: ReactNode;
   isStreaming?: boolean;
-  provider?: string;
   onOpenCitation?: (citation: Citation) => void;
   children?: ReactNode;
 }) {
@@ -193,13 +194,14 @@ function AIMessage({
           {content && !morphContent ? (
             isStreaming ? (
               <MarkdownRenderer content={content} />
-            ) : provider === "openui" ? (
-              <OpenUIRenderer response={content} />
-            ) : (
-              <GenUIRenderer
-                content={content}
-                textRenderer={(text) => <MarkdownRenderer content={text} />}
+            ) : hasOpenUIContent(content) ? (
+              <Renderer
+                response={content}
+                library={openuiLibrary}
+                isStreaming={false}
               />
+            ) : (
+              <MarkdownRenderer content={content} />
             )
           ) : !morphContent && isStreaming ? (
             <div className="py-2">
