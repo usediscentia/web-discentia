@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-export type GenerationStep = "configure" | "generating" | "review" | "success";
+export type GenerationStep = "configure" | "generating" | "review" | "schedule" | "success";
 export type ExerciseGenerationType = "flashcards" | "quiz" | "sprint" | "connections";
 
 export interface FlashcardDraft {
@@ -32,6 +32,10 @@ interface GenerationState {
   removedCardIds: Set<string>;
   editingCardId: string | null;
 
+  // Schedule
+  targetDate: Date | null;
+  savedCardIds: string[]; // IDs of cards saved to DB (for distribution)
+
   // Actions
   open: (documentId: string, documentTitle: string, type: ExerciseGenerationType) => void;
   close: () => void;
@@ -43,6 +47,8 @@ interface GenerationState {
   removeCard: (id: string) => void;
   updateCard: (id: string, front: string, back: string) => void;
   setEditingCard: (id: string | null) => void;
+  setTargetDate: (date: Date | null) => void;
+  setSavedCardIds: (ids: string[]) => void;
   reset: () => void;
 }
 
@@ -59,6 +65,8 @@ const initialState = {
   currentGeneratingIndex: 0,
   removedCardIds: new Set<string>(),
   editingCardId: null as string | null,
+  targetDate: null as Date | null,
+  savedCardIds: [] as string[],
 };
 
 export const useGenerationStore = create<GenerationState>((set) => ({
@@ -109,6 +117,10 @@ export const useGenerationStore = create<GenerationState>((set) => ({
     })),
 
   setEditingCard: (editingCardId) => set({ editingCardId }),
+
+  setTargetDate: (targetDate) => set({ targetDate }),
+
+  setSavedCardIds: (savedCardIds) => set({ savedCardIds }),
 
   reset: () => set(initialState),
 }));

@@ -44,7 +44,7 @@ export default function AppShell() {
 
   if (isLoading) return null
 
-  if (!user) return <AuthScreen />
+  if (!user && process.env.NODE_ENV !== "development") return <AuthScreen />
 
   return (
     <>

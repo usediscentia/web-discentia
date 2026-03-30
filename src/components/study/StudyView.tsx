@@ -2,8 +2,9 @@
 
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Loader2, Brain } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useStudyStore } from "@/stores/study.store";
+import { TodayScreen } from "./TodayScreen";
 import { StudyRail } from "./StudyRail";
 import { StudyCard } from "./StudyCard";
 import { StudyInput } from "./StudyInput";
@@ -49,22 +50,9 @@ export default function StudyView() {
     );
   }
 
-  // No cards due (complete with no cards loaded)
-  if (cards.length === 0) {
-    return (
-      <div className="flex h-full">
-        <StudyRail />
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-4">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center">
-            <Brain size={24} className="text-emerald-600" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-900">All caught up!</p>
-            <p className="text-xs text-gray-400 mt-1">No cards due for review right now.</p>
-          </div>
-        </div>
-      </div>
-    );
+  // Today screen (landing)
+  if (phase === "today") {
+    return <TodayScreen />;
   }
 
   // Session complete
