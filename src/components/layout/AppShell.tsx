@@ -27,7 +27,9 @@ export default function AppShell() {
   useEffect(() => {
     if (user) {
       loadProviderConfigs()
-      sendBackup().catch(console.error) // fire-and-forget, non-fatal
+      if (process.env.NODE_ENV !== "development") {
+        sendBackup().catch(console.error) // fire-and-forget, non-fatal
+      }
     }
   }, [user, loadProviderConfigs])
 

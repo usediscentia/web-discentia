@@ -99,22 +99,24 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
     try {
       const configs = { ...defaultConfigs };
 
-      const results = await Promise.allSettled(
-        SERVER_KEY_PROVIDERS.map((provider) =>
-          apiFetch<{ provider: string; key: string }>(`/keys/${provider}`)
-        )
-      );
+      if (process.env.NODE_ENV !== "development") {
+        const results = await Promise.allSettled(
+          SERVER_KEY_PROVIDERS.map((provider) =>
+            apiFetch<{ provider: string; key: string }>(`/keys/${provider}`)
+          )
+        );
 
-      results.forEach((result, i) => {
-        const provider = SERVER_KEY_PROVIDERS[i];
-        if (result.status === "fulfilled") {
-          configs[provider] = {
-            ...configs[provider],
-            apiKey: result.value.key,
-          };
-        }
-        // 404 = key not configured — leave apiKey as ""
-      });
+        results.forEach((result, i) => {
+          const provider = SERVER_KEY_PROVIDERS[i];
+          if (result.status === "fulfilled") {
+            configs[provider] = {
+              ...configs[provider],
+              apiKey: result.value.key,
+            };
+          }
+          // 404 = key not configured — leave apiKey as ""
+        });
+      }
 
       const savedProvider = localStorage.getItem(STORAGE_KEYS.SELECTED_PROVIDER) as AIProviderType | null;
       const selectedProvider = savedProvider && configs[savedProvider] ? savedProvider : "openai";
@@ -133,7 +135,7 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
   },
 
   saveProviderConfig: async (type: AIProviderType, apiKey: string) => {
-    if (!apiKey) return;
+    if (!apiKey || process.env.NODE_ENV === "development") return;
     await apiFetch("/keys", {
       method: "POST",
       body: JSON.stringify({ provider: type, key: apiKey }),
