@@ -150,6 +150,7 @@ export const StorageService = {
       citations?: Citation[];
       attachments?: Attachment[];
       exerciseId?: string;
+      provider?: string;
     }
   ): Promise<Message> {
     const message: Message = {
@@ -160,6 +161,7 @@ export const StorageService = {
       citations: extras?.citations,
       attachments: extras?.attachments,
       exerciseId: extras?.exerciseId,
+      provider: extras?.provider,
       timestamp: Date.now(),
     };
     await getDB().messages.add(message);
@@ -484,6 +486,35 @@ export const StorageService = {
       metadata,
       timestamp: Date.now(),
     });
+  },
+
+  async getTotalCardCount(): Promise<number> {
+    return getDB().srsCards.count();
+  },
+
+  async getNextScheduledReview(): Promise<{ date: number; count: number } | null> {
+    const now = Date.now();
+    // Find the earliest future card
+    const nextCard = await getDB()
+      .srsCards.where("nextReviewDate")
+      .above(now)
+      .sortBy("nextReviewDate")
+      .then((cards) => cards[0]);
+
+    if (!nextCard) return null;
+
+    // Count all cards due on that same day
+    const nextDay = new Date(nextCard.nextReviewDate);
+    nextDay.setHours(0, 0, 0, 0);
+    const dayStart = nextDay.getTime();
+    const dayEnd = dayStart + 86_400_000;
+
+    const count = await getDB()
+      .srsCards.where("nextReviewDate")
+      .between(dayStart, dayEnd)
+      .count();
+
+    return { date: dayStart, count };
   },
 
   async listExercisesBySourceItem(sourceItemId: string) {
