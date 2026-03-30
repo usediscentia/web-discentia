@@ -265,6 +265,7 @@ export function useChat() {
               const savedMessage = await StorageService.addMessage(convId!, "assistant", cleanContent, {
                 citations,
                 exerciseId,
+                provider: config.type,
               });
 
               // Now save the exercise with the real messageId

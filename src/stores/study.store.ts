@@ -9,7 +9,7 @@ import { useProviderStore } from "@/stores/provider.store";
 import { getAIProvider } from "@/services/ai";
 import { buildEvaluationPrompt } from "@/services/ai/prompts/review.prompts";
 
-type Phase = "loading" | "answering" | "evaluating" | "evaluated" | "complete";
+type Phase = "loading" | "today" | "answering" | "evaluating" | "evaluated" | "complete";
 type AIVerdict = "correct" | "partial" | "incorrect";
 
 interface UpcomingBucket {
@@ -42,12 +42,18 @@ interface StudyState {
   activeLibraryName: string | null;
   activeLibraryColor: string | null;
 
+  // Today screen data
+  totalCardsInSystem: number;
+  nextSessionDate: number | null;
+  nextSessionCount: number;
+
   // Source contexts for AI evaluation
   sourceContexts: Record<string, string>; // libraryItemId → text
   accentColors: Record<string, string>; // libraryItemId → library color hex
 
   // Actions
   initSession: () => Promise<void>;
+  startReview: () => void;
   submitAnswer: (answer: string) => Promise<void>;
   skipCard: () => void;
   rateCard: (rating: ReviewRating) => Promise<void>;
@@ -70,6 +76,10 @@ export const useStudyStore = create<StudyState>((set, get) => ({
   activeLibraryName: null,
   activeLibraryColor: null,
 
+  totalCardsInSystem: 0,
+  nextSessionDate: null,
+  nextSessionCount: 0,
+
   sourceContexts: {},
   accentColors: {},
 
@@ -85,12 +95,17 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       accentColors: {},
       activeLibraryName: null,
       activeLibraryColor: null,
+      totalCardsInSystem: 0,
+      nextSessionDate: null,
+      nextSessionCount: 0,
     });
 
-    const [cards, stats, insights] = await Promise.all([
+    const [cards, stats, insights, totalCards, nextReview] = await Promise.all([
       StorageService.getDueCards(20),
       StorageService.getDashboardStats(),
       StorageService.getDashboardInsights(),
+      StorageService.getTotalCardCount(),
+      StorageService.getNextScheduledReview(),
     ]);
 
     const upcomingReviews: UpcomingBucket[] = insights.upcomingReviews.map(
@@ -103,7 +118,10 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       dueToday: stats.dueToday,
       reviewedToday: stats.reviewedToday,
       upcomingReviews,
-      phase: cards.length === 0 ? "complete" : "answering",
+      totalCardsInSystem: totalCards,
+      nextSessionDate: nextReview?.date ?? null,
+      nextSessionCount: nextReview?.count ?? 0,
+      phase: "today",
     });
 
     // Non-blocking: load source contexts and accent colors
@@ -169,6 +187,12 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     })();
   },
 
+  startReview: () => {
+    const { cards } = get();
+    if (cards.length === 0) return;
+    set({ phase: "answering" });
+  },
+
   submitAnswer: async (answer: string) => {
     if (get().phase !== "answering") return;
     const { cards, currentIndex, sourceContexts } = get();
@@ -206,7 +230,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
             onComplete: (fullText) => resolve(fullText),
             onError: (err) => reject(err),
           }
-        );
+        ).catch(reject);
       });
 
       // Strip markdown fences before parsing

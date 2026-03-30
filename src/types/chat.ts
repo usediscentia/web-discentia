@@ -15,6 +15,7 @@ export interface Message {
   citations?: Citation[];
   attachments?: Attachment[];
   timestamp: number;
+  provider?: string;
 }
 
 export interface Attachment {
