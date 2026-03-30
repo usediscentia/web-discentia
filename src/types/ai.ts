@@ -3,8 +3,7 @@ export type AIProviderType =
   | "anthropic"
   | "ollama"
   | "openrouter"
-  | "github-copilot"
-  | "openui";
+  | "github-copilot";
 
 export interface ProviderConfig {
   type: AIProviderType;
@@ -86,11 +85,5 @@ export const PROVIDER_DEFAULTS: Record<
     defaultModel: "", // set after first fetch
     requiresApiKey: true,
     apiKeyDescription: "Connect your GitHub account with an active Copilot subscription",
-  },
-  openui: {
-    displayName: "OpenUI",
-    models: ["gpt-4o", "gpt-4o-mini", "claude-3.5-sonnet"],
-    defaultModel: "gpt-4o",
-    requiresApiKey: true,
   },
 };
