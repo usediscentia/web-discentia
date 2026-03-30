@@ -14,7 +14,7 @@ export interface ProviderConfigState {
 
 export type OllamaStatus = "unknown" | "connected" | "disconnected";
 
-const SERVER_KEY_PROVIDERS: AIProviderType[] = ["openai", "anthropic", "openrouter", "github-copilot", "openui"];
+const SERVER_KEY_PROVIDERS: AIProviderType[] = ["openai", "anthropic", "openrouter", "github-copilot"];
 
 const defaultConfigs: Record<AIProviderType, ProviderConfigState> = {
   openai: { apiKey: "", model: PROVIDER_DEFAULTS.openai.defaultModel },
@@ -22,7 +22,6 @@ const defaultConfigs: Record<AIProviderType, ProviderConfigState> = {
   ollama: { apiKey: "", model: PROVIDER_DEFAULTS.ollama.defaultModel },
   openrouter: { apiKey: "", model: PROVIDER_DEFAULTS.openrouter.defaultModel },
   "github-copilot": { apiKey: "", model: PROVIDER_DEFAULTS["github-copilot"].defaultModel },
-  openui: { apiKey: "", model: PROVIDER_DEFAULTS.openui.defaultModel },
 };
 
 interface ProviderState {
