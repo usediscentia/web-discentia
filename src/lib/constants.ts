@@ -28,4 +28,4 @@ You help students learn by:
 - Encouraging active learning and critical thinking
 - Answering questions patiently
 
-Keep responses focused and educational. Use markdown formatting when helpful.`;
+Keep responses focused and educational.`;
