@@ -50,6 +50,7 @@ interface StudyState {
   // Source contexts for AI evaluation
   sourceContexts: Record<string, string>; // libraryItemId → text
   accentColors: Record<string, string>; // libraryItemId → library color hex
+  libraryNames: Record<string, string>; // libraryItemId → library name
 
   // Actions
   initSession: () => Promise<void>;
@@ -82,6 +83,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
 
   sourceContexts: {},
   accentColors: {},
+  libraryNames: {},
 
   initSession: async () => {
     set({
@@ -93,6 +95,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       sessionStartTime: Date.now(),
       sourceContexts: {},
       accentColors: {},
+      libraryNames: {},
       activeLibraryName: null,
       activeLibraryColor: null,
       totalCardsInSystem: 0,
@@ -128,6 +131,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     void (async () => {
       const contexts: Record<string, string> = {};
       const colors: Record<string, string> = {};
+      const names: Record<string, string> = {};
       let firstName: string | null = null;
       let firstColor: string | null = null;
 
@@ -164,6 +168,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
               const library = await StorageService.getLibrary(item.libraryId);
               if (library) {
                 colors[card.libraryItemId] = library.color;
+                names[card.libraryItemId] = library.name;
                 if (!firstName) {
                   firstName = library.name;
                   firstColor = library.color;
@@ -181,6 +186,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       set({
         sourceContexts: contexts,
         accentColors: colors,
+        libraryNames: names,
         activeLibraryName: firstName,
         activeLibraryColor: firstColor,
       });
