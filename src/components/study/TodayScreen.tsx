@@ -5,6 +5,7 @@ import { CheckCircle2, BookOpen, Flame, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStudyStore } from "@/stores/study.store";
 import { useAppStore } from "@/stores/app.store";
+import { CardOrbit } from "./CardOrbit";
 
 function formatDateLocale(date: Date): string {
   return date.toLocaleDateString("pt-BR", {
@@ -37,6 +38,8 @@ export function TodayScreen() {
     nextSessionDate,
     nextSessionCount,
     startReview,
+    accentColors,
+    libraryNames,
   } = useStudyStore();
 
   const setActiveView = useAppStore((s) => s.setActiveView);
@@ -45,6 +48,12 @@ export function TodayScreen() {
   const dateString = formatDateLocale(today);
   const hasDueCards = cards.length > 0;
   const hasAnyCards = totalCardsInSystem > 0;
+
+  const cardOrbitItems = cards.map((card) => ({
+    card,
+    libraryName: card.libraryItemId ? (libraryNames[card.libraryItemId] ?? "Biblioteca") : "Biblioteca",
+    libraryColor: card.libraryItemId ? (accentColors[card.libraryItemId] ?? "#34D399") : "#34D399",
+  }));
 
   // State 3 — No cards at all
   if (!hasAnyCards) {
@@ -138,9 +147,12 @@ export function TodayScreen() {
   const progress = totalDue > 0 ? Math.round((reviewedToday / (reviewedToday + cards.length)) * 100) : 0;
 
   return (
-    <div className="flex items-center justify-center h-full px-4">
+    <div className="relative flex items-center justify-center h-full px-4 overflow-hidden">
+      <CardOrbit cards={cardOrbitItems} />
+
       <motion.div
-        className="flex flex-col items-center gap-6 text-center max-w-sm w-full"
+        className="relative flex flex-col items-center gap-6 text-center max-w-sm w-full"
+        style={{ zIndex: 20 }}
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 400, damping: 28 }}
