@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { useAppStore } from "@/stores/app.store";
 import type { DashboardDueByLibrary } from "@/types/dashboard";
 
@@ -58,7 +59,7 @@ export default function LibraryReviews({ libraries }: LibraryReviewsProps) {
                   </span>
                 </div>
                 {index < rows.length - 1 ? (
-                  <div className="h-px w-full bg-[#F0EDE9]" />
+                  <Separator className="bg-[#F0EDE9]" />
                 ) : null}
               </div>
             );

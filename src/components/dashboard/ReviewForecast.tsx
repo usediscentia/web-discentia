@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { Separator } from "@/components/ui/separator";
 import type { DashboardUpcomingReview } from "@/types/dashboard";
 
 interface ReviewForecastProps {
@@ -39,7 +40,7 @@ export default function ReviewForecast({ upcoming }: ReviewForecastProps) {
                 </span>
               </div>
               {index < upcoming.length - 1 ? (
-                <div className="h-px w-full bg-[#F0EDE9]" />
+                <Separator className="bg-[#F0EDE9]" />
               ) : null}
             </div>
           );
