@@ -6,12 +6,140 @@ import {
   Square3Stack3DIcon,
   QuestionMarkCircleIcon,
 } from "@heroicons/react/24/outline";
+import { ProviderIcon } from "@lobehub/icons";
+import { KeyRound } from "lucide-react";
+import { useProviderStore } from "@/stores/provider.store";
+import { useAppStore } from "@/stores/app.store";
+import { PROVIDER_DEFAULTS } from "@/types/ai";
+import type { AIProviderType } from "@/types/ai";
 
 interface ChatEmptyProps {
   onPromptClick?: (prompt: string) => void;
 }
 
+const providerCards: Array<{
+  id: AIProviderType;
+  name: string;
+  lobeProvider: string;
+  description: string;
+  tag: string;
+}> = [
+  {
+    id: "openai",
+    name: "OpenAI",
+    lobeProvider: "openai",
+    description: "GPT-4o and more",
+    tag: "API Key",
+  },
+  {
+    id: "ollama",
+    name: "Ollama",
+    lobeProvider: "ollama",
+    description: "Run models locally",
+    tag: "Local",
+  },
+  {
+    id: "openrouter",
+    name: "OpenRouter",
+    lobeProvider: "openrouter",
+    description: "Access multiple providers",
+    tag: "Multi-model",
+  },
+];
+
+function SetupCard() {
+  const { setSettingsOpen } = useAppStore();
+
+  return (
+    <div className="flex flex-col items-center justify-center flex-1 gap-8 w-full px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+        className="flex flex-col items-center gap-3"
+      >
+        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#1A1A1A]">
+          <AcademicCapIcon className="w-7 h-7 text-white" />
+        </div>
+        <h1 className="text-[22px] font-semibold text-[#1A1A1A] tracking-[-0.5px]">
+          Welcome to Discentia
+        </h1>
+        <p className="text-[14px] text-[#9CA3AF] text-center max-w-[340px] leading-relaxed">
+          Connect an AI provider to start chatting, generating flashcards, and reviewing with spaced repetition.
+        </p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.15, ease: [0.23, 1, 0.32, 1] }}
+        className="flex items-stretch gap-3"
+      >
+        {providerCards.map((provider, i) => (
+          <motion.button
+            key={provider.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.4,
+              delay: 0.2 + i * 0.08,
+              ease: [0.23, 1, 0.32, 1],
+            }}
+            onClick={() => setSettingsOpen(true)}
+            className="group flex flex-col items-center gap-3 w-[160px] p-5 rounded-2xl border border-[#E5E7EB] bg-white cursor-pointer transition-all duration-200 hover:border-[#D1D5DB] hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] active:scale-[0.97]"
+          >
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#F9FAFB] group-hover:bg-[#F3F4F6] transition-colors">
+              <ProviderIcon provider={provider.lobeProvider} size={22} type="color" />
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-[14px] font-semibold text-[#1A1A1A]">
+                {provider.name}
+              </span>
+              <span className="text-[12px] text-[#9CA3AF] leading-snug text-center">
+                {provider.description}
+              </span>
+            </div>
+            <span className="text-[10px] font-medium text-[#6B7280] bg-[#F3F4F6] px-2 py-0.5 rounded-full">
+              {provider.tag}
+            </span>
+          </motion.button>
+        ))}
+      </motion.div>
+
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.5 }}
+        className="text-[12px] text-[#C4C4C4] flex items-center gap-1.5"
+      >
+        <KeyRound size={11} />
+        API keys are encrypted and stored locally on your device
+      </motion.p>
+    </div>
+  );
+}
+
 export function ChatEmpty({ onPromptClick }: ChatEmptyProps) {
+  const providerConfigs = useProviderStore((s) => s.providerConfigs);
+  const ollamaStatus = useProviderStore((s) => s.ollamaStatus);
+
+  const isConfigured = (() => {
+    for (const [type, config] of Object.entries(providerConfigs)) {
+      if (type === "ollama") {
+        if (ollamaStatus === "connected") return true;
+        continue;
+      }
+      if (PROVIDER_DEFAULTS[type as AIProviderType]?.requiresApiKey && config.apiKey) {
+        return true;
+      }
+    }
+    return false;
+  })();
+
+  if (!isConfigured) {
+    return <SetupCard />;
+  }
+
   const prompts = [
     {
       icon: Square3Stack3DIcon,
