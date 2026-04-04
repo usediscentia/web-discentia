@@ -157,6 +157,17 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
       const models: string[] = (data.models ?? []).map((m) => m.name);
       set({ ollamaStatus: "connected", ollamaModels: models });
 
+      // Auto-select Ollama if current provider has no key configured
+      {
+        const s = get();
+        const currentNeedsKey = PROVIDER_DEFAULTS[s.selectedProvider].requiresApiKey;
+        const currentConfig = s.providerConfigs[s.selectedProvider];
+        if (currentNeedsKey && !currentConfig.apiKey && models.length > 0) {
+          set({ selectedProvider: "ollama" });
+          localStorage.setItem(STORAGE_KEYS.SELECTED_PROVIDER, "ollama");
+        }
+      }
+
       // Auto-select first available model if current one isn't installed
       const state = get();
       const currentModel = state.providerConfigs.ollama.model;
