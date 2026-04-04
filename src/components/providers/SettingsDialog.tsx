@@ -84,6 +84,14 @@ export function SettingsDialog() {
       setTimeout(() => {
         void useProviderStore.getState().saveProviderConfig(type, apiKey);
       }, 0);
+
+      // Auto-select this provider if current one has no key configured
+      const state = useProviderStore.getState();
+      const currentConfig = state.providerConfigs[state.selectedProvider];
+      const currentNeedsKey = PROVIDER_DEFAULTS[state.selectedProvider].requiresApiKey;
+      if (currentNeedsKey && !currentConfig.apiKey) {
+        state.setSelectedProvider(type);
+      }
     }
 
     if (type === "ollama") {
