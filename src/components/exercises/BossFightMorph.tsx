@@ -47,7 +47,7 @@ export function BossFightMorph({
   const [phase, setPhase] = useState<"fighting" | "victory" | "defeat">(
     "fighting"
   );
-  const [startTime] = useState(Date.now());
+  const [startTime] = useState(() => Date.now());
 
   const round = data.rounds[currentRound];
   const hpPercent = (bossHP / data.totalHP) * 100;

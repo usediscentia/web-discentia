@@ -33,7 +33,7 @@ export function QuizMorph({
   const [answered, setAnswered] = useState(false);
   const [results, setResults] = useState<boolean[]>([]);
   const [completed, setCompleted] = useState(false);
-  const [startTime] = useState(Date.now());
+  const [startTime] = useState(() => Date.now());
 
   const questions = data.questions;
   const total = questions.length;

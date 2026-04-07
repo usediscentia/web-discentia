@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { StorageService } from "@/services/storage";
 import { sm2 } from "@/lib/sm2";
 import type { ReviewRating } from "@/lib/sm2";
+import { buildWeekDayData } from "@/lib/dashboard-utils";
+import type { WeekDayData } from "@/types/dashboard";
 import { ReviewComplete } from "./ReviewComplete";
 import { ProgressRing } from "./ProgressRing";
 import { FlashcardFront } from "./FlashcardFront";
@@ -61,8 +63,9 @@ export default function ReviewView() {
   const [complete, setComplete] = useState(false);
   const [streak, setStreak] = useState(0);
   const [lastRating, setLastRating] = useState<ReviewRating | null>(null);
-  const [isInputFocused, setIsInputFocused] = useState(false);
   const [sessionStartTime] = useState(() => Date.now());
+  const [sessionDuration, setSessionDuration] = useState(0);
+  const [weekDayData, setWeekDayData] = useState<WeekDayData[]>([]);
 
   const { getActiveProviderConfig } = useProviderStore();
 
@@ -70,9 +73,11 @@ export default function ReviewView() {
     Promise.all([
       StorageService.getDueCards(20),
       StorageService.getDashboardStats(),
-    ]).then(([due, stats]) => {
+      StorageService.getWeeklyCardLoad(),
+    ]).then(([due, stats, weeklyDue]) => {
       setCards(due);
       setStreak(stats.streak);
+      setWeekDayData(buildWeekDayData(stats.activityByDay, weeklyDue));
       setLoading(false);
 
       const itemIds = [
@@ -206,14 +211,14 @@ export default function ReviewView() {
       );
 
       if (index + 1 >= cards.length) {
+        setSessionDuration(Date.now() - sessionStartTime);
         setComplete(true);
       } else {
         setIndex((i) => i + 1);
         setPhase("input");
-        setIsInputFocused(false);
       }
     },
-    [current, index, cards.length]
+    [current, index, cards.length, sessionStartTime]
   );
 
   const handleRestart = useCallback(() => {
@@ -224,6 +229,7 @@ export default function ReviewView() {
     setSessionCards([]);
     setComplete(false);
     setLastRating(null);
+    setSessionDuration(0);
     StorageService.getDueCards(20).then((due) => {
       setCards(due);
       setLoading(false);
@@ -266,8 +272,9 @@ export default function ReviewView() {
         partialCount={partialCount}
         incorrectCount={incorrectCount}
         streak={streak}
-        sessionDuration={Date.now() - sessionStartTime}
+        sessionDuration={sessionDuration}
         accentColor={accentColor}
+        weekDayData={weekDayData}
         onRestart={handleRestart}
       />
     );
@@ -305,7 +312,6 @@ export default function ReviewView() {
                 accentColor={accentColor}
                 remaining={cards.length - index - 1}
                 isEvaluating={phase === "evaluating"}
-                isFocused={isInputFocused}
                 verdict={currentVerdict}
                 isDraggable={phase === "input"}
                 onSwipeLeft={handleDontKnow}
@@ -328,7 +334,6 @@ export default function ReviewView() {
                 <AnswerInput
                   onSubmit={handleCheck}
                   onSkip={handleDontKnow}
-                  onFocusChange={setIsInputFocused}
                 />
               </motion.div>
             )}

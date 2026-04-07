@@ -9,7 +9,6 @@ import {
   type KeyboardEvent,
 } from "react";
 import {
-  PlusIcon,
   BoltIcon,
   ArrowUpIcon,
   StopIcon,
@@ -83,8 +82,8 @@ export function InputBar({
   const hasContent = value.trim().length > 0;
 
   return (
-    <div className="flex flex-col items-center w-full px-8 pt-3 pb-6 gap-2">
-      <div className="w-[720px] mx-auto flex flex-wrap gap-1.5 min-h-5">
+    <div className="flex flex-col items-center w-full gap-2 px-4 pt-3 pb-4 md:px-8 md:pb-6">
+      <div className="w-full max-w-[720px] mx-auto flex flex-wrap gap-1.5 min-h-5">
         {selectedLibraries.map((library) => (
           <button
             key={library.id}
@@ -106,12 +105,8 @@ export function InputBar({
         ))}
       </div>
 
-      <div className="relative w-[720px] mx-auto">
+      <div className="relative w-full max-w-[720px] mx-auto">
         <div className="flex items-center gap-2.5 h-[52px] bg-white rounded-[26px] border border-[#E5E7EB] pl-4 pr-1.5">
-          <button className="flex items-center justify-center w-8 h-8 rounded-2xl bg-[#F3F4F6] shrink-0 cursor-pointer hover:bg-[#E5E7EB] transition-colors">
-            <PlusIcon className="w-4 h-4 text-[#6B7280]" />
-          </button>
-
           <button
             type="button"
             className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1 shrink-0 cursor-pointer ${
