@@ -408,7 +408,8 @@ export default function EditorView() {
 
   useEffect(() => {
     if (!libraryId && libraries.length > 0) {
-      setLibraryId(libraries[0].id);
+      const timeout = window.setTimeout(() => setLibraryId(libraries[0].id), 0);
+      return () => window.clearTimeout(timeout);
     }
   }, [libraries, libraryId]);
 
@@ -451,13 +452,22 @@ export default function EditorView() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     if (!editorItemId) {
-      setContentReady(true);
-      return;
+      const timeout = window.setTimeout(() => {
+        if (!cancelled) setContentReady(true);
+      }, 0);
+      return () => {
+        cancelled = true;
+        window.clearTimeout(timeout);
+      };
     }
 
-    setContentReady(false);
+    const loadingTimeout = window.setTimeout(() => {
+      if (!cancelled) setContentReady(false);
+    }, 0);
     StorageService.getLibraryItem(editorItemId).then((item) => {
+      if (cancelled) return;
       if (!item) {
         setContentReady(true);
         return;
@@ -467,6 +477,10 @@ export default function EditorView() {
       setInitialContent(item.content);
       setContentReady(true);
     });
+    return () => {
+      cancelled = true;
+      window.clearTimeout(loadingTimeout);
+    };
   }, [editorItemId]);
 
   const handleUpdate = useCallback(
@@ -533,25 +547,28 @@ export default function EditorView() {
     ]
   );
 
+  const [statusNow, setStatusNow] = useState(() => Date.now());
+
   const saveStatusText = useMemo(() => {
     if (isSaving) return null;
     if (lastSavedAt) {
-      const seconds = Math.floor((Date.now() - lastSavedAt) / 1000);
+      const seconds = Math.floor((statusNow - lastSavedAt) / 1000);
       if (seconds < 5) return "Saved";
       if (seconds < 60) return `Saved ${seconds}s ago`;
       return `Saved ${Math.floor(seconds / 60)}m ago`;
     }
     return null;
-  }, [isSaving, lastSavedAt]);
+  }, [isSaving, lastSavedAt, statusNow]);
 
-  const [, setTick] = useState(0);
   useEffect(() => {
     if (!lastSavedAt) return;
-    const interval = setInterval(() => setTick((t) => t + 1), 10000);
-    return () => clearInterval(interval);
+    const initialTimeout = window.setTimeout(() => setStatusNow(Date.now()), 0);
+    const interval = setInterval(() => setStatusNow(Date.now()), 10000);
+    return () => {
+      window.clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
   }, [lastSavedAt]);
-
-  const selectedLibrary = libraries.find((l) => l.id === libraryId);
 
   if (!contentReady) {
     return (

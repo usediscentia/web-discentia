@@ -128,7 +128,9 @@ export function AIProviderSelector({ isOpen, onClose }: AIProviderSelectorProps)
   } = useProviderStore();
   const { setActiveView } = useAppStore();
 
-  const [modelSearch, setModelSearch] = useState("");
+  const [modelSearchByProvider, setModelSearchByProvider] = useState<
+    Partial<Record<AIProviderType, string>>
+  >({});
 
   useEffect(() => {
     if (isOpen) {
@@ -139,10 +141,7 @@ export function AIProviderSelector({ isOpen, onClose }: AIProviderSelectorProps)
     }
   }, [isOpen, checkOllamaConnection, selectedProvider, fetchGithubCopilotModels]);
 
-  // Reset search when switching providers
-  useEffect(() => {
-    setModelSearch("");
-  }, [selectedProvider]);
+  const modelSearch = modelSearchByProvider[selectedProvider] ?? "";
 
   const getModels = (id: AIProviderType): string[] => {
     if (id === "ollama") return ollamaModels;
@@ -358,7 +357,12 @@ export function AIProviderSelector({ isOpen, onClose }: AIProviderSelectorProps)
                                   />
                                   <input
                                     value={modelSearch}
-                                    onChange={(e) => setModelSearch(e.target.value)}
+                                    onChange={(e) =>
+                                      setModelSearchByProvider((prev) => ({
+                                        ...prev,
+                                        [provider.id]: e.target.value,
+                                      }))
+                                    }
                                     placeholder="Filter models…"
                                     className="w-full bg-[#F8F9FA] rounded-lg pl-7 pr-3 py-1.5 text-[12px] text-[#1A1A1A] placeholder:text-[#C4C4C4] outline-none border border-transparent focus:border-[#E5E7EB] focus:bg-white transition-[border-color,background-color] duration-150 ease-out"
                                     onClick={(e) => e.stopPropagation()}

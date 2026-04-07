@@ -171,7 +171,7 @@ export function chunkPageItems(
   const headingBlocks = filtered.filter((b) => b.isHeading);
 
   // Interleaved processing: preserve heading positions relative to body
-  let bodyMerged: string[] = [];
+  const bodyMerged: string[] = [];
   {
     let pending = "";
     for (const b of bodyBlocks.map((b) => b.text)) {

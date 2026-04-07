@@ -52,7 +52,7 @@ export function ReviewCard({ card, index, total, onCheck, onDontKnow }: ReviewCa
             onClick={onDontKnow}
             className="px-4 py-2 text-xs font-medium text-[#9CA3AF] border border-[#E5E7EB] rounded-lg cursor-pointer hover:bg-[#F9FAFB] transition-colors"
           >
-            I don't know
+            I don&rsquo;t know
           </button>
           <div className="flex-1" />
           <button

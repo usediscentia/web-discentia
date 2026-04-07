@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "motion/react";
 import { Check, Minus, X, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,14 +15,15 @@ function formatDuration(ms: number): string {
 
 export function StudyComplete() {
   const { results, streak, sessionStartTime, restartSession } = useStudyStore();
+  const [duration] = useState(() =>
+    sessionStartTime > 0 ? Date.now() - sessionStartTime : 0
+  );
 
   const total = results.length;
   const correctCount = results.filter((r) => r.verdict === "correct").length;
   const partialCount = results.filter((r) => r.verdict === "partial").length;
   const incorrectCount = results.filter((r) => r.verdict === "incorrect" || r.verdict === null).length;
   const accuracy = total > 0 ? Math.round(((correctCount + partialCount * 0.5) / total) * 100) : 0;
-  const duration = sessionStartTime > 0 ? Date.now() - sessionStartTime : 0;
-
   const stats = [
     { icon: Check, color: "text-emerald-600", bg: "bg-emerald-100", label: "Correct", value: correctCount },
     { icon: Minus, color: "text-amber-600", bg: "bg-amber-100", label: "Partial", value: partialCount },

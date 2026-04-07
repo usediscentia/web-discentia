@@ -23,10 +23,10 @@ import { GITHUB_COPILOT_USERNAME_KEY } from "@/lib/constants";
 export function GitHubCopilotConnect() {
   const {
     providerConfigs,
-    setProviderConfig,
     githubCopilotModels,
+    githubCopilotError,
     fetchGithubCopilotModels,
-    saveProviderConfig,
+    clearGithubCopilotConnection,
   } = useProviderStore();
 
   const config = providerConfigs["github-copilot"];
@@ -54,14 +54,14 @@ export function GitHubCopilotConnect() {
   }, [isConnected]);
 
   const handleDisconnect = () => {
-    setProviderConfig("github-copilot", { ...config, apiKey: "", model: "" });
-    localStorage.removeItem(GITHUB_COPILOT_USERNAME_KEY);
-    // Clear the dynamic model list so the provider selector shows no models
-    useProviderStore.setState({ githubCopilotModels: [] });
+    void clearGithubCopilotConnection();
   };
 
   const handleModelChange = (model: string) => {
-    setProviderConfig("github-copilot", { ...config, model });
+    useProviderStore.getState().setProviderConfig("github-copilot", {
+      ...config,
+      model,
+    });
   };
 
   // ── Connected ──
@@ -76,6 +76,7 @@ export function GitHubCopilotConnect() {
             </span>
             {username && (
               <span className="flex items-center gap-1.5 text-xs text-[#888]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`https://avatars.githubusercontent.com/${username}`}
                   alt={username}
@@ -118,6 +119,16 @@ export function GitHubCopilotConnect() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        ) : githubCopilotError ? (
+          <div className="space-y-2 rounded-lg border border-red-200 bg-red-50/80 p-3">
+            <p className="text-xs text-red-700">{githubCopilotError}</p>
+            <button
+              onClick={handleDisconnect}
+              className="text-xs font-medium text-red-700 hover:text-red-800 transition-colors cursor-pointer"
+            >
+              Reconnect GitHub Copilot
+            </button>
           </div>
         ) : (
           <div className="flex items-center gap-2">
@@ -179,7 +190,7 @@ export function GitHubCopilotConnect() {
       ? state.message
       : state.status === "expired"
       ? "Code expired — try again"
-      : null;
+      : githubCopilotError;
 
   return (
     <div className="space-y-2">

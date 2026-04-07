@@ -87,6 +87,22 @@ export default function LibraryView() {
     await addFiles(activeLibraryId, files);
   };
 
+  const handleDeleteItem = async (item: LibraryItem) => {
+    const confirmed = window.confirm(`Delete "${item.title}"?`);
+    if (!confirmed) return;
+    await deleteItem(item.id);
+  };
+
+  const handleDeleteActiveLibrary = async () => {
+    if (!activeLibraryId) return;
+    const library = librariesMap[activeLibraryId];
+    const confirmed = window.confirm(
+      `Delete library "${library?.name ?? "this library"}" and all its items?`
+    );
+    if (!confirmed) return;
+    await deleteLibrary(activeLibraryId);
+  };
+
   // When a detail item is selected, show the document detail page instead of the grid
   if (detailItem) {
     return (
@@ -94,8 +110,8 @@ export default function LibraryView() {
         item={detailItem}
         library={librariesMap[detailItem.libraryId]}
         onBack={() => setDetailItem(null)}
-        onDelete={() => {
-          deleteItem(detailItem.id);
+        onDelete={async () => {
+          await handleDeleteItem(detailItem);
           setDetailItem(null);
         }}
       />
@@ -210,7 +226,7 @@ export default function LibraryView() {
                       libraryColor={library?.color || "#CCC"}
                       index={i}
                       onOpen={() => setDetailItem(item)}
-                      onDelete={() => deleteItem(item.id)}
+                      onDelete={() => handleDeleteItem(item)}
                       onOpenInEditor={
                         item.type === "markdown" || item.type === "text"
                           ? () => {
@@ -273,7 +289,7 @@ export default function LibraryView() {
       {activeLibraryId && (
         <button
           className="fixed bottom-5 right-5 text-xs text-red-600 bg-white border border-red-200 rounded-md px-3 py-2 cursor-pointer hover:bg-red-50"
-          onClick={() => deleteLibrary(activeLibraryId)}
+          onClick={handleDeleteActiveLibrary}
           disabled={isMutating}
         >
           Delete selected library

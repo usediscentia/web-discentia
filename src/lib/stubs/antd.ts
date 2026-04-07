@@ -1,7 +1,5 @@
 // Minimal stub for antd — only ConfigProvider is used by antd-style internals pulled in by @lobehub/icons.
-import { createContext, useContext, type ReactNode } from "react";
-
-const AntdConfigContext = createContext({});
+import type { ReactNode } from "react";
 
 export function ConfigProvider({ children }: { children: ReactNode }) {
   return children as React.ReactElement;
