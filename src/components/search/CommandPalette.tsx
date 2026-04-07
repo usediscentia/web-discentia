@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Search,
@@ -79,12 +79,15 @@ export function CommandPalette() {
   // Focus input + load libraries when opened
   useEffect(() => {
     if (commandPaletteOpen) {
-      setQuery("");
-      setActiveIndex(0);
+      const timeout = window.setTimeout(() => {
+        setQuery("");
+        setActiveIndex(0);
+      }, 0);
       setTimeout(() => inputRef.current?.focus(), 50);
       StorageService.listLibraries().then((libs) =>
         setLibraries(new Map(libs.map((l) => [l.id, l])))
       );
+      return () => window.clearTimeout(timeout);
     }
   }, [commandPaletteOpen]);
 
@@ -96,7 +99,8 @@ export function CommandPalette() {
     StorageService.searchLibraryItems({ query: "", limit: 5 }).then((r) =>
       setLibraryResults(r)
     );
-    setConversationResults([]);
+    const timeout = window.setTimeout(() => setConversationResults([]), 0);
+    return () => window.clearTimeout(timeout);
   }, [commandPaletteOpen, query]);
 
   // Debounced search
@@ -124,13 +128,16 @@ export function CommandPalette() {
     };
   }, [query]);
 
-  const allResults = [
-    ...libraryResults.map((r) => ({ type: "library" as const, data: r })),
-    ...conversationResults.map((r) => ({
-      type: "conversation" as const,
-      data: r,
-    })),
-  ];
+  const allResults = useMemo(
+    () => [
+      ...libraryResults.map((r) => ({ type: "library" as const, data: r })),
+      ...conversationResults.map((r) => ({
+        type: "conversation" as const,
+        data: r,
+      })),
+    ],
+    [libraryResults, conversationResults]
+  );
 
   const openResult = useCallback(
     (result: (typeof allResults)[number]) => {

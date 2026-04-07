@@ -29,7 +29,7 @@ export function FillGapMorph({
   const [activeGapId, setActiveGapId] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [startTime] = useState(Date.now());
+  const [startTime] = useState(() => Date.now());
 
   // Parse passage into segments: text parts and gap markers
   const segments = useMemo(() => {
@@ -65,7 +65,7 @@ export function FillGapMorph({
       map.set(gap.id, gap);
     }
     return map;
-  }, [data.gaps]);
+  }, [data]);
 
   const usedWords = useMemo(
     () => new Set(Object.values(filledGaps)),

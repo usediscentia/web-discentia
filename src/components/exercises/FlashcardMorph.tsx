@@ -23,7 +23,7 @@ export function FlashcardMorph({
   const [flipped, setFlipped] = useState(false);
   const [knew, setKnew] = useState<boolean[]>([]);
   const [completed, setCompleted] = useState(false);
-  const [startTime] = useState(Date.now());
+  const [startTime] = useState(() => Date.now());
 
   const cards = data.cards;
   const total = cards.length;

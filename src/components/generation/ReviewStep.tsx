@@ -56,8 +56,11 @@ export default function ReviewStep({
   useEffect(() => {
     if (!emblaApi) return;
     emblaApi.on("select", onSelect);
-    onSelect();
-    return () => { emblaApi.off("select", onSelect); };
+    const timeout = window.setTimeout(onSelect, 0);
+    return () => {
+      window.clearTimeout(timeout);
+      emblaApi.off("select", onSelect);
+    };
   }, [emblaApi, onSelect]);
 
   // Re-init embla when cards change

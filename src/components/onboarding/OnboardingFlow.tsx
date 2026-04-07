@@ -19,7 +19,6 @@ import { ProviderIcon } from "@lobehub/icons";
 import { useProviderStore } from "@/stores/provider.store";
 import { StorageService } from "@/services/storage";
 import { LIBRARY_COLORS } from "@/lib/colors";
-import { OLLAMA_API_URL } from "@/lib/constants";
 import type { AIProviderType } from "@/types/ai";
 
 const ONBOARDED_KEY = "discentia_onboarded";
@@ -322,8 +321,9 @@ function StepProvider({
 
   // Auto-detect Ollama on mount
   useEffect(() => {
-    setOllamaChecking(true);
+    const startTimeout = window.setTimeout(() => setOllamaChecking(true), 0);
     checkOllamaConnection().finally(() => setOllamaChecking(false));
+    return () => window.clearTimeout(startTimeout);
   }, [checkOllamaConnection]);
 
   const handleSelectProvider = useCallback(
@@ -395,8 +395,6 @@ function StepProvider({
           const isSelected = selected === provider.type;
           const isOllamaConnected =
             provider.type === "ollama" && ollamaStatus === "connected";
-          const isOllamaDisconnected =
-            provider.type === "ollama" && ollamaStatus === "disconnected";
 
           return (
             <motion.button

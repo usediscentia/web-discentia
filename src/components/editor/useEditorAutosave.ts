@@ -7,7 +7,6 @@ interface AutosaveOptions {
   itemId: string | null;
   libraryId: string | null;
   title: string;
-  itemType?: string;
   onItemCreated?: (id: string) => void;
 }
 
@@ -15,7 +14,6 @@ export function useEditorAutosave({
   itemId,
   libraryId,
   title,
-  itemType,
   onItemCreated,
 }: AutosaveOptions) {
   const [isSaving, setIsSaving] = useState(false);

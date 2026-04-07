@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { X } from "lucide-react";
 import { StorageService } from "@/services/storage";
 import type { FlashcardData } from "@/types/exercise";
@@ -17,12 +17,17 @@ export function BulkApproveModal({ cards, libraryItemId, onDone, onSkip }: BulkA
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
 
-  const toggle = (id: string) =>
+  const toggle = (id: string) => {
     setDismissed((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
+  };
 
   const kept = cards.filter((c) => !dismissed.has(c.id));
 

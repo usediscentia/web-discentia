@@ -10,6 +10,124 @@ import { useAppStore } from "@/stores/app.store";
 import { StorageService } from "@/services/storage";
 import MarkdownRenderer from "@/components/chat/MarkdownRenderer";
 
+function ReviewScheduleComponent({
+  items,
+}: {
+  items: { label: string; count: number }[];
+}) {
+  const { setActiveView } = useAppStore();
+
+  return (
+    <Card className="max-w-xs">
+      <CardContent className="pt-4 pb-4 space-y-2">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Calendar size={13} className="text-muted-foreground" />
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Upcoming
+          </span>
+        </div>
+        {items.map((item, i) => (
+          <div key={i} className="flex justify-between text-sm">
+            <span className="text-muted-foreground">{item.label}</span>
+            <span className="font-medium">{item.count} cards</span>
+          </div>
+        ))}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full mt-1"
+          onClick={() => setActiveView("study")}
+        >
+          Estudar agora →
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DeckDiagnosticComponent({
+  decks,
+}: {
+  decks: { name: string; overdueCards: number; retentionRate: number }[];
+}) {
+  const { setActiveView } = useAppStore();
+
+  return (
+    <Card className="max-w-xs">
+      <CardContent className="p-0 divide-y">
+        {decks.map((deck, i) => (
+          <div key={i} className="flex items-center justify-between px-4 py-3">
+            <div>
+              <p className="text-sm font-medium">{deck.name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {deck.overdueCards} atrasados · {deck.retentionRate}% retenção
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveView("study")}
+            >
+              Revisar
+            </Button>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function FlashCardBatchComponent({
+  cards,
+  deckName,
+}: {
+  cards: { question: string; answer: string }[];
+  deckName: string;
+}) {
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (saving || saved) return;
+    setSaving(true);
+    try {
+      await StorageService.createSRSCards(
+        cards.map((c) => ({ front: c.question, back: c.answer }))
+      );
+      setSaved(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2 max-w-sm">
+      {cards.map((card, i) => (
+        <Card key={i}>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-sm font-medium">{card.question}</p>
+            <p className="text-xs text-muted-foreground mt-2 border-t pt-2">
+              {card.answer}
+            </p>
+          </CardContent>
+        </Card>
+      ))}
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={handleSave}
+        disabled={saving || saved}
+      >
+        {saved
+          ? "✓ Adicionado ao deck"
+          : saving
+          ? "Salvando..."
+          : `Adicionar ao deck "${deckName}"`}
+      </Button>
+    </div>
+  );
+}
+
 /**
  * Markdown — plain text / markdown fallback.
  * The LLM uses this as root when no specialized UI component is needed.
@@ -71,35 +189,7 @@ export const ReviewSchedule = defineComponent({
       )
       .describe("Array of upcoming review buckets"),
   }),
-  component: ({ props }) => {
-    const { setActiveView } = useAppStore();
-    return (
-      <Card className="max-w-xs">
-        <CardContent className="pt-4 pb-4 space-y-2">
-          <div className="flex items-center gap-1.5 mb-2">
-            <Calendar size={13} className="text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Upcoming
-            </span>
-          </div>
-          {props.items.map((item, i) => (
-            <div key={i} className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{item.label}</span>
-              <span className="font-medium">{item.count} cards</span>
-            </div>
-          ))}
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full mt-1"
-            onClick={() => setActiveView("review")}
-          >
-            Estudar agora →
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  },
+  component: ({ props }) => <ReviewScheduleComponent items={props.items} />,
 });
 
 /**
@@ -122,32 +212,7 @@ export const DeckDiagnostic = defineComponent({
       )
       .describe("Array of decks needing attention"),
   }),
-  component: ({ props }) => {
-    const { setActiveView } = useAppStore();
-    return (
-      <Card className="max-w-xs">
-        <CardContent className="p-0 divide-y">
-          {props.decks.map((deck, i) => (
-            <div key={i} className="flex items-center justify-between px-4 py-3">
-              <div>
-                <p className="text-sm font-medium">{deck.name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {deck.overdueCards} atrasados · {deck.retentionRate}% retenção
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveView("review")}
-              >
-                Revisar
-              </Button>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    );
-  },
+  component: ({ props }) => <DeckDiagnosticComponent decks={props.decks} />,
 });
 
 /**
@@ -170,48 +235,7 @@ export const FlashCardBatch = defineComponent({
       .string()
       .describe("Topic or deck name shown on the save button"),
   }),
-  component: ({ props }) => {
-    const [saved, setSaved] = useState(false);
-    const [saving, setSaving] = useState(false);
-
-    const handleSave = async () => {
-      if (saving || saved) return;
-      setSaving(true);
-      try {
-        await StorageService.createSRSCards(
-          props.cards.map((c) => ({ front: c.question, back: c.answer }))
-        );
-        setSaved(true);
-      } finally {
-        setSaving(false);
-      }
-    };
-
-    return (
-      <div className="space-y-2 max-w-sm">
-        {props.cards.map((card, i) => (
-          <Card key={i}>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-sm font-medium">{card.question}</p>
-              <p className="text-xs text-muted-foreground mt-2 border-t pt-2">
-                {card.answer}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={handleSave}
-          disabled={saving || saved}
-        >
-          {saved
-            ? "✓ Adicionado ao deck"
-            : saving
-            ? "Salvando..."
-            : `Adicionar ao deck "${props.deckName}"`}
-        </Button>
-      </div>
-    );
-  },
+  component: ({ props }) => (
+    <FlashCardBatchComponent cards={props.cards} deckName={props.deckName} />
+  ),
 });

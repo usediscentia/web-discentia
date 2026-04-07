@@ -31,7 +31,6 @@ interface ChatMessagesProps {
   isGeneratingExercise?: boolean;
   onOpenCitation?: (citation: Citation) => void;
   highlightMessageId?: string | null;
-  highlightTerm?: string;
 }
 
 export function ChatMessages({
@@ -41,7 +40,6 @@ export function ChatMessages({
   isGeneratingExercise,
   onOpenCitation,
   highlightMessageId,
-  highlightTerm: _highlightTerm,
 }: ChatMessagesProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -76,7 +74,8 @@ export function ChatMessages({
     const last = messages[messages.length - 1];
     if (last?.role === "user") {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-      setIsNearBottom(true);
+      const timeout = window.setTimeout(() => setIsNearBottom(true), 0);
+      return () => window.clearTimeout(timeout);
     }
   }, [messages.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -86,9 +85,12 @@ export function ChatMessages({
     const el = messageRefs.current[highlightMessageId];
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
-      setFlashId(highlightMessageId);
-      const t = setTimeout(() => setFlashId(null), 2000);
-      return () => clearTimeout(t);
+      const flashTimeout = window.setTimeout(() => setFlashId(highlightMessageId), 0);
+      const clearTimeoutId = window.setTimeout(() => setFlashId(null), 2000);
+      return () => {
+        window.clearTimeout(flashTimeout);
+        window.clearTimeout(clearTimeoutId);
+      };
     }
   }, [highlightMessageId]);
 
@@ -289,7 +291,7 @@ function CitationsPanel({
                 </span>
                 {citation.excerpt && (
                   <span className="text-[12px] text-[#9CA3AF] leading-snug line-clamp-2">
-                    "{citation.excerpt}"
+                    &ldquo;{citation.excerpt}&rdquo;
                   </span>
                 )}
               </div>

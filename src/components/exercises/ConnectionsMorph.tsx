@@ -57,7 +57,7 @@ export function ConnectionsMorph({
   const [gameOver, setGameOver] = useState(false);
   const [shakeWrong, setShakeWrong] = useState(false);
   const [oneAwayHint, setOneAwayHint] = useState(false);
-  const [startTime] = useState(Date.now());
+  const [startTime] = useState(() => Date.now());
 
   const toggleWord = useCallback(
     (word: string) => {

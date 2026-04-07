@@ -11,7 +11,6 @@ interface FlashcardFrontProps {
   /** How many cards are still behind this one (for ghost deck effect) */
   remaining: number;
   isEvaluating?: boolean;
-  isFocused?: boolean;
   verdict?: Verdict;
   /** Enable swipe-left-to-skip gesture (only during input phase) */
   isDraggable?: boolean;
@@ -40,7 +39,6 @@ export function FlashcardFront({
   accentColor,
   remaining,
   isEvaluating = false,
-  isFocused = false,
   verdict,
   isDraggable = false,
   onSwipeLeft,
@@ -51,7 +49,6 @@ export function FlashcardFront({
   // Motion value to track drag offset for skip hint
   const dragX = useMotionValue(0);
   const skipOpacity = useTransform(dragX, [-120, -SWIPE_THRESHOLD, 0], [1, 0.7, 0]);
-  const keepOpacity = useTransform(dragX, [0, SWIPE_THRESHOLD, 120], [0, 0.7, 1]);
   const dragRotate = useTransform(dragX, [-200, 0, 200], [-6, 0, 6]);
 
   const hasVerdict = verdict != null;
@@ -71,7 +68,7 @@ export function FlashcardFront({
         { duration: 0.4, ease: "easeInOut" }
       );
     }
-  }, [verdict]);
+  }, [animateShake, scope, verdict]);
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const { offset, velocity } = info;

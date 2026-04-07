@@ -35,7 +35,7 @@ export function Tag({ children }: { children?: ReactNode; [key: string]: unknown
   return <span>{children}</span>;
 }
 
-export function CopyButton(_props: { [key: string]: unknown }) {
+export function CopyButton() {
   return null;
 }
 
@@ -43,7 +43,7 @@ export function Highlighter({ children }: { children?: ReactNode; [key: string]:
   return <>{children}</>;
 }
 
-export function ActionIcon(_props: { [key: string]: unknown }) {
+export function ActionIcon() {
   return null;
 }
 
@@ -59,7 +59,7 @@ export function Grid({ children }: { children?: ReactNode; [key: string]: unknow
   return <div>{children}</div>;
 }
 
-export function SearchBar(_props: { [key: string]: unknown }) {
+export function SearchBar() {
   return null;
 }
 

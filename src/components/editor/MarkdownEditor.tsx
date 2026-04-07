@@ -8,7 +8,7 @@ import { createLowlight, all } from "lowlight";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
 import { Markdown } from "tiptap-markdown";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import EditorToolbar from "./EditorToolbar";
 import "./editor.css";
 
@@ -45,7 +45,7 @@ export default function MarkdownEditor({
   isEmpty,
 }: MarkdownEditorProps) {
   const lastLoadedContent = useRef<string | undefined>(undefined);
-  const lowlight = useRef(createLowlight(all)).current;
+  const lowlight = useMemo(() => createLowlight(all), []);
 
   const editor = useEditor({
     immediatelyRender: false,

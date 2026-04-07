@@ -27,13 +27,21 @@ export const useAppStore = create<AppState>((set) => ({
   activeView: "study",
   settingsOpen: false,
   commandPaletteOpen: false,
-  sidebarCollapsed: false,
+  sidebarCollapsed:
+    typeof window !== "undefined"
+      ? localStorage.getItem("discentia_sidebar_collapsed") === "1"
+      : false,
   libraryFocusItemId: null,
   editorItemId: null,
   setActiveView: (view) => set({ activeView: view }),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
-  setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+  setSidebarCollapsed: (collapsed) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("discentia_sidebar_collapsed", collapsed ? "1" : "0");
+    }
+    set({ sidebarCollapsed: collapsed });
+  },
   setLibraryFocusItemId: (id) => set({ libraryFocusItemId: id }),
   setEditorItemId: (id) => set({ editorItemId: id }),
 }));

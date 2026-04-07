@@ -38,6 +38,7 @@ export function SprintMorph({
   const [bestStreak, setBestStreak] = useState(0);
   const [timeLeft, setTimeLeft] = useState(data.timePerQuestion);
   const [startTime, setStartTime] = useState(0);
+  const [questionStartedAt, setQuestionStartedAt] = useState(0);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -90,6 +91,7 @@ export function SprintMorph({
         setCurrentIndex((i) => i + 1);
         setSelectedOption(null);
         setTimeLeft(data.timePerQuestion);
+        setQuestionStartedAt(Date.now());
       }
     },
     [currentIndex, total, data.timePerQuestion, finishExercise]
@@ -150,8 +152,7 @@ export function SprintMorph({
   useEffect(() => {
     if (phase !== "playing" || selectedOption !== null) return;
 
-    setTimeLeft(data.timePerQuestion);
-    const start = Date.now();
+    const start = questionStartedAt || Date.now();
     const duration = data.timePerQuestion * 1000;
 
     timerRef.current = setInterval(() => {
@@ -170,12 +171,15 @@ export function SprintMorph({
         timerRef.current = null;
       }
     };
-  }, [phase, currentIndex, selectedOption, data.timePerQuestion, handleTimeout]);
+  }, [phase, currentIndex, selectedOption, data.timePerQuestion, handleTimeout, questionStartedAt]);
 
   const handleStart = useCallback(() => {
+    const startedAt = Date.now();
     setPhase("playing");
-    setStartTime(Date.now());
-  }, []);
+    setStartTime(startedAt);
+    setQuestionStartedAt(startedAt);
+    setTimeLeft(data.timePerQuestion);
+  }, [data.timePerQuestion]);
 
   const handleRestart = useCallback(() => {
     clearTimers();
@@ -186,6 +190,7 @@ export function SprintMorph({
     setStreak(0);
     setBestStreak(0);
     setTimeLeft(data.timePerQuestion);
+    setQuestionStartedAt(0);
   }, [clearTimers, data.timePerQuestion]);
 
   const correct = results.filter((r) => r === "correct").length;
