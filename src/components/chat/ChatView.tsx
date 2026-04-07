@@ -60,8 +60,10 @@ export default function ChatView() {
       .map((m) => m.exerciseId)
       .filter((id): id is string => Boolean(id));
     if (exerciseIds.length === 0) {
-      setExercises({});
-      return;
+      const timeout = window.setTimeout(() => {
+        if (!cancelled) setExercises({});
+      }, 0);
+      return () => window.clearTimeout(timeout);
     }
 
     // Small delay to handle the timing gap between message save and exercise save
@@ -270,7 +272,6 @@ export default function ChatView() {
           isGeneratingExercise={isGeneratingExercise}
           onOpenCitation={handleOpenCitation}
           highlightMessageId={searchHighlight?.messageId}
-          highlightTerm={searchHighlight?.term}
         />
       )}
 

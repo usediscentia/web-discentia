@@ -25,7 +25,6 @@ import {
 import { ProviderIcon } from "@lobehub/icons";
 import { useProviderStore } from "@/stores/provider.store";
 import { useAppStore } from "@/stores/app.store";
-import { useAuthStore } from "@/stores/auth.store";
 import { getAIProvider } from "@/services/ai";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
 import type { AIProviderType } from "@/types/ai";
@@ -543,18 +542,24 @@ type ThemeOption = "light" | "dark" | "system";
 function AppearanceSection() {
   const { sidebarCollapsed, setSidebarCollapsed } = useAppStore();
 
-  const [theme, setTheme] = useState<ThemeOption>("system");
-  const [accentColor, setAccentColor] = useState(ACCENT_COLORS[0].hex);
-  const [fontSize, setFontSize] = useState<"small" | "medium" | "large">("medium");
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("discentia_theme") as ThemeOption | null;
-    const savedAccent = localStorage.getItem("discentia_accent");
-    const savedFontSize = localStorage.getItem("discentia_font_size") as "small" | "medium" | "large" | null;
-    if (savedTheme) setTheme(savedTheme);
-    if (savedAccent) setAccentColor(savedAccent);
-    if (savedFontSize) setFontSize(savedFontSize);
-  }, []);
+  const [theme, setTheme] = useState<ThemeOption>(() => {
+    if (typeof window === "undefined") return "system";
+    return (localStorage.getItem("discentia_theme") as ThemeOption | null) ?? "system";
+  });
+  const [accentColor, setAccentColor] = useState(() => {
+    if (typeof window === "undefined") return ACCENT_COLORS[0].hex;
+    return localStorage.getItem("discentia_accent") ?? ACCENT_COLORS[0].hex;
+  });
+  const [fontSize, setFontSize] = useState<"small" | "medium" | "large">(() => {
+    if (typeof window === "undefined") return "medium";
+    return (
+      (localStorage.getItem("discentia_font_size") as
+        | "small"
+        | "medium"
+        | "large"
+        | null) ?? "medium"
+    );
+  });
 
   const applyTheme = (value: ThemeOption) => {
     setTheme(value);
@@ -702,15 +707,14 @@ function AppearanceSection() {
 const DAILY_GOAL_OPTIONS = [5, 10, 20, 30, 50];
 
 function StudySection() {
-  const [dailyGoal, setDailyGoal] = useState(20);
-  const [newCardsPerDay, setNewCardsPerDay] = useState(10);
-
-  useEffect(() => {
-    const savedGoal = localStorage.getItem("discentia_daily_goal");
-    const savedNew = localStorage.getItem("discentia_new_cards_per_day");
-    if (savedGoal) setDailyGoal(Number(savedGoal));
-    if (savedNew) setNewCardsPerDay(Number(savedNew));
-  }, []);
+  const [dailyGoal, setDailyGoal] = useState(() => {
+    if (typeof window === "undefined") return 20;
+    return Number(localStorage.getItem("discentia_daily_goal") ?? 20);
+  });
+  const [newCardsPerDay, setNewCardsPerDay] = useState(() => {
+    if (typeof window === "undefined") return 10;
+    return Number(localStorage.getItem("discentia_new_cards_per_day") ?? 10);
+  });
 
   const handleGoal = (value: number) => {
     setDailyGoal(value);
@@ -1073,7 +1077,6 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingsSection>("providers");
 
   const { checkOllamaConnection } = useProviderStore();
-  const { signOut } = useAuthStore();
 
   useEffect(() => {
     checkOllamaConnection();
@@ -1107,12 +1110,9 @@ export default function SettingsPage() {
           })}
         </div>
         <div className="mt-auto pt-4 border-t border-[#ECECEC] px-3">
-          <button
-            onClick={() => void signOut()}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
-          >
-            Sign out
-          </button>
+          <p className="px-3 py-2 text-xs leading-relaxed text-[#777]">
+            This build runs local-first. No Discentia account or external sync is required.
+          </p>
         </div>
       </nav>
 
