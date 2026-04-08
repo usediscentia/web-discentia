@@ -13,9 +13,9 @@ import {
   WifiOff,
   Eye,
   EyeOff,
-  GraduationCap,
 } from "lucide-react";
 import { ProviderIcon } from "@lobehub/icons";
+import { DiscentiaLogo } from "@/components/brand/DiscentiaLogo";
 import { useProviderStore } from "@/stores/provider.store";
 import { StorageService } from "@/services/storage";
 import { LIBRARY_COLORS } from "@/lib/colors";
@@ -48,67 +48,50 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   }, [onComplete]);
 
   const variants = {
-    enter: (d: number) => ({ x: d > 0 ? 80 : -80, opacity: 0 }),
+    enter: (d: number) => ({ x: d > 0 ? 40 : -40, opacity: 0 }),
     center: { x: 0, opacity: 1 },
-    exit: (d: number) => ({ x: d > 0 ? -80 : 80, opacity: 0 }),
+    exit: (d: number) => ({ x: d > 0 ? -40 : 40, opacity: 0 }),
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0a0a0a] overflow-hidden">
-      {/* Subtle animated gradient background */}
-      <div className="absolute inset-0 opacity-30">
-        <div
-          className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px]"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(129,140,248,0.3) 0%, transparent 70%)",
-            animation: "drift 20s ease-in-out infinite",
-          }}
-        />
-        <div
-          className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[100px]"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(52,211,153,0.25) 0%, transparent 70%)",
-            animation: "drift 25s ease-in-out infinite reverse",
-          }}
-        />
-      </div>
-
-      {/* Noise texture overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.035] pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
-          backgroundRepeat: "repeat",
-          backgroundSize: "128px 128px",
-        }}
-      />
-
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-white">
       {/* Main content card */}
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 w-full max-w-[520px] mx-4"
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-10 w-full max-w-[480px] mx-4"
       >
+        <div className="mb-4 flex items-center justify-center gap-2.5">
+          <DiscentiaLogo size={22} alt="Discentia" />
+          <span
+            className="text-[17px] font-bold text-[#0a0a0a]"
+            style={{
+              fontFamily: "Helvetica, Arial, sans-serif",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Discentia
+          </span>
+        </div>
+
         {/* Progress dots */}
-        <div className="flex items-center justify-center gap-2 mb-6">
+        <div className="flex items-center justify-center gap-2 mb-5">
           {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <motion.div
               key={i}
               className="h-1.5 rounded-full"
               animate={{
                 width: i === step ? 28 : 8,
-                backgroundColor: i <= step ? "#fff" : "rgba(255,255,255,0.2)",
+                backgroundColor: i <= step ? "#0a0a0a" : "rgba(0,0,0,0.15)",
               }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+              transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
             />
           ))}
         </div>
 
         {/* Step content */}
-        <div className="bg-white rounded-3xl shadow-2xl shadow-black/40 overflow-hidden min-h-[480px] flex flex-col">
+        <div className="bg-white rounded-3xl shadow-lg overflow-hidden min-h-[480px] flex flex-col border border-black/[0.06]">
           <AnimatePresence mode="wait" custom={direction}>
             {step === 0 && (
               <StepWelcome
@@ -149,14 +132,6 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         </div>
       </motion.div>
 
-      <style>{`
-        @keyframes drift {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          25% { transform: translate(30px, -20px) scale(1.05); }
-          50% { transform: translate(-20px, 30px) scale(0.95); }
-          75% { transform: translate(15px, 15px) scale(1.02); }
-        }
-      `}</style>
     </div>
   );
 }
@@ -184,83 +159,89 @@ function StepWelcome({
       initial="enter"
       animate="center"
       exit="exit"
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="flex flex-col items-center flex-1 px-10 py-12"
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      className="flex flex-col flex-1"
     >
-      {/* Logo mark */}
-      <motion.div
-        initial={{ scale: 0, rotate: -20 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{
-          type: "spring",
-          stiffness: 260,
-          damping: 20,
-          delay: 0.15,
-        }}
-        className="w-20 h-20 rounded-[22px] bg-[#0a0a0a] flex items-center justify-center shadow-lg shadow-black/20"
-      >
-        <GraduationCap size={36} className="text-white" />
-      </motion.div>
+      {/* Hero area */}
+      <div className="relative px-10 pt-12 pb-8">
 
-      <motion.h1
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
-        className="mt-6 text-3xl font-bold tracking-[-0.04em] text-[#0a0a0a]"
-      >
-        discentia
-      </motion.h1>
+        {/* Display headline */}
+        <motion.h1
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="relative text-[40px] font-bold leading-[1.05] tracking-[-0.04em] text-[#0a0a0a]"
+        >
+          Learn.
+          <br />
+          Retain.
+          <br />
+          <span className="text-[#0a0a0a]/25">Repeat.</span>
+        </motion.h1>
 
-      <motion.p
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.45, duration: 0.5 }}
-        className="mt-3 text-[15px] text-[#6B7280] text-center leading-relaxed max-w-xs"
-      >
-        Learn anything with AI-powered exercises, flashcards, and spaced
-        repetition.
-      </motion.p>
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35, duration: 0.45 }}
+          className="relative mt-4 text-[13px] text-[#6B7280] leading-relaxed max-w-[240px]"
+        >
+          AI exercises, flashcards, and spaced repetition — all in your browser.
+        </motion.p>
+      </div>
 
-      {/* Feature pills */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6, duration: 0.5 }}
-        className="flex flex-wrap justify-center gap-2 mt-8"
-      >
+      {/* Feature badges */}
+      <div className="flex flex-col flex-1 px-10 py-6 gap-2.5">
         {[
-          { icon: Sparkles, label: "AI Exercises", color: "#818CF8" },
-          { icon: BookOpen, label: "Smart Library", color: "#34D399" },
-          { icon: Zap, label: "Spaced Repetition", color: "#FBBF24" },
-        ].map((feat) => (
-          <span
+          {
+            icon: Sparkles,
+            label: "AI Exercises",
+            sub: "Flashcards & quizzes",
+            color: "#818CF8",
+          },
+          {
+            icon: BookOpen,
+            label: "Smart Library",
+            sub: "PDFs, text & notes",
+            color: "#34D399",
+          },
+          {
+            icon: Zap,
+            label: "Spaced Repetition",
+            sub: "SM-2 algorithm",
+            color: "#FBBF24",
+          },
+        ].map((feat, i) => (
+          <motion.span
             key={feat.label}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium"
-            style={{
-              backgroundColor: `${feat.color}14`,
-              color: feat.color,
-            }}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 + i * 0.09, duration: 0.28, ease: [0.23, 1, 0.32, 1] }}
+            className="inline-flex items-center self-start gap-x-2.5 rounded-full border border-[#E5E7EB] bg-white px-3 py-1.5"
           >
-            <feat.icon size={13} />
-            {feat.label}
-          </span>
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#0a0a0a]">
+              <feat.icon size={12} style={{ color: feat.color }} />
+              {feat.label}
+            </span>
+            <span className="h-3.5 w-px bg-[#E5E7EB]" />
+            <span className="text-[12px] text-[#9CA3AF]">{feat.sub}</span>
+          </motion.span>
         ))}
-      </motion.div>
+      </div>
 
-      <div className="flex-1" />
-
-      <motion.button
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.75, duration: 0.4 }}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={onNext}
-        className="flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-[#0a0a0a] text-white text-[15px] font-semibold cursor-pointer shadow-lg shadow-black/15 hover:bg-[#1a1a1a] transition-colors"
-      >
-        Get Started
-        <ArrowRight size={16} />
-      </motion.button>
+      <div className="px-10 pb-8">
+        <motion.button
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7, duration: 0.35 }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={onNext}
+          className="w-full flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full bg-[#0a0a0a] text-white text-[14px] font-semibold cursor-pointer shadow-md shadow-black/10 hover:bg-[#1a1a1a] transition-colors"
+        >
+          Get Started
+          <ArrowRight size={15} />
+        </motion.button>
+      </div>
     </motion.div>
   );
 }
@@ -288,6 +269,13 @@ const PROVIDERS: ProviderOption[] = [
     lobeKey: "openai",
     label: "OpenAI",
     description: "GPT-4o, GPT-4o-mini",
+    requiresApiKey: true,
+  },
+  {
+    type: "anthropic",
+    lobeKey: "anthropic",
+    label: "Claude",
+    description: "Claude 3.5 Sonnet, Claude 3 Haiku",
     requiresApiKey: true,
   },
   {
@@ -378,7 +366,7 @@ function StepProvider({
       initial="enter"
       animate="center"
       exit="exit"
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       className="flex flex-col flex-1 px-8 py-8"
     >
       <div>
@@ -403,10 +391,10 @@ function StepProvider({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + i * 0.08, duration: 0.3 }}
               onClick={() => handleSelectProvider(provider.type)}
-              className={`w-full flex items-center gap-3.5 p-4 rounded-xl border-2 transition-all cursor-pointer text-left ${
+              className={`w-full flex items-center gap-3.5 p-4 rounded-xl border-2 cursor-pointer text-left ${
                 isSelected
-                  ? "border-[#0a0a0a] bg-[#FAFAFA]"
-                  : "border-[#E5E7EB] hover:border-[#D1D5DB] hover:bg-[#FAFAFA]"
+                  ? "border-[#0a0a0a] bg-[#FAFAFA] [transition:border-color_150ms_ease,background-color_150ms_ease]"
+                  : "border-[#E5E7EB] hover:border-[#D1D5DB] hover:bg-[#FAFAFA] [transition:border-color_150ms_ease,background-color_150ms_ease]"
               }`}
             >
               <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center shrink-0 overflow-hidden">
@@ -525,10 +513,10 @@ function StepProvider({
 /* ─── Step 3: Create First Library ─── */
 
 const TEMPLATES = [
-  { name: "Biology", icon: "🧬", color: "#34D399" },
-  { name: "History", icon: "📜", color: "#FBBF24" },
-  { name: "Computer Science", icon: "💻", color: "#818CF8" },
-  { name: "Languages", icon: "🗣️", color: "#F87171" },
+  { name: "Biology", emoji: "🔬", color: "#34D399" },
+  { name: "History", emoji: "🏛️", color: "#FBBF24" },
+  { name: "Computer Science", emoji: "💻", color: "#818CF8" },
+  { name: "Languages", emoji: "🌍", color: "#F87171" },
 ];
 
 function StepLibrary({
@@ -570,94 +558,109 @@ function StepLibrary({
       initial="enter"
       animate="center"
       exit="exit"
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       className="flex flex-col flex-1 px-8 py-8"
     >
       <div>
-        <h2 className="text-2xl font-bold tracking-[-0.03em] text-[#0a0a0a]">
-          Create your first library
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">
+          Step 2
+        </p>
+        <h2 className="mt-1 text-2xl font-bold tracking-[-0.03em] text-[#0a0a0a]">
+          Your first library
         </h2>
-        <p className="mt-1.5 text-[14px] text-[#6B7280] leading-relaxed">
-          Libraries organize your study materials. Pick a subject to get
-          started.
+        <p className="mt-1 text-[13px] text-[#9CA3AF] leading-relaxed">
+          Pick a subject or name one yourself.
         </p>
       </div>
 
       {/* Templates */}
       <div className="mt-5 grid grid-cols-2 gap-2">
-        {TEMPLATES.map((template, i) => (
-          <motion.button
-            key={template.name}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + i * 0.06, duration: 0.3 }}
-            onClick={() => handleTemplateClick(template)}
-            className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all cursor-pointer text-left ${
-              libraryName === template.name
-                ? "border-[#0a0a0a] bg-[#FAFAFA]"
-                : "border-[#E5E7EB] hover:border-[#D1D5DB]"
-            }`}
-          >
-            <span className="text-lg">{template.icon}</span>
-            <span className="text-[13px] font-medium text-[#0a0a0a]">
-              {template.name}
-            </span>
-          </motion.button>
-        ))}
+        {TEMPLATES.map((template, i) => {
+          const isActive = libraryName === template.name;
+          return (
+            <motion.button
+              key={template.name}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 + i * 0.06, duration: 0.3 }}
+              onClick={() => handleTemplateClick(template)}
+              className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 [transition:border-color_150ms_ease,background-color_150ms_ease] cursor-pointer text-center ${
+                isActive
+                  ? "border-[#0a0a0a] bg-[#FAFAFA]"
+                  : "border-[#E5E7EB] hover:border-[#D1D5DB] hover:bg-[#FAFAFA]"
+              }`}
+            >
+              <div
+                className="flex h-14 w-14 items-center justify-center shadow-sm"
+                style={{ borderRadius: "28%" }}
+              >
+                <span className="text-[34px] leading-none select-none">{template.emoji}</span>
+              </div>
+              <span className="text-[12px] font-medium text-[#0a0a0a] leading-tight">
+                {template.name}
+              </span>
+            </motion.button>
+          );
+        })}
       </div>
 
       {/* Name input */}
-      <div className="mt-5">
-        <label className="text-[13px] font-medium text-[#374151] block mb-1.5">
-          Library name
-        </label>
+      <div className="mt-4">
         <input
           type="text"
           value={libraryName}
           onChange={(e) => setLibraryName(e.target.value)}
-          placeholder="e.g. Organic Chemistry, French Vocab..."
+          placeholder="Or type a custom name…"
           className="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] text-[14px] text-[#0a0a0a] outline-none focus:border-[#0a0a0a] transition-colors bg-[#FAFAFA] placeholder:text-[#C0C0C0]"
         />
       </div>
 
-      {/* Color picker inline */}
-      <div className="mt-4">
-        <label className="text-[13px] font-medium text-[#374151] block mb-2">
-          Color
-        </label>
-        <div className="flex items-center gap-2 flex-wrap">
-          {LIBRARY_COLORS.map((color) => {
+      {/* Book-spine color picker */}
+      <div className="mt-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9CA3AF] mb-3">
+          Colour
+        </p>
+        <div className="flex items-end gap-1.5">
+          {LIBRARY_COLORS.map((color, i) => {
             const isSelected = selectedColor === color.hex;
+            // Vary spine heights for a bookshelf feel
+            const heights = [44, 52, 40, 56, 48, 44, 52, 40, 56, 48, 44, 52];
+            const h = heights[i % heights.length];
             return (
-              <button
+              <motion.button
                 key={color.hex}
                 type="button"
                 onClick={() => setSelectedColor(color.hex)}
-                className="w-7 h-7 rounded-full cursor-pointer transition-transform hover:scale-110 flex items-center justify-center"
+                animate={{
+                  y: isSelected ? -4 : 0,
+                  opacity: isSelected ? 1 : 0.5,
+                }}
+                transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                className="relative flex-1 rounded-t-sm rounded-b-[2px] cursor-pointer focus:outline-none"
                 style={{
+                  height: h,
                   backgroundColor: color.hex,
-                  boxShadow: isSelected
-                    ? `0 0 0 2px white, 0 0 0 3.5px ${color.hex}`
-                    : undefined,
                 }}
                 title={color.name}
               >
                 {isSelected && (
-                  <Check
-                    size={12}
-                    className="text-white drop-shadow-sm"
+                  <span
+                    className="absolute inset-x-0 bottom-0 h-0.5 rounded-full"
+                    style={{ backgroundColor: "rgba(0,0,0,0.25)" }}
                   />
                 )}
-              </button>
+              </motion.button>
             );
           })}
         </div>
+        {/* Shelf baseline */}
+        <div className="mt-0 h-[3px] rounded-full bg-[#E5E7EB]" />
       </div>
 
       <div className="flex-1" />
 
       {/* Navigation */}
-      <div className="flex items-center justify-between mt-6">
+      <div className="flex items-center justify-between mt-5">
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 text-[13px] text-[#9CA3AF] hover:text-[#6B7280] cursor-pointer transition-colors"
@@ -674,7 +677,7 @@ function StepLibrary({
           </button>
           <motion.button
             whileHover={libraryName.trim() ? { scale: 1.02 } : {}}
-            whileTap={libraryName.trim() ? { scale: 0.98 } : {}}
+            whileTap={libraryName.trim() ? { scale: 0.97 } : {}}
             onClick={handleCreate}
             disabled={!libraryName.trim() || creating}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-[14px] font-semibold transition-all cursor-pointer ${
@@ -707,37 +710,27 @@ function StepReady({
       initial="enter"
       animate="center"
       exit="exit"
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       className="flex flex-col items-center justify-center flex-1 px-10 py-12"
     >
       {/* Animated checkmark */}
       <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{
-          type: "spring",
-          stiffness: 200,
-          damping: 15,
-          delay: 0.1,
-        }}
+        initial={{ scale: 0.85, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", duration: 0.5, bounce: 0.25, delay: 0.1 }}
         className="relative"
       >
         <div className="w-24 h-24 rounded-full bg-emerald-50 flex items-center justify-center">
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 20,
-              delay: 0.3,
-            }}
+            initial={{ scale: 0.7, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", duration: 0.45, bounce: 0.2, delay: 0.22 }}
             className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center"
           >
             <motion.div
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.4 }}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.38, duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
             >
               <Check size={32} className="text-emerald-600" strokeWidth={3} />
             </motion.div>
@@ -748,9 +741,9 @@ function StepReady({
         {[0, 60, 120, 180, 240, 300].map((angle, i) => (
           <motion.div
             key={angle}
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: [0, 1, 0], scale: [0, 1, 0.5] }}
-            transition={{ delay: 0.6 + i * 0.08, duration: 0.8 }}
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.6] }}
+            transition={{ delay: 0.45 + i * 0.06, duration: 0.6, ease: "easeOut" }}
             className="absolute w-2 h-2 rounded-full bg-emerald-400"
             style={{
               top: `${50 - 55 * Math.cos((angle * Math.PI) / 180)}%`,
@@ -762,9 +755,9 @@ function StepReady({
       </motion.div>
 
       <motion.h2
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.5 }}
+        transition={{ delay: 0.35, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
         className="mt-8 text-2xl font-bold tracking-[-0.03em] text-[#0a0a0a]"
       >
         You&apos;re all set!
@@ -773,8 +766,8 @@ function StepReady({
       <motion.p
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.65, duration: 0.5 }}
-        className="mt-2 text-[15px] text-[#6B7280] text-center leading-relaxed max-w-xs"
+        transition={{ delay: 0.45, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+        className="mt-2 text-[14px] text-[#6B7280] text-center leading-relaxed max-w-xs"
       >
         Start a conversation, add content to your library, or generate
         exercises. Discentia adapts to how you learn.
@@ -783,19 +776,20 @@ function StepReady({
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8, duration: 0.4 }}
+        transition={{ delay: 0.55, duration: 0.28, ease: [0.23, 1, 0.32, 1] }}
         className="flex flex-col items-center gap-3 mt-8"
       >
-        <button
+        <motion.button
+          whileTap={{ scale: 0.97 }}
           onClick={onFinish}
-          className="flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-[#0a0a0a] text-white text-[15px] font-semibold cursor-pointer shadow-lg shadow-black/15 hover:bg-[#1a1a1a] transition-colors"
+          className="flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-[#0a0a0a] text-white text-[15px] font-semibold cursor-pointer shadow-md shadow-black/10 hover:bg-[#1a1a1a] [transition:background-color_150ms_ease]"
         >
           <Sparkles size={16} />
           Start Learning
-        </button>
+        </motion.button>
         <button
           onClick={onBack}
-          className="text-[13px] text-[#9CA3AF] hover:text-[#6B7280] cursor-pointer transition-colors"
+          className="text-[13px] text-[#9CA3AF] hover:text-[#6B7280] cursor-pointer [transition:color_150ms_ease]"
         >
           Go back
         </button>
