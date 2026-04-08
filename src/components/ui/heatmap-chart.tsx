@@ -88,16 +88,6 @@ export default function HeatmapChart({ activityByDay, width }: HeatmapChartProps
   const svgWidth = TOTAL_WEEKS * (cellSize + GAP) - GAP;
   const svgHeight = MONTH_LABEL_HEIGHT + 7 * (cellSize + GAP);
 
-  const xScale = scaleLinear<number>({
-    domain: [0, 1],
-    range: [0, cellSize + GAP],
-  });
-
-  const yScale = scaleLinear<number>({
-    domain: [0, 1],
-    range: [0, cellSize + GAP],
-  });
-
   const rectColorScale = scaleLinear<string>({
     range: [COLORS_LIGHT, COLORS_DARK],
     domain: [0, colorMax || 1],
