@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import { motion } from "motion/react";
-import { GraduationCap, BookOpen } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import MarkdownRenderer from "@/components/chat/MarkdownRenderer";
+import { DiscentiaLogo } from "@/components/brand/DiscentiaLogo";
 import { Renderer } from "@openuidev/react-lang";
 import { openuiLibrary } from "@/services/ai/openui";
 import { ExerciseGeneratingIndicator } from "@/components/chat/ExerciseGeneratingIndicator";
@@ -189,7 +190,7 @@ function AIMessage({
   return (
     <div className="flex gap-3 w-full">
       <div className="flex items-center justify-center w-8 h-8 rounded-2xl bg-[#1A1A1A] shrink-0 mt-0.5">
-        <GraduationCap size={16} className="text-white" />
+        <DiscentiaLogo size={16} className="text-white" alt="Discentia" />
       </div>
       <div className="flex flex-col gap-2 flex-1 min-w-0">
         <div className="px-1">

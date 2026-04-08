@@ -21,6 +21,7 @@ import {
   Download,
   Upload,
   Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { ProviderIcon } from "@lobehub/icons";
 import { useProviderStore } from "@/stores/provider.store";
@@ -797,6 +798,7 @@ function DataPrivacySection() {
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [resettingOnboarding, setResettingOnboarding] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
 
@@ -921,6 +923,17 @@ function DataPrivacySection() {
     }
   };
 
+  const handleResetOnboarding = () => {
+    setResettingOnboarding(true);
+    try {
+      localStorage.removeItem("discentia_onboarded");
+      alert("Onboarding reset. The page will refresh.");
+      window.location.reload();
+    } finally {
+      setResettingOnboarding(false);
+    }
+  };
+
   const usedPct = storageInfo
     ? Math.min(100, (storageInfo.used / storageInfo.quota) * 100)
     : 0;
@@ -987,6 +1000,30 @@ function DataPrivacySection() {
             onChange={handleImport}
             className="hidden"
           />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold text-[#111] mb-3">Onboarding</h3>
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-[#E5E7EB] p-5">
+          <div>
+            <p className="text-sm font-medium text-[#111]">Reset onboarding</p>
+            <p className="mt-0.5 text-xs text-[#888]">
+              Clears the onboarding flag and shows the welcome flow again after reload.
+            </p>
+          </div>
+          <button
+            onClick={handleResetOnboarding}
+            disabled={resettingOnboarding}
+            className="shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#111] border border-[#DDD] rounded-lg cursor-pointer hover:bg-[#F9FAFB] transition-colors disabled:opacity-50"
+          >
+            {resettingOnboarding ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <RotateCcw size={14} />
+            )}
+            Reset onboarding
+          </button>
         </div>
       </div>
 

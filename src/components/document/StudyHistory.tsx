@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GraduationCap, BookOpen, HelpCircle } from "lucide-react";
+import { BookOpen, HelpCircle } from "lucide-react";
+import { DiscentiaLogo } from "@/components/brand/DiscentiaLogo";
 import { StorageService } from "@/services/storage";
 import type { Exercise } from "@/types/exercise";
 
@@ -45,7 +46,9 @@ export default function StudyHistory({ documentId }: StudyHistoryProps) {
 
       {exercises.length === 0 ? (
         <div className="flex flex-col items-center py-8 text-center">
-          <GraduationCap size={48} className="text-[#D3D1CE] mb-3" />
+          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#ECE9E6] bg-[#F8F8F7]">
+            <DiscentiaLogo size={32} className="text-[#7C7974]" alt="Discentia" />
+          </div>
           <p className="text-sm text-[#7C7974]">No study sessions yet</p>
           <p className="text-xs text-[#A8A5A0] mt-1">
             Generate your first exercises above to start studying.
