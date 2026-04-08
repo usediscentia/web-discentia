@@ -3,7 +3,9 @@
 import { motion } from "motion/react";
 import { Check, Minus, X, Flame } from "lucide-react";
 import { useAppStore } from "@/stores/app.store";
+import type { WeekDayData } from "@/types/dashboard";
 import { ProgressRing } from "./ProgressRing";
+import { WeeklyCardStack } from "./WeeklyCardStack";
 
 interface ReviewCompleteProps {
   total: number;
@@ -13,6 +15,7 @@ interface ReviewCompleteProps {
   streak: number;
   sessionDuration: number; // ms
   accentColor: string;
+  weekDayData: WeekDayData[];
   onRestart: () => void;
 }
 
@@ -31,6 +34,7 @@ export function ReviewComplete({
   streak,
   sessionDuration,
   accentColor,
+  weekDayData,
   onRestart,
 }: ReviewCompleteProps) {
   const { setActiveView } = useAppStore();
@@ -122,6 +126,18 @@ export function ReviewComplete({
             </div>
           </div>
         </motion.div>
+
+        {/* Weekly card stack */}
+        {weekDayData.length > 0 && (
+          <motion.div
+            className="w-full bg-white rounded-2xl border border-gray-200 p-5"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 400, damping: 28, delay: 0.40 }}
+          >
+            <WeeklyCardStack days={weekDayData} />
+          </motion.div>
+        )}
 
         {/* Streak badge */}
         {streak > 0 && (
