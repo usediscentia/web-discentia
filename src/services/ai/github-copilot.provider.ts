@@ -7,8 +7,6 @@ import type {
 import { PROVIDER_DEFAULTS } from "@/types/ai";
 import { GITHUB_COPILOT_API_URL } from "@/lib/constants";
 
-const GITHUB_API_URL = "https://api.github.com";
-
 // ── Session token cache (module-level, shared across calls) ──
 
 interface SessionCache {
@@ -17,6 +15,48 @@ interface SessionCache {
 }
 
 let sessionCache: SessionCache | null = null;
+
+async function fetchSessionToken(accessToken: string): Promise<SessionCache> {
+  const response = await fetch("/api/github/copilot/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ accessToken }),
+  });
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as {
+      error?: string;
+    };
+    throw new Error(
+      body.error ?? `Failed to get Copilot session token: ${response.status}`
+    );
+  }
+
+  return (await response.json()) as SessionCache;
+}
+
+async function fetchCopilotModels(accessToken: string): Promise<string[]> {
+  const response = await fetch("/api/github/copilot/models", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ accessToken }),
+  });
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as {
+      error?: string;
+    };
+    throw new Error(
+      body.error ?? `Failed to fetch Copilot models: ${response.status}`
+    );
+  }
+
+  const data = (await response.json()) as {
+    data: Array<{ id: string }>;
+  };
+
+  return [...new Set(data.data.map((m) => m.id))];
+}
 
 // Required by api.githubcopilot.com
 const COPILOT_HEADERS_BASE = {
@@ -41,33 +81,8 @@ async function getSessionToken(accessToken: string): Promise<string> {
     return sessionCache.token;
   }
 
-  const response = await fetch(
-    `${GITHUB_API_URL}/copilot_internal/v2/token`,
-    {
-      method: "GET",
-      headers: {
-        "authorization": `token ${accessToken}`,
-        "accept": "application/json",
-        "editor-version": "vscode/1.99.0",
-        "editor-plugin-version": "copilot-chat/0.26.7",
-        "user-agent": "GitHubCopilotChat/0.26.7",
-        "x-github-api-version": "2025-04-01",
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      `Failed to get Copilot session token: ${response.status}`
-    );
-  }
-
-  const data = (await response.json()) as {
-    token: string;
-    expires_at: number;
-  };
-
-  sessionCache = { token: data.token, expiresAt: data.expires_at };
+  const data = await fetchSessionToken(accessToken);
+  sessionCache = data;
   return data.token;
 }
 
@@ -80,22 +95,7 @@ export const githubCopilotProvider: AIServiceProvider = {
   defaultModel: PROVIDER_DEFAULTS["github-copilot"].defaultModel,
 
   async fetchModels(accessToken: string): Promise<string[]> {
-    // Use a server-side proxy to avoid CORS restrictions on api.githubcopilot.com
-    const response = await fetch("/api/github/copilot/models", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accessToken }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch Copilot models: ${response.status}`);
-    }
-
-    const data = (await response.json()) as {
-      data: Array<{ id: string }>;
-    };
-    // Deduplicate — the Copilot API returns multiple entries with the same id
-    return [...new Set(data.data.map((m) => m.id))];
+    return fetchCopilotModels(accessToken);
   },
 
   async sendMessage(
@@ -203,9 +203,7 @@ export const githubCopilotProvider: AIServiceProvider = {
 
   async validateApiKey(accessToken: string): Promise<boolean> {
     try {
-      // Clears cached token first to force a fresh exchange
-      sessionCache = null;
-      await getSessionToken(accessToken);
+      await fetchCopilotModels(accessToken);
       return true;
     } catch {
       return false;
