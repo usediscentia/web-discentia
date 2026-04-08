@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { DiscentiaLogo } from "@/components/brand/DiscentiaLogo";
 
 interface TopNavbarProps {
   activeTab: "chat" | "library";
@@ -10,7 +11,10 @@ interface TopNavbarProps {
 export function TopNavbar({ activeTab, onTabChange }: TopNavbarProps) {
   return (
     <header className="flex items-center justify-between h-14 px-8 border-b border-[#E5E7EB] w-full shrink-0">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#111111]">
+          <DiscentiaLogo size={18} className="text-white" alt="Discentia" />
+        </div>
         <span className="text-[#1A1A1A] text-lg font-light tracking-[2px]">
           discentia
         </span>
