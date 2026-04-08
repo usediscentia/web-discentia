@@ -2,12 +2,12 @@
 
 import { motion } from "motion/react";
 import {
-  AcademicCapIcon,
   Square3Stack3DIcon,
   QuestionMarkCircleIcon,
 } from "@heroicons/react/24/outline";
 import { ProviderIcon } from "@lobehub/icons";
 import { KeyRound } from "lucide-react";
+import { DiscentiaLogo } from "@/components/brand/DiscentiaLogo";
 import { useProviderStore } from "@/stores/provider.store";
 import { useAppStore } from "@/stores/app.store";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
@@ -59,7 +59,7 @@ function SetupCard() {
         className="flex flex-col items-center gap-3"
       >
         <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#1A1A1A]">
-          <AcademicCapIcon className="w-7 h-7 text-white" />
+          <DiscentiaLogo size={28} alt="Discentia" />
         </div>
         <h1 className="text-[22px] font-semibold text-[#1A1A1A] tracking-[-0.5px]">
           Welcome to Discentia
@@ -160,7 +160,7 @@ export function ChatEmpty({ onPromptClick }: ChatEmptyProps) {
         className="flex flex-col items-center gap-4"
       >
         <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-[#1A1A1A]">
-          <AcademicCapIcon className="w-8 h-8 text-white" />
+          <DiscentiaLogo size={32} alt="Discentia" />
         </div>
         <h1 className="text-2xl font-semibold text-[#1A1A1A] tracking-[-0.5px]">
           Start learning. Ask anything.
