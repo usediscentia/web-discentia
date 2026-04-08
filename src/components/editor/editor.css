@@ -99,14 +99,14 @@
   border-radius: 0;
 }
 
-/* Blockquote — teal accent matching design */
+/* Blockquote follows the active appearance accent */
 .tiptap blockquote {
   margin: 0.75rem 0;
   padding: 0.75rem 1rem;
-  border-left: 3px solid #1A7A6D;
-  background: #F0FDFA;
+  border-left: 3px solid var(--brand);
+  background: var(--brand-soft);
   border-radius: 0 0.5rem 0.5rem 0;
-  color: #15665B;
+  color: var(--brand-soft-foreground);
 }
 
 .tiptap blockquote p {

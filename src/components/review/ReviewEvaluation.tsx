@@ -24,7 +24,7 @@ const VERDICT_CONFIG = {
 
 const RATINGS: { value: ReviewRating; label: string; sub: string; style: string }[] = [
   { value: "hard", label: "Hard", sub: "Review tomorrow", style: "border-red-200 bg-red-50 text-red-600 hover:bg-red-100" },
-  { value: "good", label: "Good", sub: "Review in ~3 days", style: "border-[#1A7A6D] bg-[#E6F5F3] text-[#1A7A6D] hover:bg-[#D0EDE9] ring-2 ring-[#1A7A6D]/20" },
+  { value: "good", label: "Good", sub: "Review in ~3 days", style: "border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)] hover:bg-[var(--brand-soft)] ring-2 ring-[var(--brand-ring)]" },
   { value: "easy", label: "Easy", sub: "Review in ~7 days", style: "border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100" },
 ];
 
@@ -49,7 +49,7 @@ export function ReviewEvaluation({ card, userAnswer, verdict, explanation, keyMi
             </p>
           </div>
           <div className="px-6 py-4 flex flex-col gap-2">
-            <p className="text-[11px] font-semibold text-[#1A7A6D] uppercase tracking-wide">Correct answer</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--brand)]">Correct answer</p>
             <p className="text-sm text-[#374151] leading-relaxed">{card.back}</p>
           </div>
         </div>

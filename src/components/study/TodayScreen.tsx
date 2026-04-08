@@ -65,14 +65,14 @@ export function TodayScreen() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 400, damping: 28 }}
         >
-          <div className="w-16 h-16 rounded-2xl bg-[#F3F4F6] flex items-center justify-center">
-            <BookOpen size={28} className="text-[#9CA3AF]" />
+          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
+            <BookOpen size={28} className="text-muted-foreground" />
           </div>
           <div>
-            <p className="text-[15px] font-semibold text-[#0C0C0C]">
+            <p className="text-[15px] font-semibold text-foreground">
               Nenhum conteúdo ainda.
             </p>
-            <p className="text-sm text-[#7C7974] mt-1.5">
+            <p className="text-sm text-muted-foreground mt-1.5">
               Suba um PDF ou cole um texto — a AI faz o resto
             </p>
           </div>
@@ -98,7 +98,7 @@ export function TodayScreen() {
           transition={{ type: "spring", stiffness: 400, damping: 28 }}
         >
           <motion.div
-            className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center"
+            className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center"
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 500, damping: 15, delay: 0.1 }}
@@ -107,11 +107,11 @@ export function TodayScreen() {
           </motion.div>
 
           <div>
-            <p className="text-[15px] font-semibold text-[#0C0C0C]">
+            <p className="text-[15px] font-semibold text-foreground">
               Tudo em dia por hoje.
             </p>
             {nextSessionDate && (
-              <p className="text-sm text-[#7C7974] mt-1.5">
+              <p className="text-sm text-muted-foreground mt-1.5">
                 Próxima revisão {formatFutureDate(nextSessionDate)} · {nextSessionCount} {nextSessionCount === 1 ? "card" : "cards"}
               </p>
             )}
@@ -119,13 +119,13 @@ export function TodayScreen() {
 
           {streak > 0 && (
             <motion.div
-              className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-4 py-2"
+              className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-2"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", stiffness: 500, damping: 15, delay: 0.2 }}
             >
               <Flame size={14} className="text-orange-500" />
-              <span className="text-sm font-medium text-orange-700">
+              <span className="text-sm font-medium text-orange-600">
                 {streak === 1 ? "Streak começou!" : `${streak} dias de streak!`}
               </span>
             </motion.div>
@@ -133,7 +133,7 @@ export function TodayScreen() {
 
           <button
             onClick={() => setActiveView("library")}
-            className="text-sm text-[#9CA3AF] hover:text-[#6B7280] transition-colors cursor-pointer mt-2"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer mt-2"
           >
             Ver todos os decks
           </button>
@@ -158,7 +158,7 @@ export function TodayScreen() {
         transition={{ type: "spring", stiffness: 400, damping: 28 }}
       >
         {/* Date */}
-        <p className="text-sm text-[#9CA3AF] font-medium capitalize">
+        <p className="text-sm text-muted-foreground font-medium capitalize">
           {dateString}
         </p>
 
@@ -170,12 +170,12 @@ export function TodayScreen() {
           transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.05 }}
         >
           <span
-            className="font-bold text-[#0C0C0C] leading-none tracking-tight"
+            className="font-bold text-foreground leading-none tracking-tight"
             style={{ fontSize: "clamp(56px, 10vw, 80px)" }}
           >
             {cards.length}
           </span>
-          <span className="text-sm text-[#7C7974] mt-2">
+          <span className="text-sm text-muted-foreground mt-2">
             {cards.length === 1 ? "card para revisar hoje" : "cards para revisar hoje"}
           </span>
         </motion.div>
@@ -188,7 +188,7 @@ export function TodayScreen() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
           >
-            <div className="h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden">
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
               <motion.div
                 className="h-full bg-emerald-500 rounded-full"
                 initial={{ width: 0 }}
@@ -196,7 +196,7 @@ export function TodayScreen() {
                 transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.15 }}
               />
             </div>
-            <p className="text-xs text-[#9CA3AF] mt-1.5">
+            <p className="text-xs text-muted-foreground mt-1.5">
               {reviewedToday} revisados hoje
             </p>
           </motion.div>
@@ -236,7 +236,7 @@ export function TodayScreen() {
 
         {/* Footer meta */}
         <motion.p
-          className="text-xs text-[#B5B3AE]"
+          className="text-xs text-muted-foreground"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.25 }}
