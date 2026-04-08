@@ -36,3 +36,12 @@ export interface DashboardInsights {
   reviewedPrev7Days: number;
   bestStreak: number;
 }
+
+export interface WeekDayData {
+  label: string;       // "DOM" | "SEG" | "TER" | "QUA" | "QUI" | "SEX" | "SÁB"
+  dateNumber: number;  // day of month
+  dateKey: string;     // "YYYY-MM-DD"
+  load: number;        // raw card count
+  dotCount: number;    // 0–8, proportional
+  status: "today" | "completed" | "pending" | "heavy";
+}
