@@ -563,6 +563,28 @@ export const StorageService = {
     };
   },
 
+  async getWeeklyCardLoad(): Promise<Record<string, number>> {
+    const db = getDB();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay()); // Sunday
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+
+    const cards = await db.srsCards
+      .where("nextReviewDate")
+      .between(weekStart.getTime(), weekEnd.getTime())
+      .toArray();
+
+    const result: Record<string, number> = {};
+    for (const card of cards) {
+      const key = toDayKey(card.nextReviewDate);
+      result[key] = (result[key] ?? 0) + 1;
+    }
+    return result;
+  },
+
   async getDashboardInsights(): Promise<DashboardInsights> {
     const db = getDB();
     const now = Date.now();
