@@ -7,8 +7,6 @@ import {
   Link,
   Camera,
   ArrowLeft,
-  X,
-  FileIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
