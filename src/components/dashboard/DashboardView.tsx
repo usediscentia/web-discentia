@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 import { motion } from "motion/react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { StorageService } from "@/services/storage";
 import type { DashboardStats, DashboardInsights } from "@/types/dashboard";
 import { ActivityChartCard } from "@/components/ui/activity-chart-card";
@@ -28,6 +28,38 @@ function getGreeting(hour: number): string {
   return "Good evening";
 }
 
+function DashboardSkeleton() {
+  return (
+    <div className="flex h-full flex-col overflow-y-auto bg-[#FAFAF8]">
+      <div
+        className="mx-auto flex w-full max-w-[1200px] flex-col"
+        style={{ padding: "32px 48px", gap: 24 }}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1.5">
+            <Skeleton className="h-8 w-48 rounded-[6px]" />
+            <Skeleton className="h-5 w-64 rounded-[6px]" />
+          </div>
+          <Skeleton className="h-4 w-32 rounded-[6px]" />
+        </div>
+        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-[120px] rounded-[10px]" />
+          ))}
+        </div>
+        <div className="flex w-full gap-4">
+          <Skeleton className="h-[160px] flex-1 rounded-[12px]" />
+          <Skeleton className="h-[160px] w-64 shrink-0 rounded-[12px]" />
+        </div>
+        <div className="flex w-full gap-4">
+          <Skeleton className="h-[220px] flex-1 rounded-[12px]" />
+          <Skeleton className="h-[220px] flex-1 rounded-[12px]" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardView() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [insights, setInsights] = useState<DashboardInsights | null>(null);
@@ -50,11 +82,7 @@ export default function DashboardView() {
   }, []);
 
   if (!stats || !insights) {
-    return (
-      <div className="flex h-full items-center justify-center bg-[#FAFAF8]">
-        <Loader2 size={18} className="animate-spin text-[#D4D4D4]" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const greeting = getGreeting(new Date(now).getHours());

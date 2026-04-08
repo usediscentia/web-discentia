@@ -2,6 +2,15 @@
 
 import { Flame } from "lucide-react";
 import { motion } from "motion/react";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import type {
   DashboardStats as Stats,
   DashboardInsights,
@@ -19,6 +28,7 @@ function EditorialStatCard({
   valueRowPrefix,
   index,
   highlightSub = false,
+  progressValue,
 }: {
   value: string;
   label: string;
@@ -26,6 +36,7 @@ function EditorialStatCard({
   valueRowPrefix?: React.ReactNode;
   index: number;
   highlightSub?: boolean;
+  progressValue?: number;
 }) {
   return (
     <motion.div
@@ -49,13 +60,19 @@ function EditorialStatCard({
       >
         {label}
       </span>
+      {progressValue !== undefined ? (
+        <Progress value={progressValue} className="h-[3px] bg-[#E8E5E0]" />
+      ) : null}
       {sublabel ? (
-        <span
-          className="text-[11px]"
-          style={{ color: highlightSub ? "#22C55E" : "#9C9690" }}
+        <Badge
+          variant="secondary"
+          className={cn(
+            "h-auto rounded-[4px] bg-transparent px-0 text-[11px] font-normal shadow-none",
+            highlightSub ? "text-[#22C55E]" : "text-[#9C9690]",
+          )}
         >
           {sublabel}
-        </span>
+        </Badge>
       ) : null}
     </motion.div>
   );
@@ -94,7 +111,18 @@ export default function DashboardStatsRow({
         value={String(stats.streak)}
         label="Day streak"
         sublabel={`Best: ${insights.bestStreak} days`}
-        valueRowPrefix={<Flame size={16} className="text-[#F59E0B]" />}
+        valueRowPrefix={
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Flame size={16} className="cursor-default text-[#F59E0B]" />
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p>Best: {insights.bestStreak} days</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        }
       />
       <EditorialStatCard
         index={2}
@@ -102,6 +130,7 @@ export default function DashboardStatsRow({
         label="Retention rate"
         sublabel={`${weeklyTrend >= 0 ? "↑" : "↓"} ${Math.abs(weeklyTrend)}% this week`}
         highlightSub={weeklyTrend >= 0}
+        progressValue={retentionRate}
       />
       <EditorialStatCard
         index={3}
