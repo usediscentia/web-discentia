@@ -63,30 +63,30 @@ export function BulkApproveModal({ cards, libraryItemId, onDone, onSkip }: BulkA
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.96, opacity: 0, y: 8 }}
         transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-        className="w-full max-w-lg bg-white rounded-2xl border border-[#E5E7EB] shadow-xl overflow-hidden"
+        className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card shadow-xl"
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-[#F3F4F6]">
-          <h2 className="text-base font-bold text-[#111]">Save cards to your review deck?</h2>
-          <p className="text-xs text-[#9CA3AF] mt-1">
+        <div className="border-b border-border px-6 py-5">
+          <h2 className="text-base font-bold text-foreground">Save cards to your review deck?</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
             Remove any cards you don&apos;t want to keep. The rest will be added to your SRS deck.
           </p>
         </div>
 
         {/* Card list */}
-        <div className="divide-y divide-[#F3F4F6] max-h-72 overflow-y-auto">
+        <div className="max-h-72 divide-y divide-border overflow-y-auto">
           {cards.map((card) => {
             const isDismissed = dismissed.has(card.id);
             return (
               <div
                 key={card.id}
                 className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${
-                  isDismissed ? "bg-red-50/60" : "bg-white"
+                  isDismissed ? "bg-red-50/60" : "bg-card"
                 }`}
               >
                 <div
                   className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                    isDismissed ? "bg-red-400" : "bg-[#1A7A6D]"
+                    isDismissed ? "bg-red-400" : "bg-primary"
                   }`}
                 />
                 <div className="flex-1 min-w-0">
@@ -111,8 +111,8 @@ export function BulkApproveModal({ cards, libraryItemId, onDone, onSkip }: BulkA
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-3 px-5 py-4 border-t border-[#F3F4F6]">
-          <span className="text-xs text-[#9CA3AF] flex-1">
+        <div className="flex items-center gap-3 border-t border-border px-5 py-4">
+          <span className="flex-1 text-xs text-muted-foreground">
             {kept.length} of {cards.length} cards selected
           </span>
           <button
@@ -124,7 +124,7 @@ export function BulkApproveModal({ cards, libraryItemId, onDone, onSkip }: BulkA
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 text-xs font-semibold text-white bg-[#1A7A6D] rounded-lg cursor-pointer hover:bg-[#15665B] transition-colors disabled:opacity-50"
+            className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-[var(--brand-hover)] disabled:opacity-50"
           >
             {saving ? "Saving..." : `Add ${kept.length} card${kept.length !== 1 ? "s" : ""} →`}
           </button>

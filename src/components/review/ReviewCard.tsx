@@ -18,8 +18,8 @@ export function ReviewCard({ card, index, total, onCheck, onDontKnow }: ReviewCa
     <div className="flex flex-col gap-5 w-full max-w-2xl">
       {/* Source label */}
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-[#1A7A6D]" />
-        <span className="text-xs text-[#9CA3AF] font-medium">
+        <div className="h-2 w-2 rounded-full bg-primary" />
+        <span className="text-xs font-medium text-muted-foreground">
           Card {index + 1} of {total}
         </span>
       </div>
@@ -41,7 +41,7 @@ export function ReviewCard({ card, index, total, onCheck, onDontKnow }: ReviewCa
             }}
             placeholder="Type your answer here..."
             rows={4}
-            className="w-full text-sm text-[#111] bg-white border border-[#E5E7EB] rounded-xl px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-[#1A7A6D]/30 focus:border-[#1A7A6D] placeholder:text-[#D1D5DB]"
+            className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-ring)]"
           />
           <p className="text-[11px] text-[#D1D5DB]">⌘↵ to check</p>
         </div>
@@ -58,7 +58,7 @@ export function ReviewCard({ card, index, total, onCheck, onDontKnow }: ReviewCa
           <button
             onClick={() => answer.trim() && onCheck(answer.trim())}
             disabled={!answer.trim()}
-            className="px-5 py-2 text-xs font-semibold text-white bg-[#1A7A6D] rounded-lg cursor-pointer hover:bg-[#15665B] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="cursor-pointer rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             Check answer →
           </button>

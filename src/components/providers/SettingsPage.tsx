@@ -26,9 +26,12 @@ import {
 import { ProviderIcon } from "@lobehub/icons";
 import { useProviderStore } from "@/stores/provider.store";
 import { useAppStore } from "@/stores/app.store";
+import { useAppearanceStore } from "@/stores/appearance.store";
+import { useShallow } from "zustand/react/shallow";
 import { getAIProvider } from "@/services/ai";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
 import type { AIProviderType } from "@/types/ai";
+import { ACCENT_COLORS, type ThemeOption } from "@/lib/appearance";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -102,18 +105,6 @@ const navItems: NavItem[] = [
   { id: "study", label: "Study", icon: BookOpen, enabled: true },
   { id: "privacy", label: "Data & Privacy", icon: Shield, enabled: true },
   { id: "shortcuts", label: "Shortcuts", icon: Keyboard, enabled: true },
-];
-
-// ── Accent colors ──
-
-const ACCENT_COLORS = [
-  { hex: "#1A7A6D", label: "Teal" },
-  { hex: "#3B82F6", label: "Blue" },
-  { hex: "#8B5CF6", label: "Violet" },
-  { hex: "#F59E0B", label: "Amber" },
-  { hex: "#EF4444", label: "Red" },
-  { hex: "#10B981", label: "Emerald" },
-  { hex: "#F97316", label: "Orange" },
 ];
 
 // ── Keyboard shortcuts data ──
@@ -249,8 +240,8 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
         );
       }
       return (
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#888] bg-[#F3F4F6] px-2 py-0.5 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#CCC]" />
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+          <span className="h-1.5 w-1.5 rounded-full bg-border" />
           Unknown
         </span>
       );
@@ -274,38 +265,38 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
     }
 
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#888] bg-[#F3F4F6] px-2 py-0.5 rounded-full">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
         Not configured
       </span>
     );
   };
 
   return (
-    <div className="border border-[#E5E7EB] rounded-xl overflow-hidden transition-shadow hover:shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-sm">
       <button
         onClick={() => !display.comingSoon && setExpanded(!expanded)}
         className={`w-full flex items-center gap-4 px-5 py-4 text-left transition-colors ${
           display.comingSoon
             ? "opacity-50 cursor-default"
-            : "cursor-pointer hover:bg-[#FAFAFA]"
+            : "cursor-pointer hover:bg-muted/50"
         }`}
       >
-        <div className="w-10 h-10 rounded-xl bg-[#F9FAFB] border border-[#F0F0F0] flex items-center justify-center shrink-0">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-muted/50">
           <ProviderIcon provider={display.lobeProvider} size={22} type="color" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-[#111]">
+            <span className="text-sm font-semibold text-foreground">
               {defaults.displayName}
             </span>
             {statusBadge()}
           </div>
-          <p className="text-xs text-[#888] mt-0.5">{display.description}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{display.description}</p>
         </div>
         {!display.comingSoon && (
           <ChevronRight
             size={16}
-            className={`text-[#CCC] shrink-0 transition-transform duration-200 ${
+            className={`shrink-0 text-border transition-transform duration-200 ${
               expanded ? "rotate-90" : ""
             }`}
           />
@@ -321,14 +312,14 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
             transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-5 pt-1 border-t border-[#F0F0F0]">
+            <div className="border-t border-border px-5 pb-5 pt-1">
               {isOllama ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs text-[#666]">
+                    <div className="text-xs text-muted-foreground">
                       {ollamaStatus === "connected" && ollamaModels.length > 0 ? (
                         <>
-                          <span className="font-medium text-[#333]">
+                          <span className="font-medium text-foreground">
                             {ollamaModels.length} model{ollamaModels.length !== 1 ? "s" : ""} available:
                           </span>{" "}
                           {ollamaModels.slice(0, 5).join(", ")}
@@ -341,7 +332,7 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                   </div>
                   {ollamaStatus === "connected" && ollamaModels.length > 0 && (
                     <div>
-                      <Label className="text-xs font-medium text-[#555] block mb-1.5">Model</Label>
+                      <Label className="mb-1.5 block text-xs font-medium text-foreground">Model</Label>
                       <Select value={ollamaModels.includes(config.model) ? config.model : ollamaModels[0]} onValueChange={handleModelChange}>
                         <SelectTrigger className="text-sm">
                           <SelectValue />
@@ -355,8 +346,8 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                     </div>
                   )}
                   <div>
-                    <label className="text-xs font-medium text-[#555] block mb-1.5">
-                      Temperature <span className="text-[#AAA] font-normal">(0.0 – 2.0)</span>
+                    <label className="mb-1.5 block text-xs font-medium text-foreground">
+                      Temperature <span className="font-normal text-muted-foreground">(0.0 – 2.0)</span>
                     </label>
                     <Input
                       type="number"
@@ -371,8 +362,8 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-[#555] block mb-1.5">
-                      Base URL <span className="text-[#AAA] font-normal">(optional)</span>
+                    <label className="mb-1.5 block text-xs font-medium text-foreground">
+                      Base URL <span className="font-normal text-muted-foreground">(optional)</span>
                     </label>
                     <Input
                       type="text"
@@ -387,7 +378,7 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                     <button
                       onClick={handleTest}
                       disabled={testing}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#111] text-white rounded-lg cursor-pointer hover:bg-[#222] transition-colors disabled:opacity-50"
+                      className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-[var(--brand-hover)] disabled:opacity-50"
                     >
                       {testing ? <Loader2 size={12} className="animate-spin" /> : null}
                       {testing ? "Testing..." : "Test Connection"}
@@ -396,7 +387,7 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                       href="https://ollama.com"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs text-[#888] hover:text-[#555] transition-colors"
+                      className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
                     >
                       Get Ollama
                       <ExternalLink size={10} />
@@ -409,10 +400,10 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                 ) : (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs font-medium text-[#555] block mb-1.5">
+                    <label className="mb-1.5 block text-xs font-medium text-foreground">
                       API Key
                       {defaults.apiKeyDescription && (
-                        <span className="text-[#AAA] font-normal ml-1">— {defaults.apiKeyDescription}</span>
+                        <span className="ml-1 font-normal text-muted-foreground">— {defaults.apiKeyDescription}</span>
                       )}
                     </label>
                     <div className="relative">
@@ -429,7 +420,7 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                       <button
                         type="button"
                         onClick={() => setShowKey(!showKey)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#AAA] hover:text-[#666] transition-colors cursor-pointer"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
                       >
                         {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
@@ -451,8 +442,8 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                     </div>
                   )}
                   <div>
-                    <label className="text-xs font-medium text-[#555] block mb-1.5">
-                      Temperature <span className="text-[#AAA] font-normal">(0.0 – 2.0)</span>
+                    <label className="mb-1.5 block text-xs font-medium text-foreground">
+                      Temperature <span className="font-normal text-muted-foreground">(0.0 – 2.0)</span>
                     </label>
                     <Input
                       type="number"
@@ -468,8 +459,8 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                   </div>
                   {display.type === "openai" && (
                     <div>
-                      <label className="text-xs font-medium text-[#555] block mb-1.5">
-                        Base URL <span className="text-[#AAA] font-normal">(optional)</span>
+                      <label className="mb-1.5 block text-xs font-medium text-foreground">
+                        Base URL <span className="font-normal text-muted-foreground">(optional)</span>
                       </label>
                       <Input
                         type="text"
@@ -485,7 +476,7 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                     <button
                       onClick={handleTest}
                       disabled={testing || !localKey.trim()}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#111] text-white rounded-lg cursor-pointer hover:bg-[#222] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {testing ? <Loader2 size={12} className="animate-spin" /> : null}
                       {testing ? "Testing..." : "Save & Test"}
@@ -538,57 +529,17 @@ function ResultBadge({
 
 // ── Appearance Section ──
 
-type ThemeOption = "light" | "dark" | "system";
-
 function AppearanceSection() {
   const { sidebarCollapsed, setSidebarCollapsed } = useAppStore();
-
-  const [theme, setTheme] = useState<ThemeOption>(() => {
-    if (typeof window === "undefined") return "system";
-    return (localStorage.getItem("discentia_theme") as ThemeOption | null) ?? "system";
-  });
-  const [accentColor, setAccentColor] = useState(() => {
-    if (typeof window === "undefined") return ACCENT_COLORS[0].hex;
-    return localStorage.getItem("discentia_accent") ?? ACCENT_COLORS[0].hex;
-  });
-  const [fontSize, setFontSize] = useState<"small" | "medium" | "large">(() => {
-    if (typeof window === "undefined") return "medium";
-    return (
-      (localStorage.getItem("discentia_font_size") as
-        | "small"
-        | "medium"
-        | "large"
-        | null) ?? "medium"
-    );
-  });
-
-  const applyTheme = (value: ThemeOption) => {
-    setTheme(value);
-    localStorage.setItem("discentia_theme", value);
-    const root = document.documentElement;
-    if (value === "dark") {
-      root.classList.add("dark");
-    } else if (value === "light") {
-      root.classList.remove("dark");
-    } else {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      if (prefersDark) {
-        root.classList.add("dark");
-      } else {
-        root.classList.remove("dark");
-      }
-    }
-  };
-
-  const applyAccent = (hex: string) => {
-    setAccentColor(hex);
-    localStorage.setItem("discentia_accent", hex);
-  };
-
-  const applyFontSize = (size: "small" | "medium" | "large") => {
-    setFontSize(size);
-    localStorage.setItem("discentia_font_size", size);
-  };
+  const { theme, accentColor, fontSize, setTheme, setAccentColor, setFontSize } =
+    useAppearanceStore(useShallow((state) => ({
+      theme: state.theme,
+      accentColor: state.accentColor,
+      fontSize: state.fontSize,
+      setTheme: state.setTheme,
+      setAccentColor: state.setAccentColor,
+      setFontSize: state.setFontSize,
+    })));
 
   const themeOptions: { value: ThemeOption; label: string; icon: typeof Sun; preview: string }[] = [
     { value: "light", label: "Light", icon: Sun, preview: "bg-white border-[#E5E7EB]" },
@@ -599,13 +550,13 @@ function AppearanceSection() {
   return (
     <div className="max-w-2xl space-y-8">
       <div>
-        <h2 className="text-xl font-bold text-[#111]">Appearance</h2>
-        <p className="text-sm text-[#888] mt-1">Customize how Discentia looks and feels.</p>
+        <h2 className="text-xl font-bold text-foreground">Appearance</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Customize how Discentia looks and feels.</p>
       </div>
 
       {/* Theme */}
       <div>
-        <h3 className="text-sm font-semibold text-[#111] mb-3">Theme</h3>
+        <h3 className="mb-3 text-sm font-semibold text-foreground">Theme</h3>
         <div className="grid grid-cols-3 gap-3">
           {themeOptions.map((opt) => {
             const Icon = opt.icon;
@@ -613,23 +564,23 @@ function AppearanceSection() {
             return (
               <button
                 key={opt.value}
-                onClick={() => applyTheme(opt.value)}
+                onClick={() => setTheme(opt.value)}
                 className={`relative flex flex-col items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   isSelected
-                    ? "border-[#1A7A6D] bg-[#E6F5F3]"
-                    : "border-[#E5E7EB] bg-white hover:bg-[#FAFAFA]"
+                    ? "border-[var(--brand)] bg-[var(--brand-soft)]"
+                    : "border-border bg-card hover:bg-muted/60"
                 }`}
               >
                 <div className={`w-full h-12 rounded-lg border ${opt.preview}`} />
                 <div className="flex items-center gap-1.5">
-                  <Icon size={13} className={isSelected ? "text-[#1A7A6D]" : "text-[#888]"} />
-                  <span className={`text-xs font-medium ${isSelected ? "text-[#1A7A6D]" : "text-[#555]"}`}>
+                  <Icon size={13} className={isSelected ? "text-[var(--brand)]" : "text-muted-foreground"} />
+                  <span className={`text-xs font-medium ${isSelected ? "text-[var(--brand)]" : "text-foreground/80"}`}>
                     {opt.label}
                   </span>
                 </div>
                 {isSelected && (
-                  <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#1A7A6D] flex items-center justify-center">
-                    <Check size={9} className="text-white" />
+                  <div className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
+                    <Check size={9} className="text-primary-foreground" />
                   </div>
                 )}
               </button>
@@ -640,15 +591,17 @@ function AppearanceSection() {
 
       {/* Accent Color */}
       <div>
-        <h3 className="text-sm font-semibold text-[#111] mb-1">Accent Color</h3>
-        <p className="text-xs text-[#888] mb-3">Used for highlights and interactive elements.</p>
+        <h3 className="mb-1 text-sm font-semibold text-foreground">Accent Color</h3>
+        <p className="mb-3 text-xs text-muted-foreground">Used for highlights and interactive elements.</p>
         <div className="flex items-center gap-2.5">
           {ACCENT_COLORS.map((color) => (
             <button
               key={color.hex}
-              onClick={() => applyAccent(color.hex)}
+              onClick={() => setAccentColor(color.hex)}
               title={color.label}
-              className="relative w-8 h-8 rounded-full cursor-pointer transition-transform hover:scale-110 focus:outline-none"
+              className={`relative h-8 w-8 cursor-pointer rounded-full transition-transform hover:scale-110 focus:outline-none ${
+                accentColor === color.hex ? "ring-2 ring-offset-2 ring-[var(--brand-ring)] ring-offset-background" : ""
+              }`}
               style={{ backgroundColor: color.hex }}
             >
               {accentColor === color.hex && (
@@ -661,17 +614,17 @@ function AppearanceSection() {
 
       {/* Font Size */}
       <div>
-        <h3 className="text-sm font-semibold text-[#111] mb-1">Font Size</h3>
-        <p className="text-xs text-[#888] mb-3">Adjusts the text size across the app.</p>
+        <h3 className="mb-1 text-sm font-semibold text-foreground">Font Size</h3>
+        <p className="mb-3 text-xs text-muted-foreground">Adjusts the text size across the app.</p>
         <div className="flex items-center gap-2">
           {(["small", "medium", "large"] as const).map((size) => (
             <button
               key={size}
-              onClick={() => applyFontSize(size)}
+              onClick={() => setFontSize(size)}
               className={`px-4 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors capitalize ${
                 fontSize === size
-                  ? "bg-[#111] text-white border-[#111]"
-                  : "bg-white text-[#555] border-[#DDD] hover:border-[#AAA]"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-foreground/80 hover:border-foreground/30"
               }`}
             >
               {size}
@@ -681,19 +634,19 @@ function AppearanceSection() {
       </div>
 
       {/* Sidebar */}
-      <div className="flex items-center justify-between py-4 border-t border-[#F0F0F0]">
+      <div className="flex items-center justify-between border-t border-border py-4">
         <div>
-          <p className="text-sm font-medium text-[#111]">Collapse sidebar by default</p>
-          <p className="text-xs text-[#888] mt-0.5">Start the app with the sidebar collapsed.</p>
+          <p className="text-sm font-medium text-foreground">Collapse sidebar by default</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Start the app with the sidebar collapsed.</p>
         </div>
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className={`relative w-10 h-6 rounded-full transition-colors cursor-pointer ${
-            sidebarCollapsed ? "bg-[#1A7A6D]" : "bg-[#DDD]"
+            sidebarCollapsed ? "bg-primary" : "bg-border"
           }`}
         >
           <span
-            className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
+            className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform dark:bg-background ${
               sidebarCollapsed ? "translate-x-4" : "translate-x-0.5"
             }`}
           />
@@ -731,14 +684,14 @@ function StudySection() {
   return (
     <div className="max-w-2xl space-y-8">
       <div>
-        <h2 className="text-xl font-bold text-[#111]">Study Preferences</h2>
-        <p className="text-sm text-[#888] mt-1">Configure your daily study goals and review settings.</p>
+        <h2 className="text-xl font-bold text-foreground">Study Preferences</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Configure your daily study goals and review settings.</p>
       </div>
 
       {/* Daily Goal */}
       <div>
-        <h3 className="text-sm font-semibold text-[#111] mb-1">Daily Goal</h3>
-        <p className="text-xs text-[#888] mb-3">Target number of cards to review per day.</p>
+        <h3 className="mb-1 text-sm font-semibold text-foreground">Daily Goal</h3>
+        <p className="mb-3 text-xs text-muted-foreground">Target number of cards to review per day.</p>
         <div className="flex items-center gap-2">
           {DAILY_GOAL_OPTIONS.map((opt) => (
             <button
@@ -746,8 +699,8 @@ function StudySection() {
               onClick={() => handleGoal(opt)}
               className={`px-4 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
                 dailyGoal === opt
-                  ? "bg-[#111] text-white border-[#111]"
-                  : "bg-white text-[#555] border-[#DDD] hover:border-[#AAA]"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-foreground/80 hover:border-foreground/30"
               }`}
             >
               {opt} cards
@@ -757,24 +710,24 @@ function StudySection() {
       </div>
 
       {/* SRS */}
-      <div className="border border-[#E5E7EB] rounded-xl overflow-hidden">
-        <div className="px-5 py-3 bg-[#FAFAFA] border-b border-[#F0F0F0]">
-          <h3 className="text-sm font-semibold text-[#111]">Spaced Repetition (SRS)</h3>
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="border-b border-border bg-muted/40 px-5 py-3">
+          <h3 className="text-sm font-semibold text-foreground">Spaced Repetition (SRS)</h3>
         </div>
-        <div className="divide-y divide-[#F0F0F0]">
+        <div className="divide-y divide-border">
           <div className="flex items-center justify-between px-5 py-3.5">
             <div>
-              <p className="text-sm text-[#111]">Algorithm</p>
-              <p className="text-xs text-[#888] mt-0.5">Scheduling algorithm for reviews.</p>
+              <p className="text-sm text-foreground">Algorithm</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Scheduling algorithm for reviews.</p>
             </div>
-            <span className="text-xs font-medium text-[#555] bg-[#F3F4F6] px-3 py-1.5 rounded-lg">
+            <span className="rounded-lg bg-muted px-3 py-1.5 text-xs font-medium text-foreground/80">
               SM-2
             </span>
           </div>
           <div className="flex items-center justify-between px-5 py-3.5">
             <div>
-              <p className="text-sm text-[#111]">New cards per day</p>
-              <p className="text-xs text-[#888] mt-0.5">Maximum new cards introduced daily.</p>
+              <p className="text-sm text-foreground">New cards per day</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Maximum new cards introduced daily.</p>
             </div>
             <input
               type="number"
@@ -782,7 +735,7 @@ function StudySection() {
               onChange={(e) => handleNewCards(Number(e.target.value))}
               min={1}
               max={200}
-              className="w-16 text-center text-sm font-medium text-[#111] border border-[#E5E7EB] rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#1A7A6D]/30 focus:border-[#1A7A6D]"
+              className="w-16 rounded-lg border border-border bg-background px-2 py-1.5 text-center text-sm font-medium text-foreground focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-ring)]"
             />
           </div>
         </div>
@@ -913,7 +866,9 @@ function DataPrivacySection() {
         db.srsCards.clear(),
         db.activityEvents.clear(),
       ]);
-      const keysToRemove = Object.keys(localStorage).filter((k) => k.startsWith("discentia_"));
+      const keysToRemove = Object.keys(localStorage).filter(
+        (k) => k.startsWith("discentia_") || k.startsWith("discentia:")
+      );
       keysToRemove.forEach((k) => localStorage.removeItem(k));
       setConfirmDelete(false);
       alert("All data deleted. The page will refresh.");
@@ -941,32 +896,32 @@ function DataPrivacySection() {
   return (
     <div className="max-w-2xl space-y-8">
       <div>
-        <h2 className="text-xl font-bold text-[#111]">Data & Privacy</h2>
-        <p className="text-sm text-[#888] mt-1">
+        <h2 className="text-xl font-bold text-foreground">Data & Privacy</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           Manage your local data, export backups, and control privacy settings.
         </p>
       </div>
 
       {/* Storage */}
       <div>
-        <h3 className="text-sm font-semibold text-[#111] mb-3">Storage</h3>
-        <div className="border border-[#E5E7EB] rounded-xl p-5">
+        <h3 className="mb-3 text-sm font-semibold text-foreground">Storage</h3>
+        <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-[#888]">Total storage used</span>
+            <span className="text-xs text-muted-foreground">Total storage used</span>
             {storageInfo && (
-              <span className="text-xs font-medium text-[#555]">
+              <span className="text-xs font-medium text-foreground/80">
                 {formatBytes(storageInfo.used)}
               </span>
             )}
           </div>
-          <div className="w-full h-2 bg-[#F0F0F0] rounded-full overflow-hidden">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full bg-[#1A7A6D] rounded-full transition-all"
+              className="h-full rounded-full bg-primary transition-all"
               style={{ width: `${usedPct}%` }}
             />
           </div>
           {storageInfo && (
-            <p className="text-[11px] text-[#AAA] mt-1.5">
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
               {formatBytes(storageInfo.used)} of {formatBytes(storageInfo.quota)} used
             </p>
           )}
@@ -975,12 +930,12 @@ function DataPrivacySection() {
 
       {/* Export & Import */}
       <div>
-        <h3 className="text-sm font-semibold text-[#111] mb-3">Export & Backup</h3>
+        <h3 className="mb-3 text-sm font-semibold text-foreground">Export & Backup</h3>
         <div className="flex items-center gap-3">
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#111] border border-[#DDD] rounded-lg cursor-pointer hover:bg-[#F9FAFB] transition-colors disabled:opacity-50"
+            className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/60 disabled:opacity-50"
           >
             {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
             Export all data (JSON)
@@ -988,7 +943,7 @@ function DataPrivacySection() {
           <button
             onClick={() => importRef.current?.click()}
             disabled={importing}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#111] border border-[#DDD] rounded-lg cursor-pointer hover:bg-[#F9FAFB] transition-colors disabled:opacity-50"
+            className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/60 disabled:opacity-50"
           >
             {importing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
             Import backup
@@ -1004,18 +959,18 @@ function DataPrivacySection() {
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold text-[#111] mb-3">Onboarding</h3>
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-[#E5E7EB] p-5">
+        <h3 className="mb-3 text-sm font-semibold text-foreground">Onboarding</h3>
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-5">
           <div>
-            <p className="text-sm font-medium text-[#111]">Reset onboarding</p>
-            <p className="mt-0.5 text-xs text-[#888]">
+            <p className="text-sm font-medium text-foreground">Reset onboarding</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
               Clears the onboarding flag and shows the welcome flow again after reload.
             </p>
           </div>
           <button
             onClick={handleResetOnboarding}
             disabled={resettingOnboarding}
-            className="shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#111] border border-[#DDD] rounded-lg cursor-pointer hover:bg-[#F9FAFB] transition-colors disabled:opacity-50"
+            className="flex shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/60 disabled:opacity-50"
           >
             {resettingOnboarding ? (
               <Loader2 size={14} className="animate-spin" />
@@ -1074,26 +1029,26 @@ function ShortcutsSection() {
   return (
     <div className="max-w-2xl space-y-8">
       <div>
-        <h2 className="text-xl font-bold text-[#111]">Keyboard Shortcuts</h2>
-        <p className="text-sm text-[#888] mt-1">
+        <h2 className="text-xl font-bold text-foreground">Keyboard Shortcuts</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           Quick reference for all keyboard shortcuts available in Discentia.
         </p>
       </div>
 
       {Object.entries(SHORTCUTS).map(([group, items]) => (
         <div key={group}>
-          <h3 className="text-xs font-semibold text-[#888] uppercase tracking-wider mb-2">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {group}
           </h3>
-          <div className="border border-[#E5E7EB] rounded-xl overflow-hidden divide-y divide-[#F0F0F0]">
+          <div className="overflow-hidden rounded-xl border border-border bg-card divide-y divide-border">
             {items.map((shortcut) => (
               <div key={shortcut.action} className="flex items-center justify-between px-5 py-3.5">
-                <span className="text-sm text-[#333]">{shortcut.action}</span>
+                <span className="text-sm text-foreground">{shortcut.action}</span>
                 <div className="flex items-center gap-1">
                   {shortcut.keys.map((key, i) => (
                     <kbd
                       key={i}
-                      className="px-2 py-0.5 text-xs font-medium text-[#555] bg-[#F3F4F6] border border-[#DDD] rounded-md"
+                      className="rounded-md border border-border bg-muted px-2 py-0.5 text-xs font-medium text-foreground/80"
                     >
                       {key}
                     </kbd>
@@ -1120,10 +1075,10 @@ export default function SettingsPage() {
   }, [checkOllamaConnection]);
 
   return (
-    <div className="flex h-full w-full bg-[#FAFAFA]">
+    <div className="flex h-full w-full bg-background text-foreground">
       {/* Left nav */}
-      <nav className="w-52 shrink-0 border-r border-[#ECECEC] bg-white px-3 py-8 flex flex-col">
-        <h1 className="text-lg font-bold text-[#111] px-3 mb-6">Settings</h1>
+      <nav className="flex w-52 shrink-0 flex-col border-r border-border bg-card px-3 py-8">
+        <h1 className="mb-6 px-3 text-lg font-bold text-foreground">Settings</h1>
         <div className="flex flex-col gap-0.5">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -1136,18 +1091,18 @@ export default function SettingsPage() {
                   !item.enabled
                     ? "opacity-40 cursor-default"
                     : isActive
-                    ? "bg-[#F3F4F6] text-[#111] font-medium cursor-pointer"
-                    : "text-[#666] hover:bg-[#F9FAFB] cursor-pointer"
+                    ? "bg-muted text-foreground font-medium cursor-pointer"
+                    : "text-muted-foreground hover:bg-muted/60 cursor-pointer"
                 }`}
               >
-                <Icon size={16} className={isActive ? "text-[#111]" : "text-[#999]"} />
+                <Icon size={16} className={isActive ? "text-foreground" : "text-muted-foreground"} />
                 {item.label}
               </button>
             );
           })}
         </div>
-        <div className="mt-auto pt-4 border-t border-[#ECECEC] px-3">
-          <p className="px-3 py-2 text-xs leading-relaxed text-[#777]">
+        <div className="mt-auto border-t border-border px-3 pt-4">
+          <p className="px-3 py-2 text-xs leading-relaxed text-muted-foreground">
             This build runs local-first. No Discentia account or external sync is required.
           </p>
         </div>
@@ -1166,8 +1121,8 @@ export default function SettingsPage() {
             {activeSection === "providers" && (
               <div className="max-w-2xl">
                 <div className="mb-6">
-                  <h2 className="text-xl font-bold text-[#111]">AI Providers</h2>
-                  <p className="text-sm text-[#888] mt-1">
+                  <h2 className="text-xl font-bold text-foreground">AI Providers</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Configure your AI providers. API keys are encrypted and stored locally on your device.
                   </p>
                 </div>

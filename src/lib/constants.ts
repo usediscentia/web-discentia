@@ -15,6 +15,9 @@ export const STORAGE_KEYS = {
   PROVIDER_CONFIGS: "discentia:provider-configs",
   SELECTED_PROVIDER: "discentia:selected-provider",
   SELECTED_MODEL: "discentia:selected-model",
+  THEME: "discentia:theme",
+  ACCENT: "discentia:accent",
+  FONT_SIZE: "discentia:font-size",
 } as const;
 
 export const SYSTEM_PROMPT = `You are Discentia, an AI study assistant running inside the Discentia app. The user is talking to you from within the app.
