@@ -97,15 +97,15 @@ export default function Sidebar() {
         onClick={() => setActiveView(item.id)}
         className={`flex items-center gap-3 rounded-md cursor-pointer transition-colors px-3 py-2 ${
           isActive
-            ? "bg-[#F3F4F6] font-medium text-[#0a0a0a]"
-            : "text-[#6B7280] hover:bg-[#F9FAFB]"
+            ? "bg-muted font-medium text-foreground"
+            : "text-muted-foreground hover:bg-muted/60"
         }`}
         title={sidebarCollapsed ? item.label : undefined}
       >
         <Icon size={18} className="shrink-0" />
         <span className={`text-sm whitespace-nowrap ${fade}`}>{item.label}</span>
         {showBadge && dueCount > 0 && !sidebarCollapsed && (
-          <span className="ml-auto text-[10px] font-semibold bg-[#1A7A6D] text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+          <span className="ml-auto min-w-[18px] rounded-full bg-primary px-1.5 py-0.5 text-center text-[10px] font-semibold text-primary-foreground">
             {dueCount}
           </span>
         )}
@@ -117,7 +117,7 @@ export default function Sidebar() {
     <motion.aside
       animate={{ width: sidebarCollapsed ? COLLAPSED_W : EXPANDED_W }}
       transition={{ type: "spring", stiffness: 320, damping: 28 }}
-      className="hidden md:flex flex-col h-screen shrink-0 border-r border-[#F3F4F6] bg-white select-none overflow-hidden"
+      className="hidden h-screen shrink-0 overflow-hidden border-r border-border bg-sidebar select-none md:flex md:flex-col"
     >
       <div className="flex flex-col h-full" style={{ width: EXPANDED_W }}>
         {/* Header */}
@@ -137,13 +137,12 @@ export default function Sidebar() {
           </motion.div>
 
           <span
-            className={`whitespace-nowrap ml-2 ${fade}`}
+            className={`ml-2 whitespace-nowrap text-foreground ${fade}`}
             style={{
               fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
               fontWeight: 700,
               fontSize: 17,
               letterSpacing: "-0.3px",
-              color: "#0a0a0a",
             }}
           >
             Discentia
@@ -153,7 +152,7 @@ export default function Sidebar() {
 
           <button
             onClick={() => setSidebarCollapsed(true)}
-            className={`w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#F3F4F6] text-[#9CA3AF] cursor-pointer transition-all duration-200 ${
+            className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-all duration-200 hover:bg-muted ${
               sidebarCollapsed
                 ? "opacity-0 pointer-events-none scale-75"
                 : "opacity-100 scale-100"
@@ -166,7 +165,7 @@ export default function Sidebar() {
 
         {/* Principal section */}
         <div className="flex flex-col gap-0.5 px-2 mt-2">
-          <span className={`text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider px-2 mb-1 ${fade}`}>
+          <span className={`mb-1 px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground ${fade}`}>
             Principal
           </span>
           {primaryNav.map((item) => (
@@ -178,7 +177,7 @@ export default function Sidebar() {
 
         {/* Secundário section */}
         <div className="flex flex-col gap-0.5 px-2 mt-4">
-          <span className={`text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider px-2 mb-1 ${fade}`}>
+          <span className={`mb-1 px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground ${fade}`}>
             Secundário
           </span>
           {secondaryNav.map((item) => (
@@ -197,7 +196,7 @@ export default function Sidebar() {
           }`}
         >
           <div className="flex items-center justify-between px-2 mb-1">
-            <span className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Conversas recentes
             </span>
             <button
@@ -205,7 +204,7 @@ export default function Sidebar() {
                 setActiveConversationId(null);
                 setActiveView("chat");
               }}
-              className="text-[#9CA3AF] hover:text-[#555] transition-colors cursor-pointer"
+              className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
               title="Nova conversa"
             >
               <Plus size={13} />
@@ -216,8 +215,8 @@ export default function Sidebar() {
               key={chat.id}
               className={`group flex items-center gap-2 px-2 py-1.5 rounded-md ${
                 activeConversationId === chat.id
-                  ? "bg-[#F3F4F6]"
-                  : "hover:bg-[#F9FAFB]"
+                  ? "bg-muted"
+                  : "hover:bg-muted/60"
               }`}
             >
               <button
@@ -228,21 +227,21 @@ export default function Sidebar() {
                 className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer text-left"
                 title={chat.title}
               >
-                <Clock size={14} className="shrink-0 text-[#9CA3AF]" />
-                <span className="text-sm truncate text-[#6B7280]">
+                <Clock size={14} className="shrink-0 text-muted-foreground" />
+                <span className="truncate text-sm text-muted-foreground">
                   {chat.title}
                 </span>
               </button>
               <div className="hidden group-hover:flex items-center gap-1">
                 <button
-                  className="text-[#9CA3AF] hover:text-[#555] cursor-pointer"
+                  className="cursor-pointer text-muted-foreground hover:text-foreground"
                   onClick={() => handleRenameConversation(chat)}
                   title="Renomear"
                 >
                   <PencilLine size={12} />
                 </button>
                 <button
-                  className="text-[#9CA3AF] hover:text-red-600 cursor-pointer"
+                  className="cursor-pointer text-muted-foreground hover:text-red-600"
                   onClick={() => handleDeleteConversation(chat)}
                   title="Excluir"
                 >
@@ -260,13 +259,13 @@ export default function Sidebar() {
         <div className="flex flex-col gap-0.5 px-2 pb-2">
           <button
             onClick={() => setCommandPaletteOpen(true)}
-            className="flex items-center gap-2.5 rounded-md cursor-pointer hover:bg-[#F9FAFB] text-[#6B7280] transition-colors px-3 py-2"
+            className="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-muted/60"
             title={sidebarCollapsed ? "Buscar ⌘K" : undefined}
           >
             <Search size={18} className="shrink-0" />
             <span className={`text-sm whitespace-nowrap ${fade}`}>
               Buscar{" "}
-              <kbd className="text-[10px] font-medium text-[#9CA3AF] ml-1">
+              <kbd className="ml-1 text-[10px] font-medium text-muted-foreground">
                 ⌘K
               </kbd>
             </span>
@@ -274,11 +273,11 @@ export default function Sidebar() {
         </div>
 
         {/* User */}
-        <div className="flex items-center gap-2.5 px-3 py-3 border-t border-[#F3F4F6]">
-          <div className="w-8 h-8 rounded-full bg-[#F3F4F6] flex items-center justify-center shrink-0">
-            <span className="text-xs font-medium text-[#6B7280]">U</span>
+        <div className="flex items-center gap-2.5 border-t border-border px-3 py-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
+            <span className="text-xs font-medium text-muted-foreground">U</span>
           </div>
-          <span className={`text-sm font-medium text-[#0a0a0a] truncate ${fade}`}>
+          <span className={`truncate text-sm font-medium text-foreground ${fade}`}>
             User Name
           </span>
         </div>

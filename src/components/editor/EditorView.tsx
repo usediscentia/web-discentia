@@ -72,11 +72,11 @@ function SaveToast({
               Saved successfully
             </span>
             <div className="flex items-center gap-1.5 text-[13px]">
-              <span className="font-semibold text-[#1A7A6D]">
+              <span className="font-semibold text-[var(--brand)]">
                 {title || "Untitled"}
               </span>
               <span className="text-[#9CA3AF]">&rarr;</span>
-              <span className="inline-flex items-center gap-1 bg-[#E6F5F3] text-[#15665B] text-xs font-medium rounded-full px-2 py-0.5">
+              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--brand-soft)] px-2 py-0.5 text-xs font-medium text-[var(--brand)]">
                 <span
                   className="w-1.5 h-1.5 rounded-full"
                   style={{ background: libraryColor }}
@@ -188,9 +188,9 @@ function LibrarySelector({ libraries, selectedId, onSelect, onLibraryCreated }: 
       {/* Trigger */}
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 text-[13px] font-medium text-[#15665B] pl-3 pr-2.5 py-[6px] bg-[#F0FAF8] rounded-lg border border-[#C8E8E2] cursor-pointer hover:bg-[#E6F5F3] hover:border-[#A8D8CE] transition-colors"
+        className="flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--brand-ring)] bg-[var(--brand-soft)] py-[6px] pl-3 pr-2.5 text-[13px] font-medium text-[var(--brand)] transition-colors hover:border-[var(--brand)] hover:bg-[var(--brand-soft)]"
       >
-        <LibraryIcon size={14} className="text-[#1A7A6D]" />
+        <LibraryIcon size={14} className="text-[var(--brand)]" />
         {selected && (
           <span
             className="w-2 h-2 rounded-full flex-shrink-0"
@@ -250,7 +250,7 @@ function LibrarySelector({ libraries, selectedId, onSelect, onLibraryCreated }: 
                       }}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
                         isSelected
-                          ? "bg-[#F0FAF8]"
+                          ? "bg-[var(--brand-soft)]"
                           : "hover:bg-[#F9FAFB]"
                       }`}
                     >
@@ -262,7 +262,7 @@ function LibrarySelector({ libraries, selectedId, onSelect, onLibraryCreated }: 
                         <span
                           className={`text-sm truncate ${
                             isSelected
-                              ? "font-semibold text-[#15665B]"
+                              ? "font-semibold text-[var(--brand)]"
                               : "font-medium text-[#374151]"
                           }`}
                         >
@@ -277,7 +277,7 @@ function LibrarySelector({ libraries, selectedId, onSelect, onLibraryCreated }: 
                         </span>
                       </div>
                       {isSelected && (
-                        <Check size={16} className="text-[#1A7A6D] flex-shrink-0" />
+                        <Check size={16} className="text-[var(--brand)] flex-shrink-0" />
                       )}
                     </button>
                   );
@@ -300,7 +300,7 @@ function LibrarySelector({ libraries, selectedId, onSelect, onLibraryCreated }: 
                         if (e.key === "Escape") setCreating(false);
                       }}
                       placeholder="Library name"
-                      className="flex-1 text-[13px] px-2.5 py-1.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg outline-none focus:border-[#1A7A6D] focus:ring-1 focus:ring-[#1A7A6D]/20 text-[#374151] placeholder:text-[#9CA3AF] transition-colors"
+                      className="flex-1 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-2.5 py-1.5 text-[13px] text-[#374151] outline-none transition-colors placeholder:text-[#9CA3AF] focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand-ring)]"
                     />
                   </div>
                   <div className="flex items-center gap-1.5 mb-3">
@@ -310,7 +310,7 @@ function LibrarySelector({ libraries, selectedId, onSelect, onLibraryCreated }: 
                         onClick={() => setNewColor(c.hex)}
                         className={`w-5 h-5 rounded-full cursor-pointer transition-all ${
                           newColor === c.hex
-                            ? "ring-2 ring-offset-1 ring-[#1A7A6D] scale-110"
+                            ? "ring-2 ring-offset-1 ring-[var(--brand)] scale-110"
                             : "hover:scale-110"
                         }`}
                         style={{ background: c.hex }}
@@ -328,7 +328,7 @@ function LibrarySelector({ libraries, selectedId, onSelect, onLibraryCreated }: 
                     <button
                       onClick={handleCreate}
                       disabled={!newName.trim() || isSubmitting}
-                      className="flex-1 text-[13px] font-medium text-white py-1.5 rounded-lg bg-[#1A7A6D] cursor-pointer hover:bg-[#15665B] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="flex-1 cursor-pointer rounded-lg bg-primary py-1.5 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isSubmitting ? "Creating..." : "Create"}
                     </button>
@@ -438,7 +438,7 @@ export default function EditorView() {
     setToastInfo({
       title: title || "Untitled",
       libraryName: lib?.name || "Library",
-      libraryColor: lib?.color || "#1A7A6D",
+      libraryColor: lib?.color || "var(--brand)",
     });
     setToastVisible(true);
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -584,7 +584,7 @@ export default function EditorView() {
       {/* Header */}
       <div className="h-14 px-8 border-b border-[#E5E7EB] bg-white flex items-center justify-between gap-4 flex-shrink-0">
         <div className="flex items-center gap-4 min-w-0">
-          <FileText size={20} className="text-[#1A7A6D] flex-shrink-0" />
+          <FileText size={20} className="text-primary flex-shrink-0" />
           <input
             type="text"
             value={title}
@@ -675,7 +675,7 @@ export default function EditorView() {
         }`}
       >
         <div className="flex items-center gap-2.5">
-          <Sparkles size={18} className="text-[#1A7A6D]" />
+          <Sparkles size={18} className="text-primary" />
           <span className="text-sm font-medium text-[#374151]">
             Generate exercises from this note
           </span>
