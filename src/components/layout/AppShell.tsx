@@ -5,6 +5,7 @@ import { BookOpen, MessageSquare, Settings, Sparkles, BarChart2 } from "lucide-r
 import { useAppStore } from "@/stores/app.store"
 import { useProviderStore } from "@/stores/provider.store"
 import Sidebar from "@/components/layout/Sidebar"
+import AppearanceEffects from "@/components/layout/AppearanceEffects"
 import ChatView from "@/components/chat/ChatView"
 import LibraryView from "@/components/library/LibraryView"
 import SettingsPage from "@/components/providers/SettingsPage"
@@ -27,7 +28,7 @@ function MobileNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-[#E5E7EB] bg-white/95 backdrop-blur md:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="grid grid-cols-5 px-2 py-2">
@@ -40,8 +41,8 @@ function MobileNav() {
               onClick={() => setActiveView(item.id)}
               className={`flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] transition-colors ${
                 isActive
-                  ? "bg-[#F3F4F6] font-medium text-[#111]"
-                  : "text-[#6B7280]"
+                  ? "bg-muted font-medium text-foreground"
+                  : "text-muted-foreground"
               }`}
             >
               <Icon size={18} />
@@ -57,13 +58,10 @@ function MobileNav() {
 export default function AppShell() {
   const { activeView, setCommandPaletteOpen } = useAppStore()
   const { loadProviderConfigs } = useProviderStore()
-  const [showOnboarding, setShowOnboarding] = useState(false)
-
-  useEffect(() => {
-    if (localStorage.getItem("discentia_onboarded") !== "1") {
-      setShowOnboarding(true)
-    }
-  }, [])
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window === "undefined") return false
+    return localStorage.getItem("discentia_onboarded") !== "1"
+  })
 
   useEffect(() => {
     void loadProviderConfigs()
@@ -82,8 +80,9 @@ export default function AppShell() {
 
   return (
     <>
+      <AppearanceEffects />
       <CommandPalette />
-      <div className="flex h-screen overflow-hidden bg-white">
+      <div className="flex h-screen overflow-hidden bg-background">
         <Sidebar />
         <main className="flex-1 min-w-0 overflow-hidden pb-[76px] md:pb-0">
           {activeView === "chat" && <ChatView />}

@@ -121,21 +121,21 @@ export function CardOrbit({ cards, orbitRadius = 265 }: CardOrbitProps) {
                     }}
                     className="w-[88px] h-[58px] rounded-md cursor-default select-none flex flex-col overflow-hidden"
                     style={{
-                      background: "#FFFFFF",
-                      border: "1px solid #E5E7EB",
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
                       borderBottom: `2px solid ${info.libraryColor}`,
                       transform: `rotate(${tilt}deg) scale(${isHovered ? 1.12 : 1}) translateY(${isHovered ? -6 : 0}px)`,
                       transition:
                         "transform 220ms cubic-bezier(0.23, 1, 0.32, 1), opacity 160ms ease-out, box-shadow 160ms ease-out",
                       boxShadow: isHovered
-                        ? "0 12px 32px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06)"
-                        : "0 1px 4px rgba(0,0,0,0.06), 0 0 0 0 transparent",
+                        ? "0 12px 32px rgba(0,0,0,0.24), 0 2px 6px rgba(0,0,0,0.12)"
+                        : "0 1px 4px rgba(0,0,0,0.12), 0 0 0 0 transparent",
                       opacity: hoveredIndex !== null && !isHovered ? 0.45 : 1,
                     }}
                   >
                     <p
                       className="flex-1 flex items-center px-2 py-1.5 text-[7px] leading-[1.4] font-medium line-clamp-3"
-                      style={{ color: "#1F2937" }}
+                      style={{ color: "var(--card-foreground)" }}
                     >
                       {info.card.front.slice(0, 65)}
                     </p>
