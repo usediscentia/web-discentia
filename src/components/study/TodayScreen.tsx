@@ -247,7 +247,7 @@ export function TodayScreen() {
             <p className="text-xs text-muted-foreground">Quantos cards revisar?</p>
             <div className="flex gap-1.5">
               {sizeOptions.map((n) => (
-                <button
+                <motion.button
                   key={n}
                   onClick={() => setSessionSize(n)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
@@ -255,20 +255,22 @@ export function TodayScreen() {
                       ? "bg-foreground text-background border-foreground"
                       : "bg-background text-muted-foreground border-border hover:border-foreground/40"
                   }`}
+                  whileTap={{ scale: 0.95 }}
                 >
                   {n}
-                </button>
+                </motion.button>
               ))}
-              <button
+              <motion.button
                 onClick={() => setSessionSize(cards.length)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
                   selectedSessionSize === cards.length
                     ? "bg-foreground text-background border-foreground"
                     : "bg-background text-muted-foreground border-border hover:border-foreground/40"
                 }`}
+                whileTap={{ scale: 0.95 }}
               >
                 Todos ({cards.length})
-              </button>
+              </motion.button>
             </div>
           </motion.div>
         )}
