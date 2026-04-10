@@ -17,6 +17,8 @@ import ItemCard from "@/components/library/ItemCard";
 import LibraryEmptyState from "@/components/library/LibraryEmptyState";
 import DocumentDetailPage from "@/components/document/DocumentDetailPage";
 
+type DragPhase = "dragging" | "fly-to-trash" | "shrinking" | "returning";
+
 type DragState = {
   item: LibraryItem;
   libraryColor: string;
@@ -59,14 +61,21 @@ export default function LibraryView() {
 
   // ── Drag-to-delete state ───────────────────────────────────────────────────
   const [dragState, setDragState] = useState<DragState>(null);
+  // Snapshot that keeps the overlay alive while it fades out during "returning"
+  // so the card (isDragging=false) can crossfade in simultaneously.
+  const [overlaySnapshot, setOverlaySnapshot] = useState<DragState>(null);
+  const [dragPhase, setDragPhase] = useState<DragPhase | null>(null);
   const [isOverTrash, setIsOverTrash] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
 
   const dragX = useMotionValue(0);
   const dragY = useMotionValue(0);
-  const overlayScale = useMotionValue(1);
-  const overlayOpacity = useMotionValue(1);
   const trashRef = useRef<HTMLDivElement>(null);
+  const positionAnimations = useRef<{ stop: () => void }[]>([]);
+  const dragPhaseRef = useRef<DragPhase | null>(null);
+
+  // Overlay renders from snapshot during return fade-out, otherwise from live dragState
+  const overlayData = overlaySnapshot ?? dragState;
 
   const selectedLibraryName = useMemo(() => {
     if (!activeLibraryId) return "All libraries";
@@ -83,24 +92,25 @@ export default function LibraryView() {
       pointerY: number,
       pointerId: number
     ) => {
+      // Cancel any in-flight position animations so they can't fire stale callbacks
+      positionAnimations.current.forEach((c) => c.stop());
+      positionAnimations.current = [];
       dragX.set(0);
       dragY.set(0);
-      overlayScale.set(1);
-      overlayOpacity.set(1);
+      dragPhaseRef.current = "dragging";
+      setOverlaySnapshot(null);
+      setDragPhase("dragging");
       setDragState({ item, libraryColor, cardRect, startX: pointerX, startY: pointerY, pointerId });
-      // Animate to "picked up" — slight scale-up for physical lift feel
-      animate(overlayScale, 1.06, { duration: 0.18, ease: [0.23, 1, 0.32, 1] });
     },
-    [dragX, dragY, overlayScale, overlayOpacity]
+    [dragX, dragY]
   );
 
   // Window-level pointer tracking during drag
   useEffect(() => {
-    if (!dragState) return;
+    if (!dragState || dragPhase !== "dragging") return;
 
     const captured = dragState;
 
-    // Grabbing cursor on body
     document.body.style.cursor = "grabbing";
     document.body.style.userSelect = "none";
 
@@ -134,45 +144,38 @@ export default function LibraryView() {
       setIsOverTrash(false);
 
       if (overTrash) {
-        // 1. Fly to trash center
+        // Fly to trash center — phase advances to "shrinking" once both springs settle
         const r = trashRef.current!.getBoundingClientRect();
         const targetX = r.left + r.width / 2 - (captured.cardRect.left + captured.cardRect.width / 2);
         const targetY = r.top + r.height / 2 - (captured.cardRect.top + captured.cardRect.height / 2);
 
-        let arrived = 0;
-        const onArrived = () => {
-          arrived++;
-          if (arrived < 2) return;
-          // 2. Shrink into trash
-          let shrunk = 0;
-          const onShrunk = () => {
-            shrunk++;
-            if (shrunk < 2) return;
-            // 3. Clear overlay, show undo toast
-            setDragState(null);
-            const capturedItem = captured.item;
-            const timerId = setTimeout(() => {
-              deleteItem(capturedItem.id);
-              setPendingDelete(null);
-            }, 4000);
-            setPendingDelete({ item: capturedItem, timerId });
-          };
-          animate(overlayScale, 0, { duration: 0.15, ease: [0.4, 0, 1, 1], onComplete: onShrunk });
-          animate(overlayOpacity, 0, { duration: 0.15, ease: [0.4, 0, 1, 1], onComplete: onShrunk });
+        dragPhaseRef.current = "fly-to-trash";
+        setDragPhase("fly-to-trash");
+
+        let xDone = false, yDone = false;
+        const checkArrived = () => {
+          if (!xDone || !yDone) return;
+          if (dragPhaseRef.current !== "fly-to-trash") return; // interrupted
+          dragPhaseRef.current = "shrinking";
+          setDragPhase("shrinking");
         };
 
-        animate(dragX, targetX, { type: "spring", stiffness: 380, damping: 28, mass: 0.8, onComplete: onArrived });
-        animate(dragY, targetY, { type: "spring", stiffness: 380, damping: 28, mass: 0.8, onComplete: onArrived });
+        positionAnimations.current = [
+          animate(dragX, targetX, { type: "spring", stiffness: 380, damping: 28, mass: 0.8, onComplete: () => { xDone = true; checkArrived(); } }),
+          animate(dragY, targetY, { type: "spring", stiffness: 380, damping: 28, mass: 0.8, onComplete: () => { yDone = true; checkArrived(); } }),
+        ];
       } else {
-        // Spring return to origin
-        let returned = 0;
-        const onReturned = () => {
-          returned++;
-          if (returned === 2) setDragState(null);
-        };
-        animate(overlayScale, 1, { type: "spring", stiffness: 400, damping: 30 });
-        animate(dragX, 0, { type: "spring", stiffness: 450, damping: 35, mass: 0.8, onComplete: onReturned });
-        animate(dragY, 0, { type: "spring", stiffness: 450, damping: 35, mass: 0.8, onComplete: onReturned });
+        // Clear dragState immediately so the card starts fading back in.
+        // The overlay stays visible via overlaySnapshot and fades out in parallel.
+        dragPhaseRef.current = "returning";
+        setOverlaySnapshot(captured);
+        setDragState(null);
+        setDragPhase("returning");
+
+        positionAnimations.current = [
+          animate(dragX, 0, { type: "spring", stiffness: 450, damping: 35, mass: 0.8 }),
+          animate(dragY, 0, { type: "spring", stiffness: 450, damping: 35, mass: 0.8 }),
+        ];
       }
     };
 
@@ -185,7 +188,7 @@ export default function LibraryView() {
       window.removeEventListener("pointermove", handleMove);
       window.removeEventListener("pointerup", handleUp);
     };
-  }, [dragState, dragX, dragY, overlayScale, overlayOpacity, deleteItem]);
+  }, [dragState, dragPhase, dragX, dragY]);
 
   const groupedItems = useMemo(() => {
     const pendingId = pendingDelete?.item.id;
@@ -285,48 +288,82 @@ export default function LibraryView() {
   return (
     <div className="flex flex-col h-full w-full bg-[#FAFAFA]">
       {/* ── Drag Overlay ──────────────────────────────────────────────────── */}
-      {dragState && (
+      {overlayData && (
         <motion.div
           className="fixed pointer-events-none z-[9999] rounded-[3px] overflow-hidden"
+          initial={{ scale: 1, opacity: 0 }}
+          animate={
+            dragPhase === "shrinking"
+              ? { scale: 0, opacity: 0 }
+              : dragPhase === "returning"
+              ? { scale: 1, opacity: 0 }
+              : isOverTrash
+              ? { scale: 0.78, opacity: 0.6 }
+              : { scale: 1.06, opacity: 1 }
+          }
+          transition={
+            dragPhase === "shrinking"
+              ? { duration: 0.15, ease: [0.4, 0, 1, 1] }
+              : dragPhase === "returning"
+              ? { duration: 0.22, ease: [0.23, 1, 0.32, 1] }
+              : { duration: 0.18, ease: [0.23, 1, 0.32, 1] }
+          }
+          onAnimationComplete={() => {
+            const phase = dragPhaseRef.current;
+            if (phase === "shrinking") {
+              const capturedItem = overlayData.item;
+              dragPhaseRef.current = null;
+              setDragPhase(null);
+              setDragState(null);
+              setOverlaySnapshot(null);
+              const timerId = setTimeout(() => {
+                deleteItem(capturedItem.id);
+                setPendingDelete(null);
+              }, 4000);
+              setPendingDelete({ item: capturedItem, timerId });
+            } else if (phase === "returning") {
+              dragPhaseRef.current = null;
+              setDragPhase(null);
+              setOverlaySnapshot(null);
+            }
+          }}
           style={{
-            left: dragState.cardRect.left,
-            top: dragState.cardRect.top,
-            width: dragState.cardRect.width,
-            height: dragState.cardRect.height,
+            left: overlayData.cardRect.left,
+            top: overlayData.cardRect.top,
+            width: overlayData.cardRect.width,
+            height: overlayData.cardRect.height,
             x: dragX,
             y: dragY,
-            scale: overlayScale,
-            opacity: overlayOpacity,
-            backgroundColor: `color-mix(in oklch, black 42%, ${dragState.libraryColor})`,
+            backgroundColor: `color-mix(in oklch, black 42%, ${overlayData.libraryColor})`,
             boxShadow: "4px 18px 44px rgba(0,0,0,0.42), 0 2px 8px rgba(0,0,0,0.14)",
           }}
         >
           {/* Spine */}
           <div
             className="absolute inset-y-0 left-0 w-[4px] z-10"
-            style={{ backgroundColor: `color-mix(in oklch, black 62%, ${dragState.libraryColor})` }}
+            style={{ backgroundColor: `color-mix(in oklch, black 62%, ${overlayData.libraryColor})` }}
           />
           {/* Page-edge */}
           <div className="absolute inset-y-0 right-0 w-[3px] bg-gradient-to-r from-transparent to-white/10 z-10" />
           {/* Thumbnail */}
-          {dragState.item.type === "pdf" && dragState.item.metadata.thumbnail && (
+          {overlayData.item.type === "pdf" && overlayData.item.metadata.thumbnail && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={dragState.item.metadata.thumbnail}
+              src={overlayData.item.metadata.thumbnail}
               alt=""
               className="absolute inset-0 w-full h-full object-cover"
             />
           )}
           {/* Gradient */}
           <div className={
-            dragState.item.type === "pdf" && dragState.item.metadata.thumbnail
+            overlayData.item.type === "pdf" && overlayData.item.metadata.thumbnail
               ? "absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"
               : "absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent"
           } />
           {/* Title */}
           <div className="absolute bottom-0 left-0 right-0 p-2 z-20">
             <p className="text-[8.5px] font-bold text-white leading-snug line-clamp-3">
-              {dragState.item.title}
+              {overlayData.item.title}
             </p>
           </div>
         </motion.div>
@@ -336,37 +373,18 @@ export default function LibraryView() {
       <AnimatePresence>
         {dragState && (
           <motion.div
-            className="fixed bottom-7 left-1/2 -translate-x-1/2 z-[9998] pointer-events-none"
-            initial={{ opacity: 0, y: 20, scale: 0.88 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.88 }}
+            ref={trashRef}
+            className="fixed bottom-0 left-0 right-0 z-[9998] pointer-events-auto flex flex-col items-center justify-center gap-2 border-t border-[#E5E7EB] bg-white"
+            style={{ height: 120 }}
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
             transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
           >
-            <motion.div
-              ref={trashRef}
-              className="pointer-events-auto flex items-center gap-2.5 px-5 py-3 rounded-2xl border"
-              animate={
-                isOverTrash
-                  ? { scale: 1.18, backgroundColor: "#FEF2F2", borderColor: "#FCA5A5" }
-                  : { scale: 1, backgroundColor: "#FFFFFF", borderColor: "#E5E7EB" }
-              }
-              transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-              style={{ boxShadow: "0 8px 28px -4px rgba(0,0,0,0.14), 0 2px 8px -2px rgba(0,0,0,0.06)" }}
-            >
-              <motion.div
-                animate={isOverTrash ? { color: "#EF4444" } : { color: "#9CA3AF" }}
-                transition={{ duration: 0.15 }}
-              >
-                <Trash2 size={17} />
-              </motion.div>
-              <motion.span
-                animate={isOverTrash ? { color: "#EF4444" } : { color: "#9CA3AF" }}
-                transition={{ duration: 0.15 }}
-                className="text-[13px] font-medium"
-              >
-                {isOverTrash ? "Release to delete" : "Drag here to delete"}
-              </motion.span>
-            </motion.div>
+            <Trash2 size={18} className="text-[#9CA3AF]" />
+            <span className="text-[13px] font-medium text-[#9CA3AF]">
+              {isOverTrash ? "Release to delete" : "Drag here to delete"}
+            </span>
           </motion.div>
         )}
       </AnimatePresence>
