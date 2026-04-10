@@ -99,8 +99,11 @@ export function CommandPalette() {
     StorageService.searchLibraryItems({ query: "", limit: 5 }).then((r) =>
       setLibraryResults(r)
     );
-    const timeout = window.setTimeout(() => setConversationResults([]), 0);
-    return () => window.clearTimeout(timeout);
+    StorageService.listConversations().then((convos) =>
+      setConversationResults(
+        convos.slice(0, 5).map((c) => ({ conversation: c, messageId: "", snippet: "" }))
+      )
+    );
   }, [commandPaletteOpen, query]);
 
   // Debounced search
