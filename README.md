@@ -6,6 +6,7 @@ All processing runs in the browser. No backend, no cloud sync, no data leaving y
 
 <!-- screenshots -->
 <img width="1469" height="687" alt="Screenshot 2026-04-09 at 22 09 32" src="https://github.com/user-attachments/assets/b5db8ae6-e0f6-46fd-ab38-7fec7949ea3f" />
+
 ---
 
 ## Why Discentia
