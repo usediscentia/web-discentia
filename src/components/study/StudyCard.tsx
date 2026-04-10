@@ -84,9 +84,9 @@ export function StudyCard({
             {onDelete && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center justify-center w-6 h-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer">
+                  <motion.button className="flex items-center justify-center w-6 h-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer" whileTap={{ scale: 0.9 }}>
                     <MoreHorizontal size={14} />
-                  </button>
+                  </motion.button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
@@ -114,8 +114,8 @@ export function StudyCard({
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            transition={{ type: "spring", stiffness: 400, damping: 28 }}
-            className="border-t border-gray-100"
+            transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+            className="border-t border-gray-100 overflow-hidden"
           >
             <div className="px-6 py-5 flex flex-col gap-3">
               <div>

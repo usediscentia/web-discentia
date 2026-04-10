@@ -45,32 +45,40 @@ export function HintLadder({ answer }: HintLadderProps) {
 
   return (
     <div className="flex flex-col gap-2 mt-2">
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {level > 0 && (
           <motion.div
-            key={`hint-${level}`}
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ type: "spring", stiffness: 400, damping: 28 }}
-            className={`rounded-lg border px-3 py-2 text-sm font-mono ${HINT_COLORS[level - 1]}`}
+            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+            className="overflow-hidden"
           >
-            <span className="text-[10px] font-sans font-medium uppercase tracking-wider opacity-60 block mb-0.5">
-              Dica {HINT_LABELS[level - 1]}
-            </span>
-            {hints[level - 1]}
+            <motion.div
+              key={level}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.15 }}
+              className={`rounded-lg border px-3 py-2 text-sm font-mono ${HINT_COLORS[level - 1]}`}
+            >
+              <span className="text-[10px] font-sans font-medium uppercase tracking-wider opacity-60 block mb-0.5">
+                Dica {HINT_LABELS[level - 1]}
+              </span>
+              {hints[level - 1]}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {level < 3 && (
-        <button
+        <motion.button
           onClick={() => setLevel((l) => l + 1)}
           className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-amber-600 transition-colors cursor-pointer self-start"
+          whileTap={{ scale: 0.97 }}
         >
           <Lightbulb size={12} />
           {level === 0 ? "Ver dica" : "Próxima dica"}
-        </button>
+        </motion.button>
       )}
     </div>
   );

@@ -31,9 +31,9 @@ export function ConfidenceRating({ value, onChange }: ConfidenceRatingProps) {
                   ? opt.activeClass
                   : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
               }`}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 400, damping: 28, delay: i * 0.04 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.15, delay: i * 0.04 }}
               whileTap={{ scale: 0.96 }}
             >
               <span>{opt.emoji}</span>
