@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { SRSCard } from "@/types/srs";
 import type { ReviewRating } from "@/lib/sm2";
+import { HintLadder } from "./HintLadder";
 
 interface StudyCardProps {
   card: SRSCard;
@@ -103,10 +104,11 @@ export function StudyCard({
         </div>
 
         {/* Front — question */}
-        <div className="px-6 py-6">
+        <div className="px-6 py-6 flex flex-col gap-4">
           <p className="text-[17px] font-medium text-gray-900 leading-relaxed">
             {card.front}
           </p>
+          {!showAnswer && <HintLadder answer={card.back} />}
         </div>
 
         {/* Answer section */}
