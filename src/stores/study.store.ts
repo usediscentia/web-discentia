@@ -23,6 +23,14 @@ interface SessionResult {
   verdict: AIVerdict | null;
   explanation: string;
   keyMissing: string | null;
+  confidence: "unsure" | "think-so" | "certain" | null;
+}
+
+interface LibraryDueEntry {
+  libraryId: string | null;
+  name: string;
+  color: string;
+  count: number;
 }
 
 interface StudyState {
@@ -46,19 +54,27 @@ interface StudyState {
   totalCardsInSystem: number;
   nextSessionDate: number | null;
   nextSessionCount: number;
+  dueByLibrary: LibraryDueEntry[];
+  selectedSessionSize: number;
 
   // Source contexts for AI evaluation
   sourceContexts: Record<string, string>; // libraryItemId → text
   accentColors: Record<string, string>; // libraryItemId → library color hex
   libraryNames: Record<string, string>; // libraryItemId → library name
 
+  // Pending confidence (set before submitting/skipping)
+  pendingConfidence: "unsure" | "think-so" | "certain" | null;
+
   // Actions
   initSession: () => Promise<void>;
+  setSessionSize: (size: number) => void;
   startReview: () => void;
   submitAnswer: (answer: string) => Promise<void>;
   skipCard: () => void;
   rateCard: (rating: ReviewRating) => Promise<void>;
+  deleteCard: (cardId: string) => Promise<void>;
   restartSession: () => Promise<void>;
+  setConfidence: (c: "unsure" | "think-so" | "certain") => void;
 }
 
 export const useStudyStore = create<StudyState>((set, get) => ({
@@ -80,10 +96,13 @@ export const useStudyStore = create<StudyState>((set, get) => ({
   totalCardsInSystem: 0,
   nextSessionDate: null,
   nextSessionCount: 0,
+  dueByLibrary: [],
+  selectedSessionSize: 0,
 
   sourceContexts: {},
   accentColors: {},
   libraryNames: {},
+  pendingConfidence: null,
 
   initSession: async () => {
     set({
@@ -92,6 +111,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       currentIndex: 0,
       results: [],
       lastRating: null,
+      pendingConfidence: null,
       sessionStartTime: Date.now(),
       sourceContexts: {},
       accentColors: {},
@@ -103,12 +123,13 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       nextSessionCount: 0,
     });
 
-    const [cards, stats, insights, totalCards, nextReview] = await Promise.all([
-      StorageService.getDueCards(20),
+    const [cards, stats, insights, totalCards, nextReview, dueByLibrary] = await Promise.all([
+      StorageService.getDueCards(),
       StorageService.getDashboardStats(),
       StorageService.getDashboardInsights(),
       StorageService.getTotalCardCount(),
       StorageService.getNextScheduledReview(),
+      StorageService.getDueLibraryBreakdown(),
     ]);
 
     const upcomingReviews: UpcomingBucket[] = insights.upcomingReviews.map(
@@ -124,6 +145,8 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       totalCardsInSystem: totalCards,
       nextSessionDate: nextReview?.date ?? null,
       nextSessionCount: nextReview?.count ?? 0,
+      dueByLibrary,
+      selectedSessionSize: cards.length,
       phase: "today",
     });
 
@@ -193,15 +216,22 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     })();
   },
 
+  setSessionSize: (size: number) => {
+    set({ selectedSessionSize: size });
+  },
+
   startReview: () => {
-    const { cards } = get();
+    const { cards, selectedSessionSize } = get();
     if (cards.length === 0) return;
-    set({ phase: "answering" });
+    const sessionCards = selectedSessionSize > 0 && selectedSessionSize < cards.length
+      ? cards.slice(0, selectedSessionSize)
+      : cards;
+    set({ cards: sessionCards, phase: "answering" });
   },
 
   submitAnswer: async (answer: string) => {
     if (get().phase !== "answering") return;
-    const { cards, currentIndex, sourceContexts } = get();
+    const { cards, currentIndex, sourceContexts, pendingConfidence } = get();
     const card = cards[currentIndex];
     if (!card) return;
 
@@ -268,11 +298,13 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       verdict,
       explanation,
       keyMissing,
+      confidence: pendingConfidence,
     };
 
     set((state) => ({
       results: [...state.results, result],
       phase: "evaluated",
+      pendingConfidence: null,
     }));
   },
 
@@ -287,11 +319,13 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       verdict: null,
       explanation: "",
       keyMissing: null,
+      confidence: get().pendingConfidence,
     };
 
     set((state) => ({
       results: [...state.results, result],
       phase: "evaluated",
+      pendingConfidence: null,
     }));
   },
 
@@ -313,13 +347,35 @@ export const useStudyStore = create<StudyState>((set, get) => ({
 
     const nextIndex = currentIndex + 1;
     if (nextIndex >= cards.length) {
-      set({ phase: "complete" });
+      set({ phase: "complete", pendingConfidence: null });
     } else {
-      set({ currentIndex: nextIndex, phase: "answering" });
+      set({ currentIndex: nextIndex, phase: "answering", pendingConfidence: null });
     }
+  },
+
+  deleteCard: async (cardId: string) => {
+    const { cards, currentIndex, results, phase } = get();
+    await StorageService.deleteSRSCard(cardId);
+
+    const newCards = cards.filter((c) => c.id !== cardId);
+    // If in evaluated phase, drop the result for the deleted card
+    const newResults = phase === "evaluated"
+      ? results.filter((r) => r.card.id !== cardId)
+      : results;
+
+    if (newCards.length === 0) {
+      set({ cards: newCards, results: newResults, phase: "complete", pendingConfidence: null });
+      return;
+    }
+
+    // currentIndex stays the same — it now points to the next card after deletion
+    const nextIndex = currentIndex >= newCards.length ? newCards.length - 1 : currentIndex;
+    set({ cards: newCards, results: newResults, currentIndex: nextIndex, phase: "answering", pendingConfidence: null });
   },
 
   restartSession: async () => {
     await get().initSession();
   },
+
+  setConfidence: (c) => set({ pendingConfidence: c }),
 }));

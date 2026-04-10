@@ -24,6 +24,7 @@ export default function StudyView() {
     submitAnswer,
     skipCard,
     rateCard,
+    deleteCard,
     initSession,
   } = useStudyStore();
 
@@ -85,6 +86,7 @@ export default function StudyView() {
               keyMissing={phase === "evaluated" ? (lastResult?.keyMissing ?? null) : null}
               accentColor={accentColor}
               lastRating={lastRating}
+              onDelete={() => deleteCard(current.id)}
             />
           </div>
         )}

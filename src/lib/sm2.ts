@@ -30,7 +30,7 @@ export function sm2(card: SRSCard, rating: ReviewRating): SRSCard {
 
   const newInterval =
     card.repetitions === 0
-      ? 1
+      ? q === 5 ? 4 : 1
       : card.repetitions === 1
       ? 6
       : Math.round(card.interval * newEase);

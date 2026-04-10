@@ -1,7 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import { MoreHorizontal, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { SRSCard } from "@/types/srs";
 import type { ReviewRating } from "@/lib/sm2";
 
@@ -15,6 +22,7 @@ interface StudyCardProps {
   keyMissing: string | null;
   accentColor: string;
   lastRating: ReviewRating | null;
+  onDelete?: () => void;
 }
 
 const cardVariants = {
@@ -49,6 +57,7 @@ export function StudyCard({
   keyMissing,
   accentColor,
   lastRating,
+  onDelete,
 }: StudyCardProps) {
   const glowClass = verdict ? (verdictGlow[verdict] ?? "") : "";
 
@@ -68,9 +77,29 @@ export function StudyCard({
           <Badge variant="secondary" className="text-[10px] uppercase tracking-wider font-medium">
             Card {index + 1} of {total}
           </Badge>
-          {card.libraryItemId && (
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor }} />
-          )}
+          <div className="flex items-center gap-2">
+            {card.libraryItemId && (
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor }} />
+            )}
+            {onDelete && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center justify-center w-6 h-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer">
+                    <MoreHorizontal size={14} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={onDelete}
+                    className="text-red-600 focus:text-red-600 cursor-pointer"
+                  >
+                    <Trash2 size={13} className="mr-2" />
+                    Deletar card
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
 
         {/* Front — question */}
