@@ -40,7 +40,7 @@ function MistakeCard({ result, index }: { result: SessionResult; index: number }
       className="border border-gray-200 rounded-xl overflow-hidden bg-white"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04 }}
+      transition={{ duration: 0.2, ease: "easeOut", delay: Math.min(index, 5) * 0.04 }}
     >
       <button
         onClick={() => setOpen((v) => !v)}
@@ -59,7 +59,7 @@ function MistakeCard({ result, index }: { result: SessionResult; index: number }
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 400, damping: 28 }}
+            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
             className="border-t border-gray-100 overflow-hidden"
           >
             <div className="px-4 pb-4 pt-3 flex flex-col gap-3">
@@ -116,7 +116,7 @@ export function MistakeAnalyzer({ results }: MistakeAnalyzerProps) {
       className="w-full"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 400, damping: 28, delay: 0.35 }}
+      transition={{ type: "spring", stiffness: 400, damping: 28, delay: 0.15 }}
     >
       <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">
         Revisar erros · {mistakes.length} {mistakes.length === 1 ? "card" : "cards"}
