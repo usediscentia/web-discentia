@@ -10,6 +10,8 @@ import { StudyCard } from "./StudyCard";
 import { StudyInput } from "./StudyInput";
 import { StudyRating } from "./StudyRating";
 import { StudyComplete } from "./StudyComplete";
+import { ConfidenceRating } from "./ConfidenceRating";
+import { HintLadder } from "./HintLadder";
 
 const DEFAULT_ACCENT = "#34D399";
 
@@ -21,6 +23,8 @@ export default function StudyView() {
     results,
     lastRating,
     accentColors,
+    pendingConfidence,
+    setConfidence,
     submitAnswer,
     skipCard,
     rateCard,
@@ -102,7 +106,9 @@ export default function StudyView() {
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ type: "spring", stiffness: 400, damping: 28 }}
               >
+                <ConfidenceRating value={pendingConfidence} onChange={setConfidence} />
                 <StudyInput onSubmit={submitAnswer} onSkip={skipCard} />
+                <HintLadder answer={current.back} />
               </motion.div>
             )}
 
