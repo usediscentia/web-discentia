@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { Lightbulb } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { Lightbulb, ChevronRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface HintLadderProps {
   answer: string;
@@ -13,10 +14,8 @@ function buildHints(answer: string): [string, string, string] {
   const wordCount = words.length;
   const firstLetter = words[0]?.[0]?.toUpperCase() ?? "?";
 
-  // Hint 1: count + first letter
   const hint1 = `${wordCount} ${wordCount === 1 ? "word" : "words"} · starts with "${firstLetter}"`;
 
-  // Hint 2: blanked — show first letter of each word, underscores for the rest
   const hint2 = words
     .map((w) => {
       if (w.length <= 1) return w;
@@ -24,60 +23,87 @@ function buildHints(answer: string): [string, string, string] {
     })
     .join(" ");
 
-  // Hint 3: first 40% of full answer revealed, rest blanked char-by-char
   const cutoff = Math.max(1, Math.floor(answer.length * 0.4));
   const hint3 = answer.slice(0, cutoff) + answer.slice(cutoff).replace(/[^\s]/g, "·");
 
   return [hint1, hint2, hint3];
 }
 
-const HINT_LABELS = ["Nível 1", "Nível 2", "Nível 3"];
-const HINT_COLORS = [
-  "text-amber-600 border-amber-200 bg-amber-50",
-  "text-orange-600 border-orange-200 bg-orange-50",
-  "text-red-600 border-red-200 bg-red-50",
+const LEVEL_COLORS = [
+  "text-amber-700 bg-amber-50 border-amber-200",
+  "text-orange-700 bg-orange-50 border-orange-200",
+  "text-red-700 bg-red-50 border-red-200",
+];
+
+const HINT_TEXT_COLORS = [
+  "text-amber-800",
+  "text-orange-800",
+  "text-red-800",
 ];
 
 export function HintLadder({ answer }: HintLadderProps) {
-  const [level, setLevel] = useState(0); // 0 = no hint shown
-
+  const [level, setLevel] = useState(0);
   const hints = buildHints(answer);
 
   return (
-    <div className="flex flex-col gap-2 mt-2">
+    <div className="flex flex-col gap-2 pt-1">
+      {/* Expand/collapse hint panel */}
       <AnimatePresence initial={false}>
         {level > 0 && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
             className="overflow-hidden"
           >
-            <motion.div
-              key={level}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.15 }}
-              className={`rounded-lg border px-3 py-2 text-sm font-mono ${HINT_COLORS[level - 1]}`}
-            >
-              <span className="text-[10px] font-sans font-medium uppercase tracking-wider opacity-60 block mb-0.5">
-                Dica {HINT_LABELS[level - 1]}
-              </span>
-              {hints[level - 1]}
-            </motion.div>
+            <div className={`rounded-lg border px-3 py-2.5 ${LEVEL_COLORS[level - 1]}`}>
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <Badge
+                  variant="secondary"
+                  className={`text-[10px] uppercase tracking-wider font-medium border px-1.5 py-0 h-auto ${LEVEL_COLORS[level - 1]}`}
+                >
+                  Dica {level}
+                </Badge>
+                {level < 3 && (
+                  <motion.button
+                    onClick={() => setLevel((l) => l + 1)}
+                    className="flex items-center gap-0.5 text-[11px] font-medium text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    Próxima
+                    <ChevronRight size={11} />
+                  </motion.button>
+                )}
+              </div>
+
+              {/* Crossfade between levels */}
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={level}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className={`font-mono text-sm leading-relaxed ${HINT_TEXT_COLORS[level - 1]}`}
+                >
+                  {hints[level - 1]}
+                </motion.p>
+              </AnimatePresence>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {level < 3 && (
+      {/* Trigger button */}
+      {level === 0 && (
         <motion.button
-          onClick={() => setLevel((l) => l + 1)}
-          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-amber-600 transition-colors cursor-pointer self-start"
+          onClick={() => setLevel(1)}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-amber-600 transition-colors cursor-pointer self-start"
           whileTap={{ scale: 0.97 }}
         >
-          <Lightbulb size={12} />
-          {level === 0 ? "Ver dica" : "Próxima dica"}
+          <Lightbulb size={11} />
+          Ver dica
         </motion.button>
       )}
     </div>
