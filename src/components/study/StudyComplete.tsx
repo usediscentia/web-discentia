@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { Check, Minus, X, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStudyStore } from "@/stores/study.store";
+import { useAppStore } from "@/stores/app.store";
 
 function formatDuration(ms: number): string {
   const seconds = Math.floor(ms / 1000);
@@ -15,6 +16,7 @@ function formatDuration(ms: number): string {
 
 export function StudyComplete() {
   const { results, streak, sessionStartTime, restartSession } = useStudyStore();
+  const { setActiveView } = useAppStore();
   const [duration] = useState(() =>
     sessionStartTime > 0 ? Date.now() - sessionStartTime : 0
   );
@@ -94,9 +96,15 @@ export function StudyComplete() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.25 }}
         >
-          <Button onClick={restartSession} className="w-full">
-            Review more cards
+          <Button onClick={() => setActiveView("stats")} className="w-full">
+            Ver estatísticas
           </Button>
+          <button
+            onClick={restartSession}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-center"
+          >
+            Revisar mais cards →
+          </button>
         </motion.div>
       </div>
     </div>
