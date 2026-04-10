@@ -5,6 +5,7 @@ import {
   FileText,
   Plus,
   ChevronDown,
+  ChevronLeft,
   Loader2,
   BookOpen,
   HelpCircle,
@@ -582,9 +583,19 @@ export default function EditorView() {
   return (
     <div ref={editorRef} className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="h-14 px-8 border-b border-[#E5E7EB] bg-white flex items-center justify-between gap-4 flex-shrink-0">
-        <div className="flex items-center gap-4 min-w-0">
-          <FileText size={20} className="text-primary flex-shrink-0" />
+      <div className="h-14 px-4 border-b border-[#E5E7EB] bg-white flex items-center justify-between gap-4 flex-shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            onClick={() => setActiveView("library")}
+            className="flex items-center gap-1 text-[13px] font-medium text-[#9CA3AF] hover:text-[#374151] px-2 py-1.5 rounded-lg hover:bg-[#F3F4F6] cursor-pointer flex-shrink-0"
+            style={{ transition: "color 150ms ease-out, background-color 150ms ease-out" }}
+            title="Back to Library"
+          >
+            <ChevronLeft size={15} />
+            <span>Library</span>
+          </button>
+          <div className="w-px h-4 bg-[#E5E7EB] flex-shrink-0" />
+          <FileText size={18} className="text-primary flex-shrink-0" />
           <input
             type="text"
             value={title}

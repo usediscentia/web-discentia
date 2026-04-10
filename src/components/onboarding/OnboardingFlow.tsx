@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { ProviderIcon } from "@lobehub/icons";
 import { DiscentiaLogo } from "@/components/brand/DiscentiaLogo";
+import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useProviderStore } from "@/stores/provider.store";
 import { StorageService } from "@/services/storage";
 import { LIBRARY_COLORS } from "@/lib/colors";
@@ -460,12 +462,12 @@ function StepProvider({
                 API Key
               </label>
               <div className="relative">
-                <input
+                <Input
                   type={showKey ? "text" : "password"}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder={`Enter your ${selectedProvider.label} API key`}
-                  className="w-full px-4 py-3 pr-10 rounded-xl border border-[#E5E7EB] text-[14px] text-[#0a0a0a] outline-none focus:border-[#0a0a0a] transition-colors bg-[#FAFAFA] placeholder:text-[#C0C0C0]"
+                  className="pr-10 rounded-xl border-[#E5E7EB] text-[14px] text-[#0a0a0a] focus:border-[#0a0a0a] bg-[#FAFAFA] placeholder:text-[#C0C0C0]"
                 />
                 <button
                   type="button"
@@ -529,11 +531,6 @@ function StepLibrary({
   const [selectedColor, setSelectedColor] = useState<string>(LIBRARY_COLORS[0].hex);
   const [creating, setCreating] = useState(false);
 
-  const handleTemplateClick = (template: (typeof TEMPLATES)[number]) => {
-    setLibraryName(template.name);
-    setSelectedColor(template.color);
-  };
-
   const handleCreate = useCallback(async () => {
     const name = libraryName.trim();
     if (!name) return;
@@ -574,44 +571,55 @@ function StepLibrary({
       </div>
 
       {/* Templates */}
-      <div className="mt-5 grid grid-cols-2 gap-2">
-        {TEMPLATES.map((template, i) => {
-          const isActive = libraryName === template.name;
-          return (
-            <motion.button
-              key={template.name}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + i * 0.06, duration: 0.3 }}
-              onClick={() => handleTemplateClick(template)}
-              className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 [transition:border-color_150ms_ease,background-color_150ms_ease] cursor-pointer text-center ${
-                isActive
-                  ? "border-[#0a0a0a] bg-[#FAFAFA]"
-                  : "border-[#E5E7EB] hover:border-[#D1D5DB] hover:bg-[#FAFAFA]"
-              }`}
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        spacing={2}
+        value={libraryName}
+        onValueChange={(value) => {
+          if (!value) return;
+          const template = TEMPLATES.find((t) => t.name === value);
+          if (template) {
+            setLibraryName(template.name);
+            setSelectedColor(template.color);
+          }
+        }}
+        className="mt-5 grid grid-cols-2 gap-2 w-full"
+      >
+        {TEMPLATES.map((template, i) => (
+          <motion.div
+            key={template.name}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 + i * 0.06, duration: 0.3 }}
+          >
+            <ToggleGroupItem
+              value={template.name}
+              aria-label={template.name}
+              className="flex h-auto w-full flex-col items-center gap-2 p-4 rounded-2xl cursor-pointer"
             >
               <div
-                className="flex h-14 w-14 items-center justify-center shadow-sm"
+                className="flex size-14 items-center justify-center"
                 style={{ borderRadius: "28%" }}
               >
                 <span className="text-[34px] leading-none select-none">{template.emoji}</span>
               </div>
-              <span className="text-[12px] font-medium text-[#0a0a0a] leading-tight">
+              <span className="text-[12px] font-medium leading-tight">
                 {template.name}
               </span>
-            </motion.button>
-          );
-        })}
-      </div>
+            </ToggleGroupItem>
+          </motion.div>
+        ))}
+      </ToggleGroup>
 
       {/* Name input */}
       <div className="mt-4">
-        <input
+        <Input
           type="text"
           value={libraryName}
           onChange={(e) => setLibraryName(e.target.value)}
           placeholder="Or type a custom name…"
-          className="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] text-[14px] text-[#0a0a0a] outline-none focus:border-[#0a0a0a] transition-colors bg-[#FAFAFA] placeholder:text-[#C0C0C0]"
+          className="rounded-xl border-[#E5E7EB] text-[14px] text-[#0a0a0a] focus:border-[#0a0a0a] bg-[#FAFAFA] placeholder:text-[#C0C0C0]"
         />
       </div>
 

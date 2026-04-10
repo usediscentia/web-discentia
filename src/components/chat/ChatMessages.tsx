@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { BookOpen } from "lucide-react";
 import MarkdownRenderer from "@/components/chat/MarkdownRenderer";
 import { DiscentiaLogo } from "@/components/brand/DiscentiaLogo";
@@ -65,10 +65,16 @@ export function ChatMessages({
   }, [checkNearBottom]);
 
   useEffect(() => {
-    if (isNearBottom) {
+    if (!isNearBottom) return;
+    if (isStreaming) {
+      // During streaming: instant scroll — calling smooth scroll on every token
+      // creates competing animations and burns CPU
+      const el = scrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    } else {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, streamingContent, isNearBottom]);
+  }, [messages, streamingContent, isNearBottom, isStreaming]);
 
   // Always scroll to bottom when a new user message is sent
   useEffect(() => {
@@ -105,9 +111,9 @@ export function ChatMessages({
           <motion.div
             key={message.id}
             ref={(el: HTMLDivElement | null) => { messageRefs.current[message.id] = el; }}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: Math.min(index * 0.05, 0.3) }}
+            initial={{ opacity: 0, y: 8, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1], delay: Math.min(index * 0.03, 0.15) }}
             className={flashId === message.id ? "bg-amber-50 rounded-xl transition-colors" : ""}
           >
             {message.role === "user" ? (
@@ -125,9 +131,9 @@ export function ChatMessages({
 
         {isStreaming && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15 }}
+            initial={{ opacity: 0, y: 8, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
           >
             {isGeneratingExercise ? (
               <AIMessage content="" isStreaming>
@@ -186,6 +192,15 @@ function AIMessage({
   children?: ReactNode;
 }) {
   const [citationsOpen, setCitationsOpen] = useState(false);
+  const citationsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!citationsOpen) return;
+    const id = setTimeout(() => {
+      citationsRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 80);
+    return () => clearTimeout(id);
+  }, [citationsOpen]);
 
   return (
     <div className="flex gap-3 w-full">
@@ -217,12 +232,14 @@ function AIMessage({
         </div>
 
         {Boolean(citations?.length) && (
-          <CitationsPanel
-            citations={citations!}
-            open={citationsOpen}
-            onToggle={() => setCitationsOpen((o) => !o)}
-            onOpenCitation={onOpenCitation}
-          />
+          <div ref={citationsRef}>
+            <CitationsPanel
+              citations={citations!}
+              open={citationsOpen}
+              onToggle={() => setCitationsOpen((o) => !o)}
+              onOpenCitation={onOpenCitation}
+            />
+          </div>
         )}
         {morphContent}
         {children}
@@ -232,6 +249,8 @@ function AIMessage({
 }
 
 // ── Citation indicator + expandable panel ─────────────────────────────────────
+
+const CITE_EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 function CitationsPanel({
   citations,
@@ -247,75 +266,94 @@ function CitationsPanel({
   return (
     <div className="flex flex-col gap-2">
       {/* Pill — collapsed trigger */}
-      <button
+      <motion.button
         onClick={onToggle}
-        className="self-start flex items-center gap-1.5 bg-[#F3F4F6] rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-[#E9EAEC] transition-colors"
+        whileTap={{ scale: 0.95 }}
+        transition={{ scale: { duration: 0.12, ease: CITE_EASE_OUT } }}
+        className="self-start flex items-center gap-1.5 bg-[#F3F4F6] rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-[#E9EAEC]"
+        style={{ transition: "background-color 150ms ease-out" }}
       >
         <BookOpen size={14} className="text-[#6B7280] shrink-0" />
         <span className="text-[12px] font-medium text-[#6B7280]">
           {citations.length} source{citations.length !== 1 ? "s" : ""} used
         </span>
-      </button>
+      </motion.button>
 
       {/* Expanded panel */}
-      {open && (
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
-          className="flex flex-col gap-3 bg-[#FAFAFA] rounded-xl border border-[#E5E7EB] p-4"
-        >
-          {/* Panel header */}
-          <div className="flex items-center gap-2">
-            <BookOpen size={16} className="text-[#6B7280] shrink-0" />
-            <span className="text-[13px] font-semibold text-[#6B7280]">
-              Sources from your library
-            </span>
-          </div>
-
-          {/* Source cards */}
-          {citations.map((citation, i) => (
-            <div
-              key={`${citation.libraryItemId}-${i}`}
-              className="flex items-center gap-3 bg-white rounded-lg border border-[#E5E7EB] p-3"
-            >
-              {/* Left accent bar */}
-              <div className="w-[3px] h-10 rounded-sm bg-[#34D399] shrink-0" />
-
-              {/* Content */}
-              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                <span className="text-[13px] font-semibold text-[#171717] leading-tight truncate">
-                  {citation.itemTitle}
-                  {citation.page != null && (
-                    <span className="ml-1.5 font-normal text-[#9CA3AF]">p. {citation.page}</span>
-                  )}
-                </span>
-                {citation.excerpt && (
-                  <span className="text-[12px] text-[#9CA3AF] leading-snug line-clamp-2">
-                    &ldquo;{citation.excerpt}&rdquo;
-                  </span>
-                )}
-              </div>
-
-              {/* View link */}
-              <button
-                onClick={() => onOpenCitation?.(citation)}
-                className="shrink-0 text-[12px] font-medium text-[#171717] hover:text-[#6B7280] transition-colors cursor-pointer"
-              >
-                View →
-              </button>
-            </div>
-          ))}
-
-          {/* Collapse button */}
-          <button
-            onClick={onToggle}
-            className="flex items-center justify-center cursor-pointer hover:text-[#6B7280] transition-colors"
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.2, ease: CITE_EASE_OUT }}
+            className="flex flex-col gap-3 bg-[#FAFAFA] rounded-xl border border-[#E5E7EB] p-4"
           >
-            <span className="text-[12px] font-medium text-[#9CA3AF]">Collapse ↑</span>
-          </button>
-        </motion.div>
-      )}
+            {/* Panel header */}
+            <div className="flex items-center gap-2">
+              <BookOpen size={16} className="text-[#6B7280] shrink-0" />
+              <span className="text-[13px] font-semibold text-[#6B7280]">
+                Sources from your library
+              </span>
+            </div>
+
+            {/* Source cards */}
+            {citations.map((citation, i) => (
+              <motion.div
+                key={`${citation.libraryItemId}-${i}`}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.18, ease: CITE_EASE_OUT, delay: i * 0.04 }}
+                className="flex items-center gap-3 bg-white rounded-lg border border-[#E5E7EB] p-3"
+              >
+                {/* Left accent bar */}
+                <div className="w-[3px] h-10 rounded-sm bg-[#34D399] shrink-0" />
+
+                {/* Content */}
+                <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                  <span className="text-[13px] font-semibold text-[#171717] leading-tight truncate">
+                    {citation.itemTitle}
+                    {citation.page != null && (
+                      <span className="ml-1.5 font-normal text-[#9CA3AF]">p. {citation.page}</span>
+                    )}
+                  </span>
+                  {citation.excerpt && (
+                    <span className="text-[12px] text-[#9CA3AF] leading-snug line-clamp-2">
+                      &ldquo;{citation.excerpt}&rdquo;
+                    </span>
+                  )}
+                </div>
+
+                {/* View link */}
+                <motion.button
+                  onClick={() => onOpenCitation?.(citation)}
+                  whileTap={{ scale: 0.93 }}
+                  transition={{ scale: { duration: 0.12, ease: CITE_EASE_OUT } }}
+                  className="shrink-0 text-[12px] font-medium text-[#171717] hover:text-[#6B7280] cursor-pointer"
+                  style={{ transition: "color 150ms ease-out" }}
+                >
+                  View →
+                </motion.button>
+              </motion.div>
+            ))}
+
+            {/* Collapse button */}
+            <motion.button
+              onClick={onToggle}
+              whileTap={{ scale: 0.97 }}
+              transition={{ scale: { duration: 0.12, ease: CITE_EASE_OUT } }}
+              className="flex items-center justify-center cursor-pointer"
+            >
+              <span
+                className="text-[12px] font-medium text-[#9CA3AF] hover:text-[#6B7280]"
+                style={{ transition: "color 150ms ease-out" }}
+              >
+                Collapse ↑
+              </span>
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
