@@ -26,7 +26,7 @@ interface ItemCardProps {
 
 // Strong ease-out for UI interactions
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
-const LONG_PRESS_MS = 350;
+const LONG_PRESS_MS = 200;
 const CANCEL_THRESHOLD_SQ = 8 * 8;
 
 export function typeBadge(type: string) {
@@ -212,14 +212,14 @@ export default function ItemCard({
             e.stopPropagation();
             onDelete();
           }}
-          className="absolute top-1.5 left-1.5 z-20 p-1 rounded bg-black/30 backdrop-blur-sm text-white/50 hover:text-red-400 hover:bg-black/50 opacity-0 group-hover:opacity-100 cursor-pointer"
+          className="absolute top-1.5 left-1.5 z-20 p-1.5 rounded bg-black/30 backdrop-blur-sm text-white/50 hover:text-red-400 hover:bg-black/50 opacity-0 group-hover:opacity-100 cursor-pointer"
           style={{
             transition:
               "opacity 150ms ease-out, color 150ms ease-out, background-color 150ms ease-out",
           }}
           title="Delete"
         >
-          <Trash2 size={10} />
+          <Trash2 size={13} />
         </button>
 
         {/* Editor hint */}
