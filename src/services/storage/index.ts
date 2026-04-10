@@ -522,6 +522,37 @@ export const StorageService = {
     return all.filter((e) => e.sourceItemId === sourceItemId);
   },
 
+  async listMessagesCitingItem(
+    itemId: string
+  ): Promise<{ message: Message; conversation: Conversation | undefined }[]> {
+    const db = getDB();
+    const allMessages = await db.messages.toArray();
+    const citing = allMessages.filter(
+      (m) => m.citations?.some((c) => c.libraryItemId === itemId)
+    );
+    if (citing.length === 0) return [];
+    const convIds = [...new Set(citing.map((m) => m.conversationId))];
+    const convs = await Promise.all(convIds.map((id) => db.conversations.get(id)));
+    const convMap = new Map(
+      convs.filter((c): c is Conversation => Boolean(c)).map((c) => [c.id, c])
+    );
+    return citing.map((message) => ({
+      message,
+      conversation: convMap.get(message.conversationId),
+    }));
+  },
+
+  async getNextSRSReviewForItem(itemId: string): Promise<number | null> {
+    const now = Date.now();
+    const cards = await getDB()
+      .srsCards.where("libraryItemId")
+      .equals(itemId)
+      .toArray();
+    const future = cards.filter((c) => c.nextReviewDate > now);
+    if (future.length === 0) return null;
+    return Math.min(...future.map((c) => c.nextReviewDate));
+  },
+
   async getDashboardStats(): Promise<DashboardStats> {
     const db = getDB();
     const now = Date.now();
