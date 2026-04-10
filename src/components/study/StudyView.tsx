@@ -11,7 +11,6 @@ import { StudyInput } from "./StudyInput";
 import { StudyRating } from "./StudyRating";
 import { StudyComplete } from "./StudyComplete";
 import { ConfidenceRating } from "./ConfidenceRating";
-import { HintLadder } from "./HintLadder";
 
 const DEFAULT_ACCENT = "#34D399";
 
@@ -108,7 +107,6 @@ export default function StudyView() {
               >
                 <ConfidenceRating value={pendingConfidence} onChange={setConfidence} />
                 <StudyInput onSubmit={submitAnswer} onSkip={skipCard} />
-                <HintLadder answer={current.back} />
               </motion.div>
             )}
 
