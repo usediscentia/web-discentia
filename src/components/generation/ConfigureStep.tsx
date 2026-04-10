@@ -51,7 +51,7 @@ export default function ConfigureStep({ onGenerate }: ConfigureStepProps) {
         onChange={(e) => setFocusPrompt(e.target.value)}
         rows={3}
         placeholder="What should these cards focus on?"
-        className="rounded-lg bg-[#F8F8F7] border-[#E4E3E1] focus-visible:ring-[#A8A5A0] resize-none mb-6"
+        className="rounded-lg bg-[#F8F8F7] border-[#E4E3E1] focus-visible:ring-ring resize-none mb-6"
       />
 
       {/* API key warning — between textarea and card count */}
@@ -76,7 +76,8 @@ export default function ConfigureStep({ onGenerate }: ConfigureStepProps) {
       <Button
         onClick={onGenerate}
         disabled={needsSetup}
-        className="w-full h-11 rounded-lg bg-gradient-to-b from-[#222018] to-[#171614] hover:brightness-110 text-white text-sm font-medium cursor-pointer shadow-[0_0_0_0.5px_rgba(0,0,0,0.4),inset_0_0_0_1px_rgba(255,255,255,0.04),inset_0_1px_0_rgba(255,255,255,0.07),0_1px_2px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.08),0_4px_8px_rgba(0,0,0,0.04)] [text-shadow:0_1px_1px_rgba(0,0,0,0.2)]"
+        className="w-full h-11 rounded-lg bg-gradient-to-b from-[#222018] to-[#171614] hover:brightness-110 active:scale-[0.97] text-white text-sm font-medium cursor-pointer shadow-[0_0_0_0.5px_rgba(0,0,0,0.4),inset_0_0_0_1px_rgba(255,255,255,0.04),inset_0_1px_0_rgba(255,255,255,0.07),0_1px_2px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.08),0_4px_8px_rgba(0,0,0,0.04)] [text-shadow:0_1px_1px_rgba(0,0,0,0.2)]"
+        style={{ transition: "filter 150ms ease, transform 150ms ease" }}
       >
         Generate {cardCount} Flashcards
       </Button>

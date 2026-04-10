@@ -112,7 +112,7 @@ function CardOption({
       onHoverEnd={() => setHovered(false)}
       className={cn(
         "relative flex h-full w-full flex-col items-center gap-3 rounded-xl border-2 p-4 transition-colors duration-200",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A1814]/30",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
         "disabled:cursor-not-allowed disabled:opacity-50",
         selected
           ? "border-[#E8E5E0] bg-[#F5F2EE]"
@@ -126,10 +126,10 @@ function CardOption({
       <AnimatePresence>
         {selected && (
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-            transition={{ type: "spring", visualDuration: 0.2, bounce: 0.3 }}
+            initial={{ scale: 0.7, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.7, opacity: 0 }}
+            transition={{ type: "spring", visualDuration: 0.18, bounce: 0.2 }}
             className="absolute right-2 top-2 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#1A1814]"
           >
             <Check size={10} className="text-white" strokeWidth={2.5} />

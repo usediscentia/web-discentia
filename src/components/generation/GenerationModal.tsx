@@ -211,7 +211,7 @@ export default function GenerationModal({ item }: GenerationModalProps) {
       <DialogContent
         showCloseButton
         onInteractOutside={(e) => e.preventDefault()}
-        className="sm:max-w-2xl rounded-2xl p-6 bg-white border-[#E4E3E1] shadow-[0_24px_48px_-8px_rgba(0,0,0,0.12),0_8px_16px_-4px_rgba(0,0,0,0.06)]"
+        className="sm:max-w-[440px] rounded-2xl p-6 bg-white border-[#E4E3E1] shadow-[0_24px_48px_-8px_rgba(0,0,0,0.12),0_8px_16px_-4px_rgba(0,0,0,0.06)]"
       >
         <DialogTitle className="sr-only">Generate Exercises</DialogTitle>
         <AnimatePresence mode="wait">
