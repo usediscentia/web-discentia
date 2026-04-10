@@ -28,6 +28,8 @@ function formatFutureDate(timestamp: number): string {
   return date.toLocaleDateString("pt-BR", { day: "numeric", month: "short" });
 }
 
+const SESSION_SIZE_OPTIONS = [10, 20, 50];
+
 export function TodayScreen() {
   const {
     cards,
@@ -37,7 +39,10 @@ export function TodayScreen() {
     totalCardsInSystem,
     nextSessionDate,
     nextSessionCount,
+    dueByLibrary,
+    selectedSessionSize,
     startReview,
+    setSessionSize,
     accentColors,
     libraryNames,
   } = useStudyStore();
@@ -146,9 +151,13 @@ export function TodayScreen() {
   const totalDue = dueToday;
   const progress = totalDue > 0 ? Math.round((reviewedToday / (reviewedToday + cards.length)) * 100) : 0;
 
+  // Session size picker — only show options ≤ total due
+  const sizeOptions = SESSION_SIZE_OPTIONS.filter((n) => n < cards.length);
+  const showPicker = cards.length > 10; // only show picker if more than smallest option
+
   return (
     <div className="relative flex items-center justify-center h-full px-4 overflow-hidden">
-      <CardOrbit cards={cardOrbitItems} />
+      <CardOrbit cards={cardOrbitItems} orbitRadius={330} />
 
       <motion.div
         className="relative flex flex-col items-center gap-6 text-center max-w-sm w-full"
@@ -180,6 +189,31 @@ export function TodayScreen() {
           </span>
         </motion.div>
 
+        {/* Library breakdown */}
+        {dueByLibrary.length > 0 && (
+          <motion.div
+            className="w-full max-w-xs flex flex-col gap-1.5"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.08 }}
+          >
+            {dueByLibrary.map((entry) => (
+              <div key={entry.libraryId ?? "__general__"} className="flex items-center gap-2.5">
+                <div
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-xs text-muted-foreground flex-1 text-left truncate">
+                  {entry.name}
+                </span>
+                <span className="text-xs font-medium text-foreground tabular-nums">
+                  {entry.count}
+                </span>
+              </div>
+            ))}
+          </motion.div>
+        )}
+
         {/* Progress bar — only show if some reviewed today */}
         {reviewedToday > 0 && (
           <motion.div
@@ -199,6 +233,43 @@ export function TodayScreen() {
             <p className="text-xs text-muted-foreground mt-1.5">
               {reviewedToday} revisados hoje
             </p>
+          </motion.div>
+        )}
+
+        {/* Session size picker */}
+        {showPicker && (
+          <motion.div
+            className="w-full max-w-xs flex flex-col items-center gap-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.12 }}
+          >
+            <p className="text-xs text-muted-foreground">Quantos cards revisar?</p>
+            <div className="flex gap-1.5">
+              {sizeOptions.map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setSessionSize(n)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
+                    selectedSessionSize === n
+                      ? "bg-foreground text-background border-foreground"
+                      : "bg-background text-muted-foreground border-border hover:border-foreground/40"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+              <button
+                onClick={() => setSessionSize(cards.length)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
+                  selectedSessionSize === cards.length
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-background text-muted-foreground border-border hover:border-foreground/40"
+                }`}
+              >
+                Todos ({cards.length})
+              </button>
+            </div>
           </motion.div>
         )}
 
