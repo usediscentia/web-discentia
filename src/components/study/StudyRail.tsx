@@ -37,7 +37,7 @@ export function StudyRail() {
       {total > 0 && (
         <div className="flex flex-col gap-1.5">
           <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Queue</span>
-          <CardDots total={total} currentIndex={currentIndex} completedCount={completedCount} />
+          <CardDots total={total} currentIndex={currentIndex} results={results} />
         </div>
       )}
 
