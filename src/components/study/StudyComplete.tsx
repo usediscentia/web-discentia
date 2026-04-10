@@ -6,6 +6,7 @@ import { Check, Minus, X, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStudyStore } from "@/stores/study.store";
 import { useAppStore } from "@/stores/app.store";
+import { MistakeAnalyzer } from "./MistakeAnalyzer";
 
 function formatDuration(ms: number): string {
   const seconds = Math.floor(ms / 1000);
@@ -89,6 +90,8 @@ export function StudyComplete() {
             </span>
           </motion.div>
         )}
+
+        <MistakeAnalyzer results={results} />
 
         <motion.div
           className="flex flex-col gap-3 w-full"
