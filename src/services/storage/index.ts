@@ -456,18 +456,56 @@ export const StorageService = {
     return cards;
   },
 
-  async getDueCards(limit = 20): Promise<SRSCard[]> {
+  async getDueCards(limit?: number): Promise<SRSCard[]> {
     const now = Date.now();
-    const due = await getDB()
-      .srsCards.where("nextReviewDate")
-      .belowOrEqual(now)
-      .limit(limit)
-      .toArray();
+    const query = getDB().srsCards.where("nextReviewDate").belowOrEqual(now);
+    const due = limit ? await query.limit(limit).toArray() : await query.toArray();
     for (let i = due.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [due[i], due[j]] = [due[j], due[i]];
     }
     return due;
+  },
+
+  async deleteSRSCard(id: string): Promise<void> {
+    await getDB().srsCards.delete(id);
+  },
+
+  async getDueLibraryBreakdown(): Promise<
+    { libraryId: string | null; name: string; color: string; count: number }[]
+  > {
+    const now = Date.now();
+    const db = getDB();
+
+    const [dueCards, libraryItems, libraries] = await Promise.all([
+      db.srsCards.where("nextReviewDate").belowOrEqual(now).toArray(),
+      db.libraryItems.toArray(),
+      db.libraries.toArray(),
+    ]);
+
+    const libraryById = new Map(libraries.map((l) => [l.id, l]));
+    const itemById = new Map(libraryItems.map((i) => [i.id, i]));
+
+    const counter = new Map<
+      string,
+      { libraryId: string | null; name: string; color: string; count: number }
+    >();
+
+    for (const card of dueCards) {
+      const item = card.libraryItemId ? itemById.get(card.libraryItemId) : undefined;
+      const library = item ? libraryById.get(item.libraryId) : undefined;
+      const key = library?.id ?? "__general__";
+      const current = counter.get(key) ?? {
+        libraryId: library?.id ?? null,
+        name: library?.name ?? "General",
+        color: library?.color ?? "#34D399",
+        count: 0,
+      };
+      current.count += 1;
+      counter.set(key, current);
+    }
+
+    return [...counter.values()].sort((a, b) => b.count - a.count);
   },
 
   async updateSRSCard(id: string, updates: Partial<SRSCard>): Promise<void> {
