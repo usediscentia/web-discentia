@@ -2,6 +2,7 @@
 
 import { BookOpen, Plus } from "lucide-react";
 import { motion } from "motion/react";
+import { Button } from "@/components/ui/button";
 
 interface LibraryEmptyStateProps {
   hasLibraries: boolean;
@@ -30,13 +31,13 @@ export default function LibraryEmptyState({
       <p className="text-sm text-[#9CA3AF] mt-2 max-w-xs">
         Add notes, images, files — anything you want to memorize.
       </p>
-      <button
+      <Button
         onClick={hasLibraries ? onAddContent : onCreateLibrary}
-        className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#111] text-white text-sm font-medium hover:bg-[#222] transition-colors cursor-pointer"
+        className="mt-6 cursor-pointer"
       >
         <Plus size={16} />
         {hasLibraries ? "Add your first content" : "Create your first library"}
-      </button>
+      </Button>
     </motion.div>
   );
 }

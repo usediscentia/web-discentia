@@ -47,7 +47,7 @@ export default function HeatmapChart({ activityByDay, width }: HeatmapChartProps
   const { binData, months, colorMax, cellSize } = useMemo(() => {
     // Derive cell size from available width
     const computedCell = width > 0 ? Math.floor((width - (TOTAL_WEEKS - 1) * GAP) / TOTAL_WEEKS) : 10;
-    const cs = Math.max(6, Math.min(computedCell, 16));
+    const cs = Math.max(6, computedCell);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
