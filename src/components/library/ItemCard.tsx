@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Trash2, PencilLine } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback, useState, memo } from "react";
 import type { LibraryItem } from "@/types/library";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +37,7 @@ export function typeBadge(type: string) {
   return type.toUpperCase().slice(0, 3);
 }
 
-export default function ItemCard({
+function ItemCard({
   item,
   libraryColor,
   index,
@@ -261,3 +261,11 @@ export default function ItemCard({
     </motion.div>
   );
 }
+
+export default memo(ItemCard, (prev, next) =>
+  prev.item.id === next.item.id &&
+  prev.item.updatedAt === next.item.updatedAt &&
+  prev.isDragging === next.isDragging &&
+  prev.libraryColor === next.libraryColor &&
+  prev.index === next.index
+);

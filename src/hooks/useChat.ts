@@ -32,20 +32,18 @@ export function useChat() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const skipNextLoadRef = useRef(false);
 
-  const {
-    messages,
-    activeConversationId,
-    setActiveConversationId,
-    isStreaming,
-    setIsStreaming,
-    setMessages,
-    appendMessage,
-    clearMessages,
-    selectedLibraryIds,
-    setSelectedLibraryIds,
-    toggleLibrary,
-    clearLibraries,
-  } = useChatStore();
+  const messages = useChatStore(s => s.messages);
+  const activeConversationId = useChatStore(s => s.activeConversationId);
+  const setActiveConversationId = useChatStore(s => s.setActiveConversationId);
+  const isStreaming = useChatStore(s => s.isStreaming);
+  const setIsStreaming = useChatStore(s => s.setIsStreaming);
+  const setMessages = useChatStore(s => s.setMessages);
+  const appendMessage = useChatStore(s => s.appendMessage);
+  const clearMessages = useChatStore(s => s.clearMessages);
+  const selectedLibraryIds = useChatStore(s => s.selectedLibraryIds);
+  const setSelectedLibraryIds = useChatStore(s => s.setSelectedLibraryIds);
+  const toggleLibrary = useChatStore(s => s.toggleLibrary);
+  const clearLibraries = useChatStore(s => s.clearLibraries);
 
   const { getActiveProviderConfig } = useProviderStore();
   const { setActiveView } = useAppStore();
