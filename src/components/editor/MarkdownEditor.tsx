@@ -67,8 +67,7 @@ export default function MarkdownEditor({
     ],
     content: normalizeTableBlankLines(initialContent || ""),
     onUpdate: ({ editor }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      onUpdate?.((editor.storage as any).markdown.getMarkdown());
+      onUpdate?.((editor.storage as { markdown: { getMarkdown(): string } }).markdown.getMarkdown());
     },
     editorProps: {
       attributes: {

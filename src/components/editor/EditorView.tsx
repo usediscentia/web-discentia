@@ -498,7 +498,7 @@ export default function EditorView() {
     if (editorMarkdown && title) {
       triggerSave(editorMarkdown);
     }
-  }, [title]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [title]); // eslint-disable-line react-hooks/exhaustive-deps -- only fires when title changes to avoid double-saving on every markdown keystroke
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

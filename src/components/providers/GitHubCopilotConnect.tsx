@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import Image from "next/image";
 import {
   Loader2,
   Github,
@@ -32,16 +33,8 @@ export function GitHubCopilotConnect() {
   const config = providerConfigs["github-copilot"];
   const isConnected = config.apiKey.length > 0;
 
-  const [username, setUsername] = useState<string>("");
+  const username = isConnected ? (localStorage.getItem(GITHUB_COPILOT_USERNAME_KEY) ?? "") : "";
   const { state, startFlow, cancel } = useGitHubDeviceFlow();
-
-  // Load stored username when connection state changes
-  useEffect(() => {
-    if (isConnected) {
-      const stored = localStorage.getItem(GITHUB_COPILOT_USERNAME_KEY);
-      setUsername(stored ?? "");
-    }
-  }, [isConnected]);
 
   // Fetch models once on mount if already connected but models not yet loaded.
   // Only depends on isConnected — NOT on githubCopilotModels.length — to avoid
@@ -50,8 +43,7 @@ export function GitHubCopilotConnect() {
     if (isConnected) {
       void fetchGithubCopilotModels();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected]);
+  }, [isConnected, fetchGithubCopilotModels]);
 
   const handleDisconnect = () => {
     void clearGithubCopilotConnection();
@@ -76,11 +68,12 @@ export function GitHubCopilotConnect() {
             </span>
             {username && (
               <span className="flex items-center gap-1.5 text-xs text-[#888]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={`https://avatars.githubusercontent.com/${username}`}
                   alt={username}
-                  className="w-4 h-4 rounded-full"
+                  width={16}
+                  height={16}
+                  className="rounded-full"
                 />
                 @{username}
               </span>
