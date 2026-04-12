@@ -84,7 +84,7 @@ export function ChatMessages({
       const timeout = window.setTimeout(() => setIsNearBottom(true), 0);
       return () => window.clearTimeout(timeout);
     }
-  }, [messages.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [messages]);
 
   // Scroll to and flash highlighted message
   useEffect(() => {
