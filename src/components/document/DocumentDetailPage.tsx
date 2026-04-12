@@ -150,26 +150,24 @@ function OverviewTab({ item, library }: { item: LibraryItem; library?: Library }
   const openGeneration = useGenerationStore((s) => s.open);
 
   useEffect(() => {
-    StorageService.listExercisesBySourceItem(item.id).then((exs) => {
-      const total = exs.reduce((sum, e) => {
+    Promise.all([
+      StorageService.listExercisesBySourceItem(item.id),
+      StorageService.listMessagesCitingItem(item.id),
+      StorageService.getNextSRSReviewForItem(item.id),
+    ]).then(([exs, pairs, nextReview]) => {
+      setFlashcardCount(exs.reduce((sum, e) => {
         if (e.type === "flashcard") {
           return sum + ((e.data as { cards: unknown[] }).cards?.length ?? 0);
         }
         return sum;
-      }, 0);
-      setFlashcardCount(total);
-    });
-
-    StorageService.listMessagesCitingItem(item.id).then((pairs) => {
-      const total = pairs.reduce(
+      }, 0));
+      setCitationCount(pairs.reduce(
         (sum, { message }) =>
           sum + (message.citations?.filter((c) => c.libraryItemId === item.id).length ?? 0),
         0
-      );
-      setCitationCount(total);
+      ));
+      setNextReview(nextReview);
     });
-
-    StorageService.getNextSRSReviewForItem(item.id).then(setNextReview);
   }, [item.id]);
 
   return (

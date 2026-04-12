@@ -43,8 +43,9 @@ export default function Sidebar() {
     setSidebarCollapsed,
     setCommandPaletteOpen,
   } = useAppStore();
-  const { activeConversationId, setActiveConversationId, messages } =
-    useChatStore();
+  const activeConversationId = useChatStore(s => s.activeConversationId);
+  const setActiveConversationId = useChatStore(s => s.setActiveConversationId);
+  const messages = useChatStore(s => s.messages);
   const [recentChats, setRecentChats] = useState<Conversation[]>([]);
   const [dueCount, setDueCount] = useState(0);
 
