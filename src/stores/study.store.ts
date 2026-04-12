@@ -150,59 +150,64 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       phase: "today",
     });
 
-    // Non-blocking: load source contexts and accent colors
+    // Non-blocking: load source contexts and accent colors in parallel
     void (async () => {
+      const uniqueItemIds = [...new Set(
+        cards.filter(c => c.libraryItemId).map(c => c.libraryItemId!)
+      )];
+
+      const items = await Promise.all(
+        uniqueItemIds.map(id => StorageService.getLibraryItem(id).catch(() => null))
+      );
+
       const contexts: Record<string, string> = {};
+      const itemLibraryIds: Record<string, string> = {};
+
+      for (let i = 0; i < uniqueItemIds.length; i++) {
+        const id = uniqueItemIds[i];
+        const item = items[i];
+        if (!item) continue;
+
+        let text = "";
+        const chunks = item.metadata?.chunks;
+        if (Array.isArray(chunks) && chunks.length > 0) {
+          for (const chunk of chunks) {
+            const chunkText =
+              chunk !== null && typeof chunk === "object" && "text" in chunk && typeof (chunk as unknown as { text: unknown }).text === "string"
+                ? (chunk as unknown as { text: string }).text
+                : "";
+            if (!chunkText) continue;
+            if (text.length + chunkText.length > 1500) break;
+            text += (text ? "\n" : "") + chunkText;
+          }
+        } else {
+          text = item.content.slice(0, 1500);
+        }
+        contexts[id] = text;
+        if (item.libraryId) itemLibraryIds[id] = item.libraryId;
+      }
+
+      const uniqueLibraryIds = [...new Set(Object.values(itemLibraryIds))];
+      const libraries = await Promise.all(
+        uniqueLibraryIds.map(id => StorageService.getLibrary(id).catch(() => null))
+      );
+      const libraryById = new Map(
+        libraries.filter(Boolean).map(lib => [lib!.id, lib!])
+      );
+
       const colors: Record<string, string> = {};
       const names: Record<string, string> = {};
       let firstName: string | null = null;
       let firstColor: string | null = null;
 
-      for (const card of cards) {
-        if (!card.libraryItemId) continue;
-        if (contexts[card.libraryItemId]) continue;
-
-        try {
-          const item = await StorageService.getLibraryItem(card.libraryItemId);
-          if (!item) continue;
-
-          // Build source context from chunks or content
-          let text = "";
-          const chunks = item.metadata?.chunks;
-          if (Array.isArray(chunks) && chunks.length > 0) {
-            for (const chunk of chunks) {
-              const chunkText =
-                chunk !== null && typeof chunk === "object" && "text" in chunk && typeof (chunk as unknown as { text: unknown }).text === "string"
-                  ? (chunk as unknown as { text: string }).text
-                  : "";
-              if (!chunkText) continue;
-              if (text.length + chunkText.length > 1500) break;
-              text += (text ? "\n" : "") + chunkText;
-            }
-          } else {
-            text = item.content.slice(0, 1500);
-          }
-
-          contexts[card.libraryItemId] = text;
-
-          // Load library for color
-          if (item.libraryId) {
-            try {
-              const library = await StorageService.getLibrary(item.libraryId);
-              if (library) {
-                colors[card.libraryItemId] = library.color;
-                names[card.libraryItemId] = library.name;
-                if (!firstName) {
-                  firstName = library.name;
-                  firstColor = library.color;
-                }
-              }
-            } catch {
-              // ignore library fetch errors
-            }
-          }
-        } catch {
-          // ignore item fetch errors
+      for (const [itemId, libraryId] of Object.entries(itemLibraryIds)) {
+        const library = libraryById.get(libraryId);
+        if (!library) continue;
+        colors[itemId] = library.color;
+        names[itemId] = library.name;
+        if (!firstName) {
+          firstName = library.name;
+          firstColor = library.color;
         }
       }
 

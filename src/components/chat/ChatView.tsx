@@ -36,7 +36,10 @@ export default function ChatView() {
   } = useChat();
 
   // Auto-send pending message (e.g. from Editor AI Action Bar)
-  const { pendingMessage, setPendingMessage, searchHighlight, setSearchHighlight } = useChatStore();
+  const pendingMessage = useChatStore(s => s.pendingMessage);
+  const setPendingMessage = useChatStore(s => s.setPendingMessage);
+  const searchHighlight = useChatStore(s => s.searchHighlight);
+  const setSearchHighlight = useChatStore(s => s.setSearchHighlight);
   useEffect(() => {
     if (pendingMessage) {
       sendMessage(pendingMessage);
