@@ -148,19 +148,17 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
 
   useEffect(() => {
     if (expanded) {
-      setLocalKey(config.apiKey);
+      setLocalKey(config.apiKey); // eslint-disable-line react-hooks/set-state-in-effect
       setResult(null);
     }
   }, [expanded, config.apiKey]);
 
   useEffect(() => {
     if (expanded) {
-      setLocalTemp(config.temperature !== undefined ? String(config.temperature) : "");
+      setLocalTemp(config.temperature !== undefined ? String(config.temperature) : ""); // eslint-disable-line react-hooks/set-state-in-effect
       setLocalBaseUrl(config.baseUrl ?? "");
     }
-    // intentionally only runs on expand/collapse to avoid resetting mid-edit
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expanded]);
+  }, [expanded]); // eslint-disable-line react-hooks/exhaustive-deps -- only resets form on expand/collapse, not on every config change mid-edit
 
   const isOllama = display.type === "ollama";
   const hasKey = config.apiKey.length > 0;
