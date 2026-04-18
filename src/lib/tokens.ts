@@ -1,7 +1,7 @@
 import type { ScoredLibraryItem } from "@/services/storage";
 import type { ContentChunk } from "@/types/library";
 
-export const DEFAULT_CONTEXT_TOKEN_BUDGET = 2200;
+export const DEFAULT_CONTEXT_TOKEN_BUDGET = 6000;
 const MAX_CHUNKS_PER_ITEM = 5;
 
 export interface InjectedChunk {
@@ -31,6 +31,10 @@ export function buildContextSnippet(
 
   for (const entry of items) {
     const { item, matchedChunks } = entry;
+
+    // Item had chunks metadata but zero matched → skip; dumping full content
+    // would starve the budget with low-signal text from a large doc.
+    if (matchedChunks && matchedChunks.length === 0) continue;
 
     if (matchedChunks && matchedChunks.length > 0) {
       // Inject top-scoring chunks individually instead of full content

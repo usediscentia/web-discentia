@@ -30,7 +30,9 @@ export const ollamaProvider: AIServiceProvider = {
         model: config.model,
         messages,
         stream: true,
-        ...(config.temperature !== undefined ? { temperature: config.temperature } : {}),
+        ...(config.temperature !== undefined
+          ? { options: { temperature: config.temperature } }
+          : {}),
       }),
       signal,
     });
