@@ -31,6 +31,8 @@ export function useChat() {
   const [availableLibraries, setAvailableLibraries] = useState<Library[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
   const skipNextLoadRef = useRef(false);
+  const tokenBufferRef = useRef<string>("");
+  const flushHandleRef = useRef<number | null>(null);
 
   const messages = useChatStore(s => s.messages);
   const activeConversationId = useChatStore(s => s.activeConversationId);
@@ -217,7 +219,9 @@ export function useChat() {
 
       const aiMessages: AIMessage[] = [
         { role: "system", content: systemParts.join("\n\n---\n\n") },
-        ...messages.map((m) => ({
+        // Cap history to last 20 turns — long conversations explode latency/cost
+        // and models rarely benefit from the full trail for follow-up answers.
+        ...messages.slice(-20).map((m) => ({
           role: m.role as "user" | "assistant",
           content: m.content,
         })),
@@ -237,9 +241,24 @@ export function useChat() {
           config,
           {
             onToken: (token) => {
-              setStreamingContent((prev) => prev + token);
+              // Batch token flushes via rAF — avoids one React render per token.
+              tokenBufferRef.current += token;
+              if (flushHandleRef.current == null) {
+                flushHandleRef.current = window.requestAnimationFrame(() => {
+                  const pending = tokenBufferRef.current;
+                  tokenBufferRef.current = "";
+                  flushHandleRef.current = null;
+                  if (pending) setStreamingContent((prev) => prev + pending);
+                });
+              }
             },
             onComplete: async (fullText) => {
+              // Drain any pending batched tokens before resetting streaming state.
+              if (flushHandleRef.current != null) {
+                window.cancelAnimationFrame(flushHandleRef.current);
+                flushHandleRef.current = null;
+              }
+              tokenBufferRef.current = "";
               // Strip any <CITATIONS> block the AI might have emitted, then
               // auto-extract citations by matching response text against the
               // chunks we actually injected into the context.
@@ -284,6 +303,11 @@ export function useChat() {
               abortControllerRef.current = null;
             },
             onError: (err) => {
+              if (flushHandleRef.current != null) {
+                window.cancelAnimationFrame(flushHandleRef.current);
+                flushHandleRef.current = null;
+              }
+              tokenBufferRef.current = "";
               setError(err.message);
               setStreamingContent("");
               setIsStreaming(false);
@@ -294,6 +318,11 @@ export function useChat() {
           controller.signal
         );
       } catch (err) {
+        if (flushHandleRef.current != null) {
+          window.cancelAnimationFrame(flushHandleRef.current);
+          flushHandleRef.current = null;
+        }
+        tokenBufferRef.current = "";
         if (controller.signal.aborted) return;
         const message =
           err instanceof Error ? err.message : "An unknown error occurred";
