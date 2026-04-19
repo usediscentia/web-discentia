@@ -50,16 +50,19 @@ export const ollamaProvider: AIServiceProvider = {
     }
 
     const reader = response.body?.getReader();
-    if (!reader) throw new Error("No response body");
+    if (!reader) throw new Error("Ollama returned empty stream body");
 
     const decoder = new TextDecoder();
-    let fullText = "";
+    const parts: string[] = [];
     let buffer = "";
 
     try {
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          buffer += decoder.decode();
+          break;
+        }
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
@@ -73,11 +76,11 @@ export const ollamaProvider: AIServiceProvider = {
             const parsed = JSON.parse(trimmed);
             const token = parsed.message?.content;
             if (token) {
-              fullText += token;
+              parts.push(token);
               callbacks.onToken(token);
             }
             if (parsed.done) {
-              callbacks.onComplete(fullText);
+              callbacks.onComplete(parts.join(""));
               return;
             }
           } catch {
@@ -86,13 +89,15 @@ export const ollamaProvider: AIServiceProvider = {
         }
       }
 
-      callbacks.onComplete(fullText);
+      callbacks.onComplete(parts.join(""));
     } catch (error) {
       if (signal?.aborted) {
-        callbacks.onComplete(fullText);
+        callbacks.onComplete(parts.join(""));
         return;
       }
       throw error;
+    } finally {
+      try { reader.releaseLock(); } catch { /* reader already released */ }
     }
   },
 
