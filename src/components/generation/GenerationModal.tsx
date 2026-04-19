@@ -48,12 +48,18 @@ export default function GenerationModal({ item }: GenerationModalProps) {
   const [saving, setSaving] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const clearProgress = () => {
     if (progressRef.current) {
       clearInterval(progressRef.current);
       progressRef.current = null;
     }
+  };
+
+  const abortGeneration = () => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
   };
 
   const handleGenerate = useCallback(async () => {
@@ -95,6 +101,10 @@ export default function GenerationModal({ item }: GenerationModalProps) {
       );
     }, 600);
 
+    // Fresh controller per generation; prior one (if any) was aborted at close.
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     // Follow the exact same pattern as useFlashcardGenerator but push to Zustand store
     const sendPromise = provider.sendMessage(
       [{ role: "user", content: fullPrompt }],
@@ -105,6 +115,8 @@ export default function GenerationModal({ item }: GenerationModalProps) {
         },
         onComplete: (fullText: string) => {
           clearProgress();
+          if (controller.signal.aborted) return;
+          abortControllerRef.current = null;
 
           const exercise = parseExerciseFromResponse(fullText, "");
           if (exercise && exercise.type === "flashcard") {
@@ -124,18 +136,21 @@ export default function GenerationModal({ item }: GenerationModalProps) {
         },
         onError: (err: Error) => {
           clearProgress();
+          if (controller.signal.aborted) return;
+          abortControllerRef.current = null;
           setGenError(err.message);
           setStep("configure");
         },
-      }
+      },
+      controller.signal
     );
 
     await sendPromise.catch((err: Error) => {
       clearProgress();
-      if (err?.name !== "AbortError") {
-        setGenError(err.message ?? "Generation failed.");
-        setStep("configure");
-      }
+      if (controller.signal.aborted || err?.name === "AbortError") return;
+      abortControllerRef.current = null;
+      setGenError(err.message ?? "Generation failed.");
+      setStep("configure");
     });
   }, [focusPrompt, cardCount, item, setStep, setGenerationProgress, setGeneratedCards]);
 
@@ -171,6 +186,8 @@ export default function GenerationModal({ item }: GenerationModalProps) {
   }, [savedCardIds, setStep]);
 
   const handleAutoClose = useCallback(() => {
+    abortGeneration();
+    clearProgress();
     close();
     setTimeout(reset, 300);
     useAppStore.getState().setActiveView("study");
@@ -195,6 +212,12 @@ export default function GenerationModal({ item }: GenerationModalProps) {
       open={isOpen}
       onOpenChange={(open) => {
         if (!open) {
+          // Abort in-flight generation if the user closes mid-stream;
+          // otherwise tokens keep flowing into unmounted state.
+          if (step === "generating") {
+            abortGeneration();
+            clearProgress();
+          }
           // If closing during schedule step, apply 2-week fallback
           if (step === "schedule" && savedCardIds.length > 0) {
             const fallbackDate = new Date();

@@ -104,7 +104,7 @@ export const githubCopilotProvider: AIServiceProvider = {
     callbacks: StreamCallbacks,
     signal?: AbortSignal
   ): Promise<void> {
-    let fullText = "";
+    const parts: string[] = [];
 
     try {
       const doFetch = async (token: string) =>
@@ -152,49 +152,56 @@ export const githubCopilotProvider: AIServiceProvider = {
       }
 
       const reader = response.body?.getReader();
-      if (!reader) throw new Error("No response body");
+      if (!reader) throw new Error("GitHub Copilot returned empty stream body");
 
       const decoder = new TextDecoder();
       let buffer = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith("data: ")) continue;
-
-          const data = trimmed.slice(6);
-          if (data === "[DONE]") {
-            callbacks.onComplete(fullText);
-            return;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            buffer += decoder.decode();
+            break;
           }
 
-          try {
-            const parsed = JSON.parse(data) as {
-              choices?: Array<{ delta?: { content?: string } }>;
-            };
-            const token = parsed.choices?.[0]?.delta?.content;
-            if (token) {
-              fullText += token;
-              callbacks.onToken(token);
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+            const data = trimmed.slice(6);
+            if (data === "[DONE]") {
+              callbacks.onComplete(parts.join(""));
+              return;
             }
-          } catch {
-            // skip malformed JSON chunks
+
+            try {
+              const parsed = JSON.parse(data) as {
+                choices?: Array<{ delta?: { content?: string } }>;
+              };
+              const token = parsed.choices?.[0]?.delta?.content;
+              if (token) {
+                parts.push(token);
+                callbacks.onToken(token);
+              }
+            } catch {
+              // skip malformed JSON chunks
+            }
           }
         }
-      }
 
-      callbacks.onComplete(fullText);
+        callbacks.onComplete(parts.join(""));
+      } finally {
+        try { reader.releaseLock(); } catch { /* reader already released */ }
+      }
     } catch (error) {
       // Handle abort at any phase (pre-stream fetch, 401 retry, or during streaming)
       if (signal?.aborted) {
-        callbacks.onComplete(fullText);
+        callbacks.onComplete(parts.join(""));
         return;
       }
       throw error;
