@@ -27,12 +27,12 @@ export const anthropicProvider: AIServiceProvider = {
     const systemMessage = messages.find((m) => m.role === "system");
     const chatMessages = messages.filter((m) => m.role !== "system");
 
-    let fullText = "";
+    const parts: string[] = [];
     try {
       const stream = client.messages.stream(
         {
           model: config.model,
-          max_tokens: 8096,
+          max_tokens: 8192,
           ...(systemMessage ? { system: systemMessage.content } : {}),
           ...(config.temperature !== undefined ? { temperature: config.temperature } : {}),
           messages: chatMessages.map((m) => ({
@@ -49,7 +49,7 @@ export const anthropicProvider: AIServiceProvider = {
           event.type === "content_block_delta" &&
           event.delta.type === "text_delta"
         ) {
-          fullText += event.delta.text;
+          parts.push(event.delta.text);
           callbacks.onToken(event.delta.text);
         }
       }
@@ -58,7 +58,7 @@ export const anthropicProvider: AIServiceProvider = {
       // clean abort — fall through to onComplete with accumulated text
     }
 
-    callbacks.onComplete(fullText);
+    callbacks.onComplete(parts.join(""));
   },
 
   async validateApiKey(apiKey: string): Promise<boolean> {

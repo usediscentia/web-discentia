@@ -125,8 +125,12 @@ export function useChat() {
 
       setError(null);
 
+      // Read fresh values from store — keeps callback identity stable across token flushes.
+      const { activeConversationId: currentConvId, messages: currentMessages } =
+        useChatStore.getState();
+
       // Create conversation if needed
-      let convId = activeConversationId;
+      let convId = currentConvId;
       if (!convId) {
         const conversation = await StorageService.createConversation(
           content.slice(0, 50),
@@ -221,7 +225,7 @@ export function useChat() {
         { role: "system", content: systemParts.join("\n\n---\n\n") },
         // Cap history to last 20 turns — long conversations explode latency/cost
         // and models rarely benefit from the full trail for follow-up answers.
-        ...messages.slice(-20).map((m) => ({
+        ...currentMessages.slice(-20).map((m) => ({
           role: m.role as "user" | "assistant",
           content: m.content,
         })),
@@ -334,8 +338,6 @@ export function useChat() {
       }
     },
     [
-      activeConversationId,
-      messages,
       getActiveProviderConfig,
       appendMessage,
       selectedLibraryIds,
