@@ -48,16 +48,19 @@ export const openaiProvider: AIServiceProvider = {
     }
 
     const reader = response.body?.getReader();
-    if (!reader) throw new Error("No response body");
+    if (!reader) throw new Error("OpenAI returned empty stream body");
 
     const decoder = new TextDecoder();
-    let fullText = "";
+    const parts: string[] = [];
     let buffer = "";
 
     try {
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          buffer += decoder.decode();
+          break;
+        }
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
@@ -69,7 +72,7 @@ export const openaiProvider: AIServiceProvider = {
 
           const data = trimmed.slice(6);
           if (data === "[DONE]") {
-            callbacks.onComplete(fullText);
+            callbacks.onComplete(parts.join(""));
             return;
           }
 
@@ -77,7 +80,7 @@ export const openaiProvider: AIServiceProvider = {
             const parsed = JSON.parse(data);
             const token = parsed.choices?.[0]?.delta?.content;
             if (token) {
-              fullText += token;
+              parts.push(token);
               callbacks.onToken(token);
             }
           } catch {
@@ -86,13 +89,15 @@ export const openaiProvider: AIServiceProvider = {
         }
       }
 
-      callbacks.onComplete(fullText);
+      callbacks.onComplete(parts.join(""));
     } catch (error) {
       if (signal?.aborted) {
-        callbacks.onComplete(fullText);
+        callbacks.onComplete(parts.join(""));
         return;
       }
       throw error;
+    } finally {
+      try { reader.releaseLock(); } catch { /* reader already released */ }
     }
   },
 
