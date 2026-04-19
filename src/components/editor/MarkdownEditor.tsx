@@ -67,7 +67,7 @@ export default function MarkdownEditor({
     ],
     content: normalizeTableBlankLines(initialContent || ""),
     onUpdate: ({ editor }) => {
-      onUpdate?.((editor.storage as { markdown: { getMarkdown(): string } }).markdown.getMarkdown());
+      onUpdate?.((editor.storage as unknown as { markdown: { getMarkdown(): string } }).markdown.getMarkdown());
     },
     editorProps: {
       attributes: {
