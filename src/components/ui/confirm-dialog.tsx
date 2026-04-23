@@ -11,10 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useTranslation } from "react-i18next";
-
 export function ConfirmDialog() {
-  const { t } = useTranslation();
   const { confirm, resolveConfirm } = useDialogStore();
   const { open, options } = confirm;
 
@@ -29,13 +26,13 @@ export function ConfirmDialog() {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => resolveConfirm(false)}>
-            {options.cancelLabel ?? t("dialogs.cancel")}
+            {options.cancelLabel ?? "Cancel"}
           </AlertDialogCancel>
           <AlertDialogAction
             variant={options.variant === "destructive" ? "destructive" : "default"}
             onClick={() => resolveConfirm(true)}
           >
-            {options.confirmLabel ?? t("dialogs.confirm")}
+            {options.confirmLabel ?? "Confirm"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
