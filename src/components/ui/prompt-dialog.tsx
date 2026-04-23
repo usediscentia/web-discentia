@@ -12,10 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useTranslation } from "react-i18next";
-
 export function PromptDialog() {
-  const { t } = useTranslation();
   const { prompt, resolvePrompt } = useDialogStore();
   const { open, options } = prompt;
   const [value, setValue] = useState("");
@@ -54,10 +51,10 @@ export function PromptDialog() {
         />
         <DialogFooter>
           <Button variant="outline" onClick={() => resolvePrompt(null)}>
-            {options.cancelLabel ?? t("dialogs.cancel")}
+            {options.cancelLabel ?? "Cancel"}
           </Button>
           <Button onClick={handleConfirm}>
-            {options.confirmLabel ?? t("dialogs.save")}
+            {options.confirmLabel ?? "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>
