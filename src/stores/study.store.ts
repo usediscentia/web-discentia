@@ -12,98 +12,6 @@ import { buildEvaluationPrompt } from "@/services/ai/prompts/review.prompts";
 type Phase = "loading" | "today" | "answering" | "evaluating" | "evaluated" | "complete";
 type AIVerdict = "correct" | "partial" | "incorrect";
 
-const DAY_MS = 86_400_000;
-
-function toDayKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function startOfDay(d: Date): Date {
-  const next = new Date(d);
-  next.setHours(0, 0, 0, 0);
-  return next;
-}
-
-function computeBreakdown(cards: SRSCard[]): {
-  newCount: number;
-  reviewCount: number;
-  overdueCount: number;
-} {
-  const overdueThreshold = startOfDay(new Date()).getTime();
-  let newCount = 0;
-  let reviewCount = 0;
-  let overdueCount = 0;
-  for (const card of cards) {
-    if (card.repetitions === 0) {
-      newCount++;
-      continue;
-    }
-    if (card.nextReviewDate < overdueThreshold) {
-      overdueCount++;
-    } else {
-      reviewCount++;
-    }
-  }
-  return { newCount, reviewCount, overdueCount };
-}
-
-function buildWeekData(
-  activityByDay: Record<string, number>,
-  weeklyLoad: Record<string, number>,
-  dueCards: SRSCard[]
-): {
-  dateKey: string;
-  dateNumber: number;
-  dayLabel: string;
-  reviewedCount: number;
-  loadCount: number;
-  isPast: boolean;
-  isToday: boolean;
-  isFuture: boolean;
-}[] {
-  const today = startOfDay(new Date());
-  const todayKey = toDayKey(today);
-  // Anchor to Monday of the current week (Mon-Sun layout)
-  const dayOfWeek = today.getDay(); // 0=Sun..6=Sat
-  const offsetToMonday = (dayOfWeek + 6) % 7;
-  const monday = new Date(today.getTime() - offsetToMonday * DAY_MS);
-
-  // Group future due cards by date for any day not covered by weeklyLoad
-  const dueByDay = new Map<string, number>();
-  for (const card of dueCards) {
-    const key = toDayKey(new Date(card.nextReviewDate));
-    dueByDay.set(key, (dueByDay.get(key) ?? 0) + 1);
-  }
-
-  const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-  return Array.from({ length: 7 }).map((_, i) => {
-    const day = new Date(monday.getTime() + i * DAY_MS);
-    const dateKey = toDayKey(day);
-    const reviewedCount = activityByDay[dateKey] ?? 0;
-    const isToday = dateKey === todayKey;
-    const isPast = day.getTime() < today.getTime();
-    const isFuture = day.getTime() > today.getTime();
-    const futureLoad = weeklyLoad[dateKey] ?? dueByDay.get(dateKey) ?? 0;
-
-    let loadCount: number;
-    if (isPast) loadCount = reviewedCount;
-    else if (isToday) loadCount = dueCards.length;
-    else loadCount = futureLoad;
-
-    return {
-      dateKey,
-      dateNumber: day.getDate(),
-      dayLabel: labels[i],
-      reviewedCount,
-      loadCount,
-      isPast,
-      isToday,
-      isFuture,
-    };
-  });
-}
-
 interface UpcomingBucket {
   label: string;
   count: number;
@@ -118,29 +26,6 @@ interface SessionResult {
   confidence: "unsure" | "think-so" | "certain" | null;
 }
 
-interface LibraryDueEntry {
-  libraryId: string | null;
-  name: string;
-  color: string;
-  count: number;
-}
-
-export interface StudyBreakdown {
-  newCount: number;
-  reviewCount: number;
-  overdueCount: number;
-}
-
-export interface StudyWeekDay {
-  dateKey: string;     // YYYY-MM-DD
-  dateNumber: number;  // day of month
-  dayLabel: string;    // localized 3-letter label
-  reviewedCount: number; // SRS reviews completed on this day
-  loadCount: number;     // cards either reviewed (past) or due (today/future)
-  isPast: boolean;
-  isToday: boolean;
-  isFuture: boolean;
-}
 
 interface StudyState {
   // Session
@@ -163,14 +48,6 @@ interface StudyState {
   totalCardsInSystem: number;
   nextSessionDate: number | null;
   nextSessionCount: number;
-  dueByLibrary: LibraryDueEntry[];
-  selectedSessionSize: number;
-
-  // Editorial study landing
-  breakdown: StudyBreakdown;
-  weekData: StudyWeekDay[];
-  bestStreak: number;
-  reviewedThisWeek: number;
 
   // Source contexts for AI evaluation
   sourceContexts: Record<string, string>; // libraryItemId → text
@@ -182,7 +59,6 @@ interface StudyState {
 
   // Actions
   initSession: () => Promise<void>;
-  setSessionSize: (size: number) => void;
   startReview: () => void;
   submitAnswer: (answer: string) => Promise<void>;
   skipCard: () => void;
@@ -211,13 +87,6 @@ export const useStudyStore = create<StudyState>((set, get) => ({
   totalCardsInSystem: 0,
   nextSessionDate: null,
   nextSessionCount: 0,
-  dueByLibrary: [],
-  selectedSessionSize: 0,
-
-  breakdown: { newCount: 0, reviewCount: 0, overdueCount: 0 },
-  weekData: [],
-  bestStreak: 0,
-  reviewedThisWeek: 0,
 
   sourceContexts: {},
   accentColors: {},
@@ -243,23 +112,17 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       nextSessionCount: 0,
     });
 
-    const [cards, stats, insights, totalCards, nextReview, dueByLibrary, weeklyLoad] = await Promise.all([
+    const [cards, stats, insights, totalCards, nextReview] = await Promise.all([
       StorageService.getDueCards(),
       StorageService.getDashboardStats(),
       StorageService.getDashboardInsights(),
       StorageService.getTotalCardCount(),
       StorageService.getNextScheduledReview(),
-      StorageService.getDueLibraryBreakdown(),
-      StorageService.getWeeklyCardLoad(),
     ]);
 
     const upcomingReviews: UpcomingBucket[] = insights.upcomingReviews.map(
       (r) => ({ label: r.label, count: r.dueCount })
     );
-
-    const breakdown = computeBreakdown(cards);
-    const weekData = buildWeekData(stats.activityByDay, weeklyLoad, cards);
-    const reviewedThisWeek = weekData.reduce((sum, d) => sum + d.reviewedCount, 0);
 
     set({
       cards,
@@ -270,12 +133,6 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       totalCardsInSystem: totalCards,
       nextSessionDate: nextReview?.date ?? null,
       nextSessionCount: nextReview?.count ?? 0,
-      dueByLibrary,
-      selectedSessionSize: cards.length,
-      breakdown,
-      weekData,
-      bestStreak: insights.bestStreak,
-      reviewedThisWeek,
       phase: "today",
     });
 
@@ -350,17 +207,10 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     })();
   },
 
-  setSessionSize: (size: number) => {
-    set({ selectedSessionSize: size });
-  },
-
   startReview: () => {
-    const { cards, selectedSessionSize } = get();
+    const { cards } = get();
     if (cards.length === 0) return;
-    const sessionCards = selectedSessionSize > 0 && selectedSessionSize < cards.length
-      ? cards.slice(0, selectedSessionSize)
-      : cards;
-    set({ cards: sessionCards, phase: "answering" });
+    set({ phase: "answering" });
   },
 
   submitAnswer: async (answer: string) => {
