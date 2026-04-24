@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { sm2 } from "@/lib/sm2";
 import type { ReviewRating } from "@/lib/sm2";
 import type { SRSCard } from "@/types/srs";
+import { RotateCcw, Check, Zap } from "lucide-react";
 
 interface RatingButtonsProps {
   card: SRSCard;
@@ -20,34 +21,45 @@ function getIntervalLabel(card: SRSCard, rating: ReviewRating): string {
   return weeks === 1 ? "in 1 week" : `in ${weeks} weeks`;
 }
 
-const RATINGS: { value: ReviewRating; label: string; key: string; className: string }[] = [
+const RATINGS = [
   {
-    value: "hard",
+    value: "hard" as ReviewRating,
     label: "Hard",
     key: "1",
-    className:
-      "bg-red-50 hover:bg-red-100 border-red-200 text-red-700",
+    Icon: RotateCcw,
+    leftBorder: "border-l-rose-300",
+    iconColor: "text-rose-400",
+    labelColor: "text-rose-700",
+    intervalColor: "text-rose-500",
+    hoverBg: "hover:bg-rose-50/60",
   },
   {
-    value: "good",
+    value: "good" as ReviewRating,
     label: "Good",
     key: "2",
-    className:
-      "bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-700",
+    Icon: Check,
+    leftBorder: "border-l-sky-300",
+    iconColor: "text-sky-500",
+    labelColor: "text-sky-700",
+    intervalColor: "text-sky-600",
+    hoverBg: "hover:bg-sky-50/60",
   },
   {
-    value: "easy",
+    value: "easy" as ReviewRating,
     label: "Easy",
     key: "3",
-    className:
-      "bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700",
+    Icon: Zap,
+    leftBorder: "border-l-emerald-400",
+    iconColor: "text-emerald-500",
+    labelColor: "text-emerald-700",
+    intervalColor: "text-emerald-600",
+    hoverBg: "hover:bg-emerald-50/60",
   },
-];
+] as const;
 
 export function RatingButtons({ card, onRate }: RatingButtonsProps) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Don't fire when typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === "1") onRate("hard");
       if (e.key === "2") onRate("good");
@@ -63,31 +75,55 @@ export function RatingButtons({ card, onRate }: RatingButtonsProps) {
 
   return (
     <div className="flex flex-col gap-2 mt-5">
-      <p className="text-xs font-medium text-gray-400">How well did you recall this?</p>
-      <div className="grid grid-cols-3 gap-3">
-        {RATINGS.map((r, i) => (
-          <motion.button
-            key={r.value}
-            onClick={() => onRate(r.value)}
-            className={`flex flex-col items-center gap-1 py-3 px-4 rounded-xl border cursor-pointer transition-colors ${r.className}`}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              type: "spring",
-              stiffness: 400,
-              damping: 28,
-              delay: 0.15 + i * 0.05,
-            }}
-            whileHover={{ y: -2, boxShadow: "0 4px 10px rgba(0,0,0,0.08)" }}
-            whileTap={{ scale: 0.97 }}
-          >
-            <span className="text-sm font-semibold">{r.label}</span>
-            <span className="text-xs opacity-60 leading-snug">
-              {getIntervalLabel(card, r.value)}
-            </span>
-            <kbd className="text-[10px] opacity-35 font-sans mt-0.5">[{r.key}]</kbd>
-          </motion.button>
-        ))}
+      <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-gray-400/70">
+        How well did you recall this?
+      </p>
+      <div className="flex flex-col gap-1.5">
+        {RATINGS.map((r, i) => {
+          const interval = getIntervalLabel(card, r.value);
+          return (
+            <motion.button
+              key={r.value}
+              onClick={() => onRate(r.value)}
+              className={[
+                "flex items-center justify-between px-4 py-3.5",
+                "rounded-xl border border-gray-100 border-l-[3px] bg-white",
+                "cursor-pointer",
+                "transition-[background-color,box-shadow] duration-150 ease-out",
+                "hover:border-gray-200 hover:shadow-sm",
+                r.leftBorder,
+                r.hoverBg,
+              ].join(" ")}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 30,
+                delay: 0.08 + i * 0.06,
+              }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {/* Left: icon + label */}
+              <div className="flex items-center gap-2.5">
+                <r.Icon size={14} strokeWidth={2.5} className={r.iconColor} />
+                <span className={`text-sm font-medium ${r.labelColor}`}>
+                  {r.label}
+                </span>
+              </div>
+
+              {/* Right: interval + kbd */}
+              <div className="flex items-center gap-2.5">
+                <span className={`text-sm font-semibold tabular-nums ${r.intervalColor}`}>
+                  {interval}
+                </span>
+                <kbd className="inline-flex items-center px-1.5 py-0.5 rounded-md border border-gray-200 text-[10px] text-gray-400 font-sans leading-none">
+                  {r.key}
+                </kbd>
+              </div>
+            </motion.button>
+          );
+        })}
       </div>
     </div>
   );
