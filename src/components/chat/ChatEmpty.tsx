@@ -70,9 +70,9 @@ function SetupCard() {
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.15, ease: [0.23, 1, 0.32, 1] }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.1, ease: [0.23, 1, 0.32, 1] }}
         className="flex items-stretch gap-3"
       >
         {providerCards.map((provider, i) => (
@@ -80,13 +80,14 @@ function SetupCard() {
             key={provider.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
+            whileTap={{ scale: 0.97 }}
             transition={{
-              duration: 0.4,
-              delay: 0.2 + i * 0.08,
+              duration: 0.35,
+              delay: 0.15 + i * 0.06,
               ease: [0.23, 1, 0.32, 1],
             }}
             onClick={() => setSettingsOpen(true)}
-            className="group flex flex-col items-center gap-3 w-[160px] p-5 rounded-2xl border border-[#E5E7EB] bg-white cursor-pointer transition-all duration-200 hover:border-[#D1D5DB] hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] active:scale-[0.97]"
+            className="group flex flex-col items-center gap-3 w-[160px] p-5 rounded-2xl border border-[#E5E7EB] bg-white cursor-pointer [transition:border-color_150ms_ease-out,box-shadow_200ms_ease-out] hover:border-[#D1D5DB] hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)]"
           >
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#F9FAFB] group-hover:bg-[#F3F4F6] transition-colors">
               <ProviderIcon provider={provider.lobeProvider} size={22} type="color" />
