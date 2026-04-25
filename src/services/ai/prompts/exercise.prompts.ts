@@ -16,15 +16,29 @@ Source material:
 ${context}
 
 Rules for cards:
-- Every card must be based on a specific fact, concept, or relationship found in the source text
+- Every card must be based on the teaching content in the source text and stay focused on "${topic}"
+- Prioritize concepts, definitions, rules, steps, examples, syntax, and comparisons that directly match "${topic}"
 - Do NOT generate generic knowledge cards — only what appears in the material
-- Front: a precise question that targets a single fact or concept from the text
+- Ignore document metadata unless the topic explicitly asks for it
+- Never ask about authors, institutions, publishers, course/program names, years, locations, document codes, headers, footers, page numbers, URLs, or who created/wrote the material
+- Never make cards about the document itself; make cards about the subject being taught
+- Skip cover-page, citation, and administrative text unless it teaches the topic
+- Front: a precise question about one concrete concept from the text
+- Prefer question styles like "What is...", "How does...", "When is...", "Why does...", or "What is the difference between..."
+- Avoid vague or meta questions like "What does the material discuss?" or "Who wrote this content?"
 - Back: the exact answer as it appears or can be inferred from the material (concise, 1-3 sentences max)
-- Hint: one keyword from the source text (optional)`
+- Hint: one keyword from the source text (optional)
+
+Example:
+- If topic is "basic Java", ask about variables, primitive types, conditionals, loops, methods, classes, or syntax basics
+- Do NOT ask who wrote the PDF or which institution published it`
   : `Generate ${count} flashcards about: "${topic}"
 
 Rules for cards:
-- Front: a clear, specific question or term
+- Keep every card tightly focused on "${topic}"
+- Front: a clear, specific question about one concrete concept
+- Prefer definitions, comparisons, usage rules, steps, and short applied questions
+- Never ask about authors, sources, publication details, or document metadata
 - Back: a concise, accurate answer (1-3 sentences max)
 - Hint: one-word or short-phrase clue (optional)
 - Vary difficulty from basic recall to applied understanding`}
