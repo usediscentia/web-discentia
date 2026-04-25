@@ -78,7 +78,7 @@ export default function GenerationModal({ item }: GenerationModalProps) {
 
     const prompt =
       focusPrompt.trim() ||
-      "Generate flashcards about the key concepts in this document";
+      "Generate flashcards about the main concepts, definitions, and examples taught in this material";
 
     // Build context from item chunks
     const chunks = item.metadata.chunks ?? [];
