@@ -48,7 +48,7 @@ const providerCards: Array<{
 ];
 
 function SetupCard() {
-  const { setSettingsOpen } = useAppStore();
+  const { setActiveView } = useAppStore();
 
   return (
     <div className="flex flex-col items-center justify-center flex-1 gap-8 w-full px-4">
@@ -86,7 +86,7 @@ function SetupCard() {
               delay: 0.15 + i * 0.06,
               ease: [0.23, 1, 0.32, 1],
             }}
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => setActiveView("settings")}
             className="group flex flex-col items-center gap-3 w-[160px] p-5 rounded-2xl border border-[#E5E7EB] bg-white cursor-pointer [transition:border-color_150ms_ease-out,box-shadow_200ms_ease-out] hover:border-[#D1D5DB] hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)]"
           >
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#F9FAFB] group-hover:bg-[#F3F4F6] transition-colors">

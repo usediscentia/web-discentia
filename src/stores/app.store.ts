@@ -10,13 +10,11 @@ export type ActiveView =
 
 interface AppState {
   activeView: ActiveView;
-  settingsOpen: boolean;
   commandPaletteOpen: boolean;
   sidebarCollapsed: boolean;
   libraryFocusItemId: string | null;
   editorItemId: string | null;
   setActiveView: (view: ActiveView) => void;
-  setSettingsOpen: (open: boolean) => void;
   setCommandPaletteOpen: (open: boolean) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setLibraryFocusItemId: (id: string | null) => void;
@@ -25,7 +23,6 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set) => ({
   activeView: "study",
-  settingsOpen: false,
   commandPaletteOpen: false,
   sidebarCollapsed:
     typeof window !== "undefined"
@@ -34,7 +31,6 @@ export const useAppStore = create<AppState>((set) => ({
   libraryFocusItemId: null,
   editorItemId: null,
   setActiveView: (view) => set({ activeView: view }),
-  setSettingsOpen: (open) => set({ settingsOpen: open }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   setSidebarCollapsed: (collapsed) => {
     if (typeof window !== "undefined") {

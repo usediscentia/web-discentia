@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { getDB } from "@/services/storage/database";
+import { StorageService } from "@/services/storage";
 import { GitHubCopilotConnect } from "@/components/providers/GitHubCopilotConnect";
 
 // ── Types ──
@@ -773,30 +773,7 @@ function DataPrivacySection() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const db = getDB();
-      const [conversations, messages, libraries, libraryItems, exercises, srsCards, activityEvents] =
-        await Promise.all([
-          db.conversations.toArray(),
-          db.messages.toArray(),
-          db.libraries.toArray(),
-          db.libraryItems.toArray(),
-          db.exercises.toArray(),
-          db.srsCards.toArray(),
-          db.activityEvents.toArray(),
-        ]);
-
-      const data = {
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        conversations,
-        messages,
-        libraries,
-        libraryItems,
-        exercises,
-        srsCards,
-        activityEvents,
-      };
-
+      const data = await StorageService.exportAllData();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -823,19 +800,7 @@ function DataPrivacySection() {
         return;
       }
 
-      const db = getDB();
-      await db.transaction("rw", [
-        db.conversations, db.messages, db.libraries, db.libraryItems,
-        db.exercises, db.srsCards, db.activityEvents,
-      ], async () => {
-        if (data.conversations?.length) await db.conversations.bulkPut(data.conversations);
-        if (data.messages?.length) await db.messages.bulkPut(data.messages);
-        if (data.libraries?.length) await db.libraries.bulkPut(data.libraries);
-        if (data.libraryItems?.length) await db.libraryItems.bulkPut(data.libraryItems);
-        if (data.exercises?.length) await db.exercises.bulkPut(data.exercises);
-        if (data.srsCards?.length) await db.srsCards.bulkPut(data.srsCards);
-        if (data.activityEvents?.length) await db.activityEvents.bulkPut(data.activityEvents);
-      });
+      await StorageService.importAllData(data);
 
       alert("Import successful! Refresh the page to see your data.");
     } catch {
@@ -854,16 +819,7 @@ function DataPrivacySection() {
 
     setDeleting(true);
     try {
-      const db = getDB();
-      await Promise.all([
-        db.conversations.clear(),
-        db.messages.clear(),
-        db.libraries.clear(),
-        db.libraryItems.clear(),
-        db.exercises.clear(),
-        db.srsCards.clear(),
-        db.activityEvents.clear(),
-      ]);
+      await StorageService.clearAllData();
       const keysToRemove = Object.keys(localStorage).filter(
         (k) => k.startsWith("discentia_") || k.startsWith("discentia:")
       );

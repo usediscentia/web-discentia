@@ -18,7 +18,7 @@ import { ConnectionsMorph } from "./ConnectionsMorph";
 import { FillGapMorph } from "./FillGapMorph";
 import { BossFightMorph } from "./BossFightMorph";
 import { BulkApproveModal } from "@/components/review/BulkApproveModal";
-import { getDB } from "@/services/storage/database";
+import { StorageService } from "@/services/storage";
 import { Layers } from "lucide-react";
 
 interface ExerciseRendererProps {
@@ -37,13 +37,7 @@ export function ExerciseRenderer({ exercise }: ExerciseRendererProps) {
       }
 
       try {
-        const db = getDB();
-        const current = await db.exercises.get(exercise.id);
-        if (current) {
-          await db.exercises.update(exercise.id, {
-            results: [...current.results, result],
-          });
-        }
+        await StorageService.addExerciseResult(exercise.id, result);
       } catch {
         // Silently fail — result display still works in-memory
       }
