@@ -16,20 +16,27 @@ Build may fail offline because Next.js fetches Google Fonts (`Inter`) during bui
 
 ## Architecture
 
-Discentia is a **local-first study app** — an SPA built on Next.js 16 + React 19. All components are `'use client'`. There is no server-side rendering or API routes.
+Discentia is a **local-first study app** — an SPA built on Next.js 16 + React 19. Almost everything is `'use client'`. The only API routes that exist are `src/app/api/github/{copilot,device,token}` — a stateless proxy for the GitHub Copilot OAuth device flow. No user data is persisted server-side.
 
 ### Routing
 
-There are **no Next.js file routes**. `src/app/page.tsx` renders `AppShell`, which switches views based on Zustand's `activeView` state:
+There are **no Next.js file routes for app views**. `src/app/page.tsx` renders `AppShell`, which switches views based on Zustand's `activeView` state:
 
-- `"chat"` | `"library"` | `"dashboard"` | `"review"` | `"settings"`
-- Navigation happens by calling `useAppStore.getState().setActiveView(view)`
+- `"chat"` | `"library"` | `"editor"` | `"study"` | `"stats"` | `"settings"`
+- Navigation: `useAppStore.getState().setActiveView(view)`
+- Mobile bottom nav (`MobileNav` inside `AppShell.tsx`) exposes: study, library, chat, stats, settings
+- Cmd/Ctrl+K opens the global `CommandPalette` (`src/components/search/CommandPalette.tsx`)
+- First-run `OnboardingFlow` is gated by `localStorage.discentia_onboarded`
 
 ### State Management (Zustand, split stores)
 
-- `src/stores/app.store.ts` — UI navigation: activeView, settingsOpen, commandPaletteOpen, sidebarCollapsed
+- `src/stores/app.store.ts` — UI nav: activeView, settingsOpen, commandPaletteOpen, sidebarCollapsed
+- `src/stores/appearance.store.ts` — theme/appearance settings (applied via `AppearanceEffects`)
 - `src/stores/chat.store.ts` — conversation state: activeConversationId, isStreaming, selectedLibraryIds
+- `src/stores/dialog.store.ts` — global dialogs
+- `src/stores/generation.store.ts` — multi-step `GenerationModal` state machine
 - `src/stores/provider.store.ts` — AI config: selectedProvider, selectedModel, providerConfigs, ollama settings
+- `src/stores/study.store.ts` — active study session state
 
 ### Data Layer (Dexie v4, IndexedDB)
 
@@ -41,22 +48,29 @@ There are **no Next.js file routes**. `src/app/page.tsx` renders `AppShell`, whi
 ### AI Service Layer
 
 - `src/services/ai/` — provider abstraction with `AIServiceProvider` interface
-- Implementations: `openai.provider.ts`, `ollama.provider.ts`, `openrouter.provider.ts`
-- Provider types: OpenAI, Anthropic, Ollama, OpenRouter, GitHub Copilot (defined in `src/types/ai.ts`)
-- API keys encrypted in localStorage via `src/lib/crypto.ts`
+- Implementations (all streaming, all shipped): `openai.provider.ts`, `anthropic.provider.ts`, `ollama.provider.ts`, `openrouter.provider.ts`, `github-copilot.provider.ts`
+- Provider types defined in `src/types/ai.ts`
+- API keys encrypted in localStorage via `src/lib/crypto.ts` (AES-GCM, key in IndexedDB keystore)
+- GitHub Copilot uses OAuth device flow via `src/hooks/useGitHubDeviceFlow.ts` + `src/app/api/github/*` proxy
 - Prompts: `src/services/ai/prompts/exercise.prompts.ts` (flashcard/quiz), `review.prompts.ts` (SRS evaluation)
 
 ### Key Directories
 
-- `src/components/layout/` — AppShell (view router) and Sidebar
-- `src/components/chat/` — Chat UI, message rendering, exercise generation
-- `src/components/library/` — Library CRUD, file upload, content viewer
-- `src/components/editor/` — Tiptap v3 markdown editor (no nav entry, accessed from Library)
-- `src/components/review/` — SRS spaced-repetition review
-- `src/components/dashboard/` — Dashboard with stats, heatmap, forecasts
+- `src/components/layout/` — `AppShell` (view router), `Sidebar`, `AppearanceEffects`
+- `src/components/chat/` — chat UI, streaming, citations, exercise generation indicator
+- `src/components/library/` — library CRUD, upload, item detail panel
+- `src/components/document/` — `DocumentDetailPage` (preview, study history, exercise tile)
+- `src/components/editor/` — Tiptap v3 markdown editor with autosave + custom code block
+- `src/components/generation/` — multi-step `GenerationModal`: Configure → Generating → Review → Schedule → Success
+- `src/components/study/` — `StudyView`, orbit layout, hint ladder, mistake analyzer, drag rating
+- `src/components/exercises/` — per-type renderers (`*Morph`). UI today only routes flashcard/quiz; the rest are dormant code (see "Faltando" below)
+- `src/components/stats/` — `StatsView`, donut cards
+- `src/components/review/`, `src/components/dashboard/` — older components, **not currently routed** in `AppShell`
+- `src/components/onboarding/` — first-run flow
+- `src/components/search/` — `CommandPalette` (Cmd+K)
 - `src/components/ui/` — shadcn/ui primitives (radix-ui + CVA)
-- `src/hooks/` — Custom hooks (useChat.ts is the chat orchestrator)
-- `src/types/` — Domain types split by feature (chat, library, exercise, srs, dashboard, ai)
+- `src/hooks/` — `useChat`, `useLibrary`, `useGitHubDeviceFlow`
+- `src/types/` — domain types split by feature (chat, library, exercise, srs, dashboard, ai)
 
 ## Conventions
 
@@ -102,20 +116,28 @@ UI (React Views)
 
 | Área | Arquivo |
 |---|---|
-| Shell | `src/app/page.tsx`, `src/components/layout/AppShell.tsx` |
-| Stores | `src/stores/app.store.ts`, `chat.store.ts`, `provider.store.ts` |
+| Shell | `src/app/page.tsx`, `src/components/layout/AppShell.tsx`, `Sidebar.tsx`, `AppearanceEffects.tsx` |
+| Stores | `src/stores/{app,appearance,chat,dialog,generation,provider,study}.store.ts` |
 | Chat / IA | `src/hooks/useChat.ts`, `src/services/ai/*` |
 | Parser exercício | `src/services/ai/parsers/exercise.parser.ts` |
 | Prompts exercício | `src/services/ai/prompts/exercise.prompts.ts` |
 | Prompts review | `src/services/ai/prompts/review.prompts.ts` |
-| Citações | `src/lib/citations.ts` (auto-extraction via word-overlap) |
+| Citações | `src/lib/citations.ts` (word-overlap scoring, whitelist `allowedItemIds`) |
 | Context/Chunks | `src/lib/tokens.ts` (InjectedChunk, buildContextSnippet) |
+| PDF chunking | `src/lib/pdf-chunker.ts` (split por tamanho fixo — alvo de melhoria) |
+| Distribuição SRS | `src/lib/distribute-cards.ts` |
+| SM-2 | `src/lib/sm2.ts` |
+| Aparência/Tema | `src/lib/appearance.ts`, `src/stores/appearance.store.ts` |
 | Persistência | `src/services/storage/database.ts`, `src/services/storage/index.ts` |
 | Biblioteca | `src/hooks/useLibrary.ts`, `src/components/library/LibraryView.tsx` |
-| Flashcard Generator | `src/hooks/useFlashcardGenerator.ts`, `src/components/library/FlashcardGeneratorPanel.tsx` |
-| Editor | `src/components/editor/EditorView.tsx`, `useEditorAutosave.ts` |
-| Review / SRS | `src/components/review/ReviewView.tsx`, `src/lib/sm2.ts` |
-| Dashboard | `src/components/dashboard/DashboardView.tsx` |
+| Documento | `src/components/document/DocumentDetailPage.tsx` |
+| Modal de geração | `src/components/generation/GenerationModal.tsx` (+ Configure/Generating/Review/Schedule/Success steps) |
+| Editor | `src/components/editor/EditorView.tsx`, `MarkdownEditor.tsx`, `useEditorAutosave.ts` |
+| Estudo | `src/components/study/StudyView.tsx`, `TodayScreen.tsx`, `StudyCard.tsx` |
+| Stats | `src/components/stats/StatsView.tsx` |
+| Onboarding | `src/components/onboarding/OnboardingFlow.tsx` |
+| Command Palette | `src/components/search/CommandPalette.tsx` |
+| GitHub Copilot OAuth | `src/hooks/useGitHubDeviceFlow.ts`, `src/app/api/github/{copilot,device,token}` |
 | Criptografia | `src/lib/crypto.ts` |
 
 ## Modelo de dados resumido
@@ -127,36 +149,74 @@ UI (React Views)
 - `SRSCard` → ease factor, repetições, intervalo, próxima revisão (SM-2)
 - `ActivityEvent` → srs_review, exercise_completed
 
-## Estado atual do ciclo core
+## Estado atual do app
 
-O fluxo principal está funcional e sólido:
-**PDF → chat com citações → geração de flashcards (chat ou standalone) → revisão SRS com avaliação IA → progresso**
+Fluxo principal funcional e sólido:
+**conteúdo → chat com citações → geração de flashcards (chat ou modal multi-step) → revisão SRS com avaliação IA → progresso**
 
-### Concluído
-- ✅ Citações automáticas por chunks (word-overlap scoring, sem depender da IA)
-- ✅ Flashcard prompt bifurcado (com/sem contexto), parser com JSON repair
-- ✅ Standalone flashcard generator (Library → botão → prompt → cards editáveis → SRS)
-- ✅ SRS source attribution (Exercise → SRSCard → ReviewEvaluation)
-- ✅ Review SRS com avaliação por contexto (correct/partial/incorrect + keyMissing + progress badges)
-- ✅ Corte de features: Gemini, Editor nav, sprint/fillgap/connections/bossfight/crossword
+### ✅ Pronto e em uso
 
-### Próximos passos
-1. **Chunking do PDF** — melhorar divisão por parágrafos semânticos (hoje é por tamanho fixo)
-2. **UI/UX polish** — visual refinement do fluxo completo
-3. **Testes manuais end-to-end** — validar todo o ciclo com PDFs reais
+**Core / Shell**
+- 6 views roteadas: chat, library, editor, study, stats, settings
+- Mobile bottom nav + Cmd/Ctrl+K command palette
+- Onboarding inicial gateado por `localStorage.discentia_onboarded`
+- Tema/aparência configurável (`appearance.store` + `AppearanceEffects`)
 
-## Decisões já tomadas — não questionar
+**Conteúdo / Biblioteca**
+- Upload e visualização: text, markdown, image, pdf, file
+- PDF chunking via `pdf-chunker.ts` (split por tamanho fixo)
+- `DocumentDetailPage` com preview, histórico de estudo e tile de exercícios
+- Editor TipTap v3 com autosave, toolbar e code block customizado
 
-- **Local-first**: sem backend próprio, dados do usuário ficam no browser
-- **Provider adapter pattern**: troca de IA sem alterar fluxo de UI
-- **StorageService único**: toda UI passa por ele, nunca acessa Dexie diretamente
-- **Citações com whitelist de allowedItemIds**: evita referenciar fontes não injetadas no contexto
+**Chat / IA**
+- 5 providers em produção, todos com streaming: OpenAI, Anthropic, Ollama, OpenRouter, GitHub Copilot
+- GitHub Copilot via OAuth device flow (`/api/github/*` + `useGitHubDeviceFlow`)
+- API keys cifradas em localStorage (AES-GCM)
+- Citações automáticas por word-overlap (`citations.ts`) com whitelist `allowedItemIds`
+- Injeção de contexto via `tokens.ts`
+- Geração de exercício direto do chat com indicador
 
-## O que NÃO fazer agora
+**Geração de exercícios (modal multi-step)**
+- Fluxo Configure → Generating → Review (cards editáveis) → Schedule → Success
+- Distribuição automática na fila SRS via `distribute-cards.ts`
 
-- Não adicionar novos tipos de exercício (só flashcard + quiz)
-- Não implementar sync multi-dispositivo
-- Não adicionar features novas — profundidade antes de largura
+**SRS / Estudo**
+- Algoritmo SM-2 (`sm2.ts`)
+- `StudyView` com orbit layout, dots, rail, `TodayScreen`
+- Drag rating slider + botões de confiança
+- Avaliação por IA: correct/partial/incorrect + keyMissing
+- Hint ladder e mistake analyzer
+- Bulk approve modal
+
+**Stats**
+- Heatmap, forecast, breakdown por library, donut cards
+
+### 🚧 Faltando / próximos passos
+
+1. **Chunking semântico de PDF** — substituir split por tamanho por split por parágrafo/heading (alavanca grande de qualidade das citações)
+2. **UI/UX polish** — varredura visual completa do fluxo
+3. **Testes manuais end-to-end** com PDFs reais
+4. **Definir destino dos exercícios não-flashcard/quiz** — `ExerciseType` em `src/types/exercise.ts` ainda exporta `crossword, connections, sprint, fillgap, bossfight` e há `*Morph.tsx` correspondentes em `components/exercises/`, mas nada está roteado na UI. Cortar de vez ou reativar.
+5. **Componentes órfãos** — `src/components/review/*` e `src/components/dashboard/*` não estão roteados em `AppShell` (substituídos por `study/` e `stats/`). Decidir remoção ou reuso.
+
+### 💡 Melhorias possíveis no código
+
+- Alinhar `ExerciseType` ao que realmente é usado e remover morphs órfãos (ou reativá-los)
+- Possível sobreposição entre `dialog.store` e flags em `app.store` (`settingsOpen`, `commandPaletteOpen`) — consolidar em um lugar só
+- Auditoria: garantir que toda escrita Dexie passa por `StorageService` (regra já existente)
+- Documentar `/api/github/*` como única exceção ao "no backend" e que não persiste nada
+- Adicionar Vitest para regressões mínimas em lógica pura: `sm2.ts`, `pdf-chunker.ts`, `citations.ts`, `exercise.parser.ts`
+
+### 🔒 Decisões consolidadas — não revisitar
+
+- **Local-first**: dados do usuário ficam no browser. Única exceção: `/api/github/*` (proxy stateless de OAuth)
+- **Provider adapter pattern** para troca de IA sem mexer na UI
+- **StorageService único**: toda UI passa por ele, nunca acessa Dexie direto
+- **Citações com whitelist `allowedItemIds`**: nunca referenciar fontes não injetadas
+- **Sem sync multi-dispositivo**
+- **Foco desktop**, mobile como secundário
+- **Profundidade antes de largura**: não adicionar features novas até o ciclo core estar polido
+- **Exercícios em uso hoje**: flashcard e quiz
 
 ## Posicionamento (contexto de produto)
 
