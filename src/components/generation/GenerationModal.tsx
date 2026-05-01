@@ -23,6 +23,7 @@ import GeneratingStep from "./GeneratingStep";
 import ReviewStep from "./ReviewStep";
 import ScheduleStep from "./ScheduleStep";
 import SuccessStep from "./SuccessStep";
+import ErrorStep from "./ErrorStep";
 
 interface GenerationModalProps {
   item: LibraryItem;
@@ -36,17 +37,18 @@ export default function GenerationModal({ item }: GenerationModalProps) {
     focusPrompt,
     close,
     setStep,
+    setError,
     setGeneratedCards,
     setGenerationProgress,
     generatedCards,
     removedCardIds,
     savedCardIds,
     setSavedCardIds,
+    errorMessage,
     reset,
   } = useGenerationStore();
 
   const [saving, setSaving] = useState(false);
-  const [genError, setGenError] = useState<string | null>(null);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -65,14 +67,12 @@ export default function GenerationModal({ item }: GenerationModalProps) {
   const handleGenerate = useCallback(async () => {
     setStep("generating");
     setGenerationProgress(0, 0);
-    setGenError(null);
 
     const config = useProviderStore.getState().getActiveProviderConfig();
     const provider = getAIProvider(config.type);
 
     if (!provider) {
-      setGenError("No AI provider available.");
-      setStep("configure");
+      setError("No AI provider available.");
       return;
     }
 
@@ -130,16 +130,14 @@ export default function GenerationModal({ item }: GenerationModalProps) {
             setGenerationProgress(100, cardCount);
             setTimeout(() => setStep("review"), 400);
           } else {
-            setGenError("Could not parse flashcards from AI response. Try again.");
-            setStep("configure");
+            setError("Could not parse flashcards from the AI response. Try again.");
           }
         },
         onError: (err: Error) => {
           clearProgress();
           if (controller.signal.aborted) return;
           abortControllerRef.current = null;
-          setGenError(err.message);
-          setStep("configure");
+          setError(err.message || "Generation failed.");
         },
       },
       controller.signal
@@ -149,10 +147,9 @@ export default function GenerationModal({ item }: GenerationModalProps) {
       clearProgress();
       if (controller.signal.aborted || err?.name === "AbortError") return;
       abortControllerRef.current = null;
-      setGenError(err.message ?? "Generation failed.");
-      setStep("configure");
+      setError(err.message ?? "Generation failed.");
     });
-  }, [focusPrompt, cardCount, item, setStep, setGenerationProgress, setGeneratedCards]);
+  }, [focusPrompt, cardCount, item, setStep, setError, setGenerationProgress, setGeneratedCards]);
 
   const handleSave = useCallback(async () => {
     const activeCards = generatedCards.filter(
@@ -212,8 +209,6 @@ export default function GenerationModal({ item }: GenerationModalProps) {
       open={isOpen}
       onOpenChange={(open) => {
         if (!open) {
-          // Abort in-flight generation if the user closes mid-stream;
-          // otherwise tokens keep flowing into unmounted state.
           if (step === "generating") {
             abortGeneration();
             clearProgress();
@@ -225,9 +220,7 @@ export default function GenerationModal({ item }: GenerationModalProps) {
             void handleScheduleConfirm(fallbackDate);
           }
           close();
-          if (step !== "generating") {
-            setTimeout(reset, 300);
-          }
+          if (step !== "generating") setTimeout(reset, 300);
         }
       }}
     >
@@ -247,14 +240,8 @@ export default function GenerationModal({ item }: GenerationModalProps) {
               key="review"
               saving={saving}
               onSave={handleSave}
-              onRegenerate={() => {
-                setStep("configure");
-                setGenError(null);
-              }}
-              onBackToSettings={() => {
-                setStep("configure");
-                setGenError(null);
-              }}
+              onRegenerate={() => setStep("configure")}
+              onBackToSettings={() => setStep("configure")}
             />
           )}
           {step === "schedule" && (
@@ -275,11 +262,14 @@ export default function GenerationModal({ item }: GenerationModalProps) {
               onAutoClose={handleAutoClose}
             />
           )}
+          {step === "error" && (
+            <ErrorStep
+              key="error"
+              message={errorMessage ?? "Something went wrong."}
+              onRetry={() => setStep("configure")}
+            />
+          )}
         </AnimatePresence>
-
-        {genError && step === "configure" && (
-          <p className="text-xs text-red-600 mt-2">{genError}</p>
-        )}
       </DialogContent>
     </Dialog>
     </>

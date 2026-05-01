@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-export type GenerationStep = "configure" | "generating" | "review" | "schedule" | "success";
+export type GenerationStep = "configure" | "generating" | "review" | "schedule" | "success" | "error";
 export type ExerciseGenerationType = "flashcards" | "quiz" | "sprint" | "connections";
 
 export interface FlashcardDraft {
@@ -36,10 +36,14 @@ interface GenerationState {
   targetDate: Date | null;
   savedCardIds: string[]; // IDs of cards saved to DB (for distribution)
 
+  // Error
+  errorMessage: string | null;
+
   // Actions
   open: (documentId: string, documentTitle: string, type: ExerciseGenerationType) => void;
   close: () => void;
   setStep: (step: GenerationStep) => void;
+  setError: (message: string) => void;
   setFocusPrompt: (prompt: string) => void;
   setCardCount: (count: number) => void;
   setGeneratedCards: (cards: FlashcardDraft[]) => void;
@@ -59,7 +63,7 @@ const initialState = {
   documentId: null as string | null,
   documentTitle: "",
   focusPrompt: "",
-  cardCount: 10,
+  cardCount: 5,
   generatedCards: [] as FlashcardDraft[],
   generationProgress: 0,
   currentGeneratingIndex: 0,
@@ -67,30 +71,35 @@ const initialState = {
   editingCardId: null as string | null,
   targetDate: null as Date | null,
   savedCardIds: [] as string[],
+  errorMessage: null as string | null,
 };
 
 export const useGenerationStore = create<GenerationState>((set) => ({
   ...initialState,
 
   open: (documentId, documentTitle, type) =>
-    set({
+    set((state) => ({
       isOpen: true,
       step: "configure",
       exerciseType: type,
       documentId,
       documentTitle,
-      focusPrompt: "",
-      cardCount: 10,
+      // Preserve focusPrompt and cardCount from previous open
+      focusPrompt: state.documentId === documentId ? state.focusPrompt : "",
+      cardCount: state.cardCount,
       generatedCards: [],
       generationProgress: 0,
       currentGeneratingIndex: 0,
       removedCardIds: new Set(),
       editingCardId: null,
-    }),
+      errorMessage: null,
+    })),
 
   close: () => set({ isOpen: false }),
 
   setStep: (step) => set({ step }),
+
+  setError: (errorMessage) => set({ errorMessage, step: "error" }),
 
   setFocusPrompt: (focusPrompt) => set({ focusPrompt }),
 
