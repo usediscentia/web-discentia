@@ -48,6 +48,7 @@ export function FlashcardMorph({
             correct,
             wrong: total - correct,
             skipped: 0,
+            missedCardIds: cards.filter((_, i) => !nextKnew[i]).map((c) => c.id),
           },
           duration: Date.now() - startTime,
           completedAt: Date.now(),
