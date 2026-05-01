@@ -28,11 +28,16 @@ interface ExerciseRendererProps {
 export function ExerciseRenderer({ exercise }: ExerciseRendererProps) {
   const [showBulkApprove, setShowBulkApprove] = useState(false);
   const [pendingCards, setPendingCards] = useState<FlashcardData["cards"]>([]);
+  const [initialDismissed, setInitialDismissed] = useState<Set<string>>(new Set());
 
   const handleComplete = useCallback(
     async (result: ExerciseResult) => {
       if (exercise.type === "flashcard") {
-        setPendingCards((exercise.data as FlashcardData).cards);
+        const allCards = (exercise.data as FlashcardData).cards;
+        const missedIds = new Set(result.details.missedCardIds ?? []);
+        // Pre-dismiss cards the user already knew — only missed ones are kept
+        setInitialDismissed(new Set(allCards.filter((c) => !missedIds.has(c.id)).map((c) => c.id)));
+        setPendingCards(allCards);
         setShowBulkApprove(true);
       }
 
@@ -128,6 +133,7 @@ export function ExerciseRenderer({ exercise }: ExerciseRendererProps) {
           <BulkApproveModal
             cards={pendingCards}
             libraryItemId={exercise.sourceItemId}
+            initialDismissed={initialDismissed}
             onDone={() => setShowBulkApprove(false)}
             onSkip={() => setShowBulkApprove(false)}
           />

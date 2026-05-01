@@ -69,7 +69,8 @@ export default function ReviewView() {
 
   const { getActiveProviderConfig } = useProviderStore();
 
-  useEffect(() => {
+  const loadSessionData = useCallback(() => {
+    setLoading(true);
     Promise.all([
       StorageService.getDueCards(20),
       StorageService.getDashboardStats(),
@@ -92,7 +93,6 @@ export default function ReviewView() {
         for (const item of items) {
           if (!item) continue;
 
-          // Build source context for AI evaluation
           if (item.metadata?.chunks && item.metadata.chunks.length > 0) {
             let text = "";
             for (const chunk of item.metadata.chunks) {
@@ -104,7 +104,6 @@ export default function ReviewView() {
             contextMap[item.id] = item.content.slice(0, 1500);
           }
 
-          // Group item IDs by library ID
           if (!libraryIdToItemIds[item.libraryId]) {
             libraryIdToItemIds[item.libraryId] = [];
           }
@@ -113,7 +112,6 @@ export default function ReviewView() {
 
         setSourceContexts(contextMap);
 
-        // Load library colors
         const libraryIds = Object.keys(libraryIdToItemIds);
         Promise.all(libraryIds.map((id) => StorageService.getLibrary(id))).then((libraries) => {
           const colorMap: Record<string, string> = {};
@@ -128,6 +126,10 @@ export default function ReviewView() {
       });
     });
   }, []);
+
+  useEffect(() => {
+    loadSessionData();
+  }, [loadSessionData]);
 
   const current = cards[index];
   const accentColor = current?.libraryItemId
@@ -222,19 +224,17 @@ export default function ReviewView() {
   );
 
   const handleRestart = useCallback(() => {
-    setLoading(true);
     setCards([]);
+    setSourceContexts({});
+    setAccentColors({});
     setIndex(0);
     setPhase("input");
     setSessionCards([]);
     setComplete(false);
     setLastRating(null);
     setSessionDuration(0);
-    StorageService.getDueCards(20).then((due) => {
-      setCards(due);
-      setLoading(false);
-    });
-  }, []);
+    loadSessionData();
+  }, [loadSessionData]);
 
   const correctCount = sessionCards.filter((s) => s.verdict === "correct").length;
   const partialCount = sessionCards.filter((s) => s.verdict === "partial").length;

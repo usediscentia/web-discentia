@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Download, PencilLine, Search, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, Download, PencilLine, Search, Trash2 } from "lucide-react";
 import { ChatEmpty } from "@/components/chat/ChatEmpty";
 import { ChatMessages, type Message as ViewMessage } from "@/components/chat/ChatMessages";
 import { InputBar } from "@/components/chat/InputBar";
@@ -14,10 +14,24 @@ import type { Citation } from "@/types/chat";
 import type { Exercise } from "@/types/exercise";
 import { StorageService } from "@/services/storage";
 import { getDB } from "@/services/storage/database";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export default function ChatView() {
   const [aiSelectorOpen, setAiSelectorOpen] = useState(false);
   const [conversationTitle, setConversationTitle] = useState("New conversation");
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [exportCopied, setExportCopied] = useState(false);
+  const exportCopiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { setActiveView, setLibraryFocusItemId } = useAppStore();
 
   const {
@@ -171,22 +185,31 @@ export default function ChatView() {
     setActiveView("library");
   };
 
-  const handleRenameConversation = async () => {
+  const handleRenameConversation = () => {
     if (!activeConversationId) return;
-    const nextTitle = window.prompt("Rename conversation", conversationTitle);
-    if (!nextTitle || !nextTitle.trim()) return;
-    await StorageService.updateConversation(activeConversationId, {
-      title: nextTitle.trim(),
-      updatedAt: Date.now(),
-    });
-    setConversationTitle(nextTitle.trim());
+    setRenameValue(conversationTitle);
+    setRenameDialogOpen(true);
   };
 
-  const handleDeleteConversation = async () => {
+  const handleRenameConfirm = async () => {
+    const trimmed = renameValue.trim();
+    if (!trimmed || !activeConversationId) return;
+    await StorageService.updateConversation(activeConversationId, {
+      title: trimmed,
+      updatedAt: Date.now(),
+    });
+    setConversationTitle(trimmed);
+    setRenameDialogOpen(false);
+  };
+
+  const handleDeleteConversation = () => {
     if (!activeConversationId) return;
-    const confirmed = window.confirm(`Delete "${conversationTitle}"?`);
-    if (!confirmed) return;
-    await StorageService.deleteConversation(activeConversationId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    await StorageService.deleteConversation(activeConversationId!);
+    setDeleteDialogOpen(false);
     startNewConversation();
   };
 
@@ -198,14 +221,13 @@ export default function ChatView() {
       })
       .join("\n\n");
 
-    const header = `# ${conversationTitle}\n\n`;
-    const payload = `${header}${transcript}`;
-
     try {
-      await navigator.clipboard.writeText(payload);
-      alert("Conversation copied to clipboard");
+      await navigator.clipboard.writeText(`# ${conversationTitle}\n\n${transcript}`);
+      setExportCopied(true);
+      if (exportCopiedTimer.current) clearTimeout(exportCopiedTimer.current);
+      exportCopiedTimer.current = setTimeout(() => setExportCopied(false), 2000);
     } catch {
-      alert("Could not copy conversation");
+      // clipboard unavailable — silently ignore
     }
   };
 
@@ -241,10 +263,10 @@ export default function ChatView() {
           <button
             onClick={handleExportConversation}
             className="w-8 h-8 rounded-md border border-[#E5E7EB] text-[#6B7280] flex items-center justify-center cursor-pointer hover:bg-[#F8F8F8]"
-            title="Export conversation"
+            title={exportCopied ? "Copied!" : "Export conversation"}
             disabled={!messages.length}
           >
-            <Download size={14} />
+            {exportCopied ? <Check size={14} className="text-emerald-500" /> : <Download size={14} />}
           </button>
           <button
             onClick={handleRenameConversation}
@@ -302,6 +324,42 @@ export default function ChatView() {
           onClose={() => setAiSelectorOpen(false)}
         />
       </div>
+
+      {/* Rename dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename conversation</DialogTitle>
+          </DialogHeader>
+          <input
+            className="w-full rounded-md border border-[#E5E7EB] px-3 py-2 text-sm outline-none focus:border-[#A1A1AA] focus:ring-1 focus:ring-[#A1A1AA]"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleRenameConfirm()}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleRenameConfirm} disabled={!renameValue.trim()}>Rename</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete conversation</DialogTitle>
+            <DialogDescription>
+              &ldquo;{conversationTitle}&rdquo; will be permanently deleted. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
