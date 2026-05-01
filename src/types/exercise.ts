@@ -78,7 +78,7 @@ export interface ExerciseResult {
   id: string;
   exerciseId: string;
   score: number;
-  details: { total: number; correct: number; wrong: number; skipped: number };
+  details: { total: number; correct: number; wrong: number; skipped: number; missedCardIds?: string[] };
   duration: number;
   completedAt: number;
 }

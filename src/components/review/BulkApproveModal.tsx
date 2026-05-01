@@ -9,12 +9,13 @@ import type { FlashcardData } from "@/types/exercise";
 interface BulkApproveModalProps {
   cards: FlashcardData["cards"];
   libraryItemId?: string;
+  initialDismissed?: Set<string>;
   onDone: () => void;
   onSkip: () => void;
 }
 
-export function BulkApproveModal({ cards, libraryItemId, onDone, onSkip }: BulkApproveModalProps) {
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+export function BulkApproveModal({ cards, libraryItemId, initialDismissed, onDone, onSkip }: BulkApproveModalProps) {
+  const [dismissed, setDismissed] = useState<Set<string>>(() => initialDismissed ?? new Set());
   const [saving, setSaving] = useState(false);
 
   const toggle = (id: string) => {
