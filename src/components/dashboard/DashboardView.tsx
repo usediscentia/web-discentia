@@ -11,6 +11,7 @@ import ReviewHeatmap from "./ReviewHeatmap";
 import LibraryReviews from "./LibraryReviews";
 import ReviewForecast from "./ReviewForecast";
 import { buildWeeklyData } from "@/lib/dashboard-utils";
+import { useAppStore } from "@/stores/app.store";
 
 function formatHeaderDate(ts: number): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -64,6 +65,7 @@ export default function DashboardView() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [insights, setInsights] = useState<DashboardInsights | null>(null);
   const [now] = useState(() => Date.now());
+  const { setActiveView } = useAppStore();
 
   useEffect(() => {
     let cancelled = false;
@@ -103,9 +105,19 @@ export default function DashboardView() {
             <h1 className="text-[28px] font-semibold text-[#1A1814]">
               {greeting}.
             </h1>
-            <p className="text-[16px] text-[#6B6560]">
-              You have {stats.dueToday} cards to review today.
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-[16px] text-[#6B6560]">
+                You have {stats.dueToday} card{stats.dueToday !== 1 ? "s" : ""} to review today.
+              </p>
+              {stats.dueToday > 0 && (
+                <button
+                  onClick={() => setActiveView("study")}
+                  className="text-[13px] font-medium text-white bg-[#1A1814] px-3 py-1 rounded-full cursor-pointer hover:bg-[#2C2A26] transition-colors"
+                >
+                  Start Review →
+                </button>
+              )}
+            </div>
           </div>
           <span
             className="text-[13px] font-medium text-[#9C9690]"
