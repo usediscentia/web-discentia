@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Loader2 } from "lucide-react";
 import { useStudyStore } from "@/stores/study.store";
+import { useAppStore } from "@/stores/app.store";
 import { TodayScreen } from "./TodayScreen";
 import { StudyRail } from "./StudyRail";
 import { StudyCard } from "./StudyCard";
@@ -32,7 +33,10 @@ export default function StudyView() {
   } = useStudyStore();
 
   useEffect(() => {
-    initSession();
+    const { studyFilterItemId, setStudyFilterItemId } = useAppStore.getState();
+    const filterId = studyFilterItemId ?? undefined;
+    setStudyFilterItemId(null);
+    initSession(filterId);
   }, [initSession]);
 
   const current = cards[currentIndex];
