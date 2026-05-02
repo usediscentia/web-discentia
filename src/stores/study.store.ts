@@ -58,7 +58,7 @@ interface StudyState {
   pendingConfidence: "unsure" | "think-so" | "certain" | null;
 
   // Actions
-  initSession: () => Promise<void>;
+  initSession: (libraryItemId?: string) => Promise<void>;
   startReview: () => void;
   submitAnswer: (answer: string) => Promise<void>;
   skipCard: () => void;
@@ -93,7 +93,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
   libraryNames: {},
   pendingConfidence: null,
 
-  initSession: async () => {
+  initSession: async (libraryItemId?: string) => {
     set({
       phase: "loading",
       cards: [],
@@ -113,7 +113,9 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     });
 
     const [cards, stats, insights, totalCards, nextReview] = await Promise.all([
-      StorageService.getDueCards(),
+      libraryItemId
+        ? StorageService.getDueCardsByLibraryItem(libraryItemId)
+        : StorageService.getDueCards(),
       StorageService.getDashboardStats(),
       StorageService.getDashboardInsights(),
       StorageService.getTotalCardCount(),
