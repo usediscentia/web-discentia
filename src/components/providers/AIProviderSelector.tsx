@@ -113,9 +113,22 @@ function truncateModel(model: string, max = 18): string {
 interface AIProviderSelectorProps {
   isOpen: boolean;
   onClose: () => void;
+  positionClassName?: string;
+  panelStyle?: React.CSSProperties;
+  backdropClassName?: string;
+  originY?: number;
+  enterFrom?: "bottom" | "right";
 }
 
-export function AIProviderSelector({ isOpen, onClose }: AIProviderSelectorProps) {
+export function AIProviderSelector({
+  isOpen,
+  onClose,
+  positionClassName = "absolute bottom-20 left-1/2 -translate-x-1/2 z-50",
+  panelStyle,
+  backdropClassName = "fixed inset-0 z-40",
+  originY = 1,
+  enterFrom = "bottom",
+}: AIProviderSelectorProps) {
   const {
     selectedProvider,
     setSelectedProvider,
@@ -131,6 +144,7 @@ export function AIProviderSelector({ isOpen, onClose }: AIProviderSelectorProps)
   const [modelSearchByProvider, setModelSearchByProvider] = useState<
     Partial<Record<AIProviderType, string>>
   >({});
+  const [expandedProvider, setExpandedProvider] = useState<AIProviderType | null>(selectedProvider);
 
   useEffect(() => {
     if (isOpen) {
@@ -165,6 +179,7 @@ export function AIProviderSelector({ isOpen, onClose }: AIProviderSelectorProps)
 
   const handleSelectProvider = (id: AIProviderType) => {
     setSelectedProvider(id);
+    setExpandedProvider((prev) => (prev === id ? null : id));
   };
 
   const handleSelectModel = (providerId: AIProviderType, model: string) => {
@@ -219,27 +234,28 @@ export function AIProviderSelector({ isOpen, onClose }: AIProviderSelectorProps)
     <AnimatePresence>
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={onClose} />
+          <div className={backdropClassName} onClick={onClose} />
           <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.96 }}
+            initial={enterFrom === "right"
+              ? { opacity: 0, x: -24, scale: 0.97 }
+              : { opacity: 0, y: 8, scale: 0.96 }
+            }
             variants={{
               enter: {
                 opacity: 1,
+                x: 0,
                 y: 0,
                 scale: 1,
-                transition: { duration: 0.18, ease: [0.23, 1, 0.32, 1] },
+                transition: { duration: 0.2, ease: [0.23, 1, 0.32, 1] },
               },
-              exit: {
-                opacity: 0,
-                y: 4,
-                scale: 0.97,
-                transition: { duration: 0.12, ease: [0.4, 0, 1, 1] },
-              },
+              exit: enterFrom === "right"
+                ? { opacity: 0, x: -16, scale: 0.98, transition: { duration: 0.15, ease: [0.4, 0, 1, 1] } }
+                : { opacity: 0, y: 4, scale: 0.97, transition: { duration: 0.12, ease: [0.4, 0, 1, 1] } },
             }}
             animate="enter"
             exit="exit"
-            style={{ originY: 1 }}
-            className="absolute bottom-20 left-1/2 -translate-x-1/2 z-50 w-[340px] bg-white rounded-xl border border-[#E5E7EB] shadow-[0_8px_12px_-4px_rgba(0,0,0,0.08),0_2px_4px_-2px_rgba(0,0,0,0.04)] py-3"
+            style={{ originY, originX: enterFrom === "right" ? 1 : 0.5, ...panelStyle }}
+            className={`${positionClassName} w-[340px] bg-white rounded-xl border border-[#E5E7EB] shadow-[0_8px_12px_-4px_rgba(0,0,0,0.08),0_2px_4px_-2px_rgba(0,0,0,0.04)] py-3`}
           >
             {/* Header */}
             <div className="px-4 pb-2">
@@ -300,13 +316,10 @@ export function AIProviderSelector({ isOpen, onClose }: AIProviderSelectorProps)
                         )}
                       </div>
 
-                      {/* Badge */}
-                      <span
-                        className="text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0"
-                        style={{ backgroundColor: provider.badgeBg, color: provider.badgeText }}
-                      >
-                        {provider.badgeLabel}
-                      </span>
+                      {/* Local hint for Ollama only */}
+                      {provider.id === "ollama" && !isSelected && (
+                        <span className="text-[11px] text-[#C4C4C4] shrink-0">local</span>
+                      )}
 
                       {/* Chevron */}
                       {!provider.comingSoon && hasModels && (

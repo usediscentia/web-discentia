@@ -1,12 +1,32 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "motion/react";
+import { ProviderIcon } from "@lobehub/icons";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CardSelector } from "@/components/ui/card-selector";
+import { AIProviderSelector } from "@/components/providers/AIProviderSelector";
 import { useGenerationStore } from "@/stores/generation.store";
 import { useProviderStore } from "@/stores/provider.store";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
+import type { AIProviderType } from "@/types/ai";
+
+const LOBE_PROVIDER_MAP: Record<AIProviderType, string> = {
+  openai: "openai",
+  anthropic: "anthropic",
+  ollama: "ollama",
+  openrouter: "openrouter",
+  "github-copilot": "github",
+};
+
+function formatModelName(model: string): string {
+  // Strip "provider/" prefix for OpenRouter models like "openai/gpt-4o"
+  const slashIdx = model.indexOf("/");
+  const name = slashIdx !== -1 ? model.slice(slashIdx + 1) : model;
+  // Truncate very long model ids
+  return name.length > 28 ? name.slice(0, 26) + "…" : name;
+}
 
 interface ConfigureStepProps {
   onGenerate: () => void;
@@ -16,10 +36,11 @@ export default function ConfigureStep({ onGenerate }: ConfigureStepProps) {
   const { documentTitle, focusPrompt, cardCount, setFocusPrompt, setCardCount } =
     useGenerationStore();
 
-  const { selectedProvider, providerConfigs } = useProviderStore();
+  const { selectedProvider, selectedModel, providerConfigs } = useProviderStore();
   const requiresKey = PROVIDER_DEFAULTS[selectedProvider].requiresApiKey;
   const hasKey = Boolean(providerConfigs[selectedProvider]?.apiKey);
   const needsSetup = requiresKey && !hasKey;
+  const [showSelector, setShowSelector] = useState(false);
 
   const displayTitle = documentTitle
     .replace(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_?/i, "")
@@ -72,15 +93,41 @@ export default function ConfigureStep({ onGenerate }: ConfigureStepProps) {
         className="mb-7"
       />
 
+      {/* Provider selector — fixed to the right of the modal */}
+      <AIProviderSelector
+        isOpen={showSelector}
+        onClose={() => setShowSelector(false)}
+        positionClassName="fixed z-[60]"
+        panelStyle={{ left: "calc(50% + 240px)", top: "calc(50% - 270px)" }}
+        backdropClassName="fixed inset-0 z-[55]"
+        originY={0}
+        enterFrom="right"
+      />
+
       {/* CTA */}
       <Button
         onClick={onGenerate}
         disabled={needsSetup}
-        className="w-full h-11 rounded-lg bg-gradient-to-b from-[#222018] to-[#171614] hover:brightness-110 active:scale-[0.97] text-white text-sm font-medium cursor-pointer shadow-[0_0_0_0.5px_rgba(0,0,0,0.4),inset_0_0_0_1px_rgba(255,255,255,0.04),inset_0_1px_0_rgba(255,255,255,0.07),0_1px_2px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.08),0_4px_8px_rgba(0,0,0,0.04)] [text-shadow:0_1px_1px_rgba(0,0,0,0.2)]"
-        style={{ transition: "filter 150ms ease, transform 150ms ease" }}
+        className="w-full h-11 rounded-lg hover:brightness-110 active:scale-[0.97] text-sm font-medium cursor-pointer shadow-[0_0_0_0.5px_rgba(0,0,0,0.4),inset_0_0_0_1px_rgba(255,255,255,0.04),inset_0_1px_0_rgba(255,255,255,0.07),0_1px_2px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.08),0_4px_8px_rgba(0,0,0,0.04)] [text-shadow:0_1px_1px_rgba(0,0,0,0.2)]"
+        style={{ transition: "filter 150ms ease, transform 150ms ease", backgroundColor: "var(--brand)", color: "var(--brand-foreground)" }}
       >
         Generate {cardCount} Flashcards
       </Button>
+
+      {/* Model attribution */}
+      <div className="flex items-center justify-center gap-1.5 mt-3">
+        <ProviderIcon provider={LOBE_PROVIDER_MAP[selectedProvider]} size={12} type="color" />
+        <span className="text-[11px] text-[#A8A5A0] leading-none">
+          {formatModelName(selectedModel)}
+        </span>
+        <span className="text-[11px] text-[#D3D1CE] leading-none">·</span>
+        <button
+          onClick={() => setShowSelector((v) => !v)}
+          className="text-[11px] text-[#A8A5A0] hover:text-[#5C5A56] transition-colors cursor-pointer leading-none"
+        >
+          Change
+        </button>
+      </div>
     </motion.div>
   );
 }
