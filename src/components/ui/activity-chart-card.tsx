@@ -147,7 +147,8 @@ export function ActivityChartCard({
                 role="presentation"
               >
                 <motion.div
-                  className="w-full origin-bottom rounded-[3px] bg-[#1A1814]"
+                  className="w-full origin-bottom rounded-[3px]"
+                  style={{ backgroundColor: "var(--brand)" }}
                   style={{
                     height: `${maxValue > 0 ? Math.max((item.value / maxValue) * 100, 4) : 4}%`,
                     opacity: item.value === 0 ? 0.12 : undefined,
