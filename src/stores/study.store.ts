@@ -54,6 +54,9 @@ interface StudyState {
   accentColors: Record<string, string>; // libraryItemId → library color hex
   libraryNames: Record<string, string>; // libraryItemId → library name
 
+  // Set only when session is started with a libraryItemId filter
+  activeFilterItemTitle: string | null;
+
   // Pending confidence (set before submitting/skipping)
   pendingConfidence: "unsure" | "think-so" | "certain" | null;
 
@@ -91,6 +94,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
   sourceContexts: {},
   accentColors: {},
   libraryNames: {},
+  activeFilterItemTitle: null,
   pendingConfidence: null,
 
   initSession: async (libraryItemId?: string) => {
@@ -107,6 +111,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       libraryNames: {},
       activeLibraryName: null,
       activeLibraryColor: null,
+      activeFilterItemTitle: null,
       totalCardsInSystem: 0,
       nextSessionDate: null,
       nextSessionCount: 0,
@@ -199,12 +204,17 @@ export const useStudyStore = create<StudyState>((set, get) => ({
         }
       }
 
+      const filterItem = libraryItemId
+        ? items.find((it) => it?.id === libraryItemId)
+        : null;
+
       set({
         sourceContexts: contexts,
         accentColors: colors,
         libraryNames: names,
         activeLibraryName: firstName,
         activeLibraryColor: firstColor,
+        activeFilterItemTitle: filterItem?.title ?? null,
       });
     })();
   },
