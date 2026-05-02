@@ -8,7 +8,7 @@ interface ReviewHeatmapProps {
   activityByDay: Record<string, number>;
 }
 
-const COLORS = ["#EDEDEA", "#C4BFB8", "#8C857C", "#4A443F", "#1A1814"];
+const LEGEND_OPACITIES = [0.12, 0.3, 0.55, 0.78, 1];
 
 export default function ReviewHeatmap({ activityByDay }: ReviewHeatmapProps) {
   return (
@@ -16,7 +16,7 @@ export default function ReviewHeatmap({ activityByDay }: ReviewHeatmapProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.12 }}
-      className="flex w-full flex-col gap-4 rounded-[12px] border border-[#E8E5E0] bg-white p-6"
+      className="flex w-full flex-col gap-3 rounded-[12px] border border-[#E8E5E0] bg-white p-4"
     >
       <div className="flex w-full items-center justify-between">
         <span
@@ -27,11 +27,11 @@ export default function ReviewHeatmap({ activityByDay }: ReviewHeatmapProps) {
         </span>
         <div className="flex items-center gap-1">
           <span className="text-[11px] text-[#9C9690]">Less</span>
-          {COLORS.map((color) => (
+          {LEGEND_OPACITIES.map((opacity) => (
             <div
-              key={color}
+              key={opacity}
               className="size-[10px] rounded-[2px]"
-              style={{ backgroundColor: color }}
+              style={{ backgroundColor: "var(--brand)", opacity }}
             />
           ))}
           <span className="text-[11px] text-[#9C9690]">More</span>
