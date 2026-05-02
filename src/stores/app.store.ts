@@ -15,6 +15,8 @@ interface AppState {
   sidebarCollapsed: boolean;
   libraryFocusItemId: string | null;
   editorItemId: string | null;
+  studyFilterItemId: string | null;
+  setStudyFilterItemId: (id: string | null) => void;
   setActiveView: (view: ActiveView) => void;
   setSettingsOpen: (open: boolean) => void;
   setCommandPaletteOpen: (open: boolean) => void;
@@ -33,6 +35,7 @@ export const useAppStore = create<AppState>((set) => ({
       : false,
   libraryFocusItemId: null,
   editorItemId: null,
+  studyFilterItemId: null,
   setActiveView: (view) => set({ activeView: view }),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
@@ -44,4 +47,5 @@ export const useAppStore = create<AppState>((set) => ({
   },
   setLibraryFocusItemId: (id) => set({ libraryFocusItemId: id }),
   setEditorItemId: (id) => set({ editorItemId: id }),
+  setStudyFilterItemId: (id) => set({ studyFilterItemId: id }),
 }));
