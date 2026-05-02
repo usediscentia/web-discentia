@@ -45,3 +45,14 @@ export interface WeekDayData {
   dotCount: number;    // 0–8, proportional
   status: "today" | "completed" | "pending" | "heavy";
 }
+
+export interface WeakSpot {
+  libraryItemId: string;
+  itemTitle: string;
+  libraryName: string;
+  libraryColor: string;
+  cardCount: number;
+  avgEaseFactor: number; // 1.3–2.5; lower = weaker
+  totalLapses: number;
+  weakScore: number; // 0.0–1.0; higher = weaker
+}
