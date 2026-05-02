@@ -26,9 +26,9 @@ interface CardOptionAnimProps {
 }
 
 const OPTIONS: CardSelectorOption[] = [
-  { amount: 5, label: "Just a few", cards: 1 },
-  { amount: 10, label: "Small deck", cards: 2 },
-  { amount: 20, label: "Full stack", cards: 4 },
+  { amount: 1, label: "Just one", cards: 1 },
+  { amount: 5, label: "A few", cards: 2 },
+  { amount: 10, label: "Small deck", cards: 4 },
 ];
 
 function MiniCardStack({
@@ -130,9 +130,10 @@ function CardOption({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.7, opacity: 0 }}
             transition={{ type: "spring", visualDuration: 0.18, bounce: 0.2 }}
-            className="absolute right-2 top-2 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#1A1814]"
+            className="absolute right-2 top-2 flex h-[18px] w-[18px] items-center justify-center rounded-full"
+              style={{ backgroundColor: "var(--brand)" }}
           >
-            <Check size={10} className="text-white" strokeWidth={2.5} />
+            <Check size={10} strokeWidth={2.5} style={{ color: "var(--brand-foreground)" }} />
           </motion.div>
         )}
       </AnimatePresence>
