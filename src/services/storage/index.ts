@@ -769,4 +769,75 @@ export const StorageService = {
       bestStreak,
     };
   },
+
+  async getDueCardsByLibraryItem(libraryItemId: string): Promise<SRSCard[]> {
+    const now = Date.now();
+    const cards = await getDB()
+      .srsCards.where("libraryItemId")
+      .equals(libraryItemId)
+      .toArray();
+
+    const due = cards.filter((c) => c.nextReviewDate <= now);
+    // If none are due yet, return all cards for the item so the user can drill anyway
+    const result = due.length > 0 ? due : cards;
+
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  },
+
+  async getWeakSpots(): Promise<import("@/types/dashboard").WeakSpot[]> {
+    const db = getDB();
+
+    const [allCards, libraryItems, libraries] = await Promise.all([
+      db.srsCards.toArray(),
+      db.libraryItems.toArray(),
+      db.libraries.toArray(),
+    ]);
+
+    const itemById = new Map(libraryItems.map((i) => [i.id, i]));
+    const libraryById = new Map(libraries.map((l) => [l.id, l]));
+
+    const reviewed = allCards.filter((c) => c.libraryItemId && c.repetitions > 0);
+
+    const groups = new Map<string, { easeSums: number[]; lapses: number }>();
+    for (const card of reviewed) {
+      const id = card.libraryItemId!;
+      const g = groups.get(id) ?? { easeSums: [], lapses: 0 };
+      g.easeSums.push(card.easeFactor);
+      g.lapses += card.lapses;
+      groups.set(id, g);
+    }
+
+    const spots: import("@/types/dashboard").WeakSpot[] = [];
+
+    for (const [libraryItemId, { easeSums, lapses }] of groups) {
+      if (easeSums.length < 2) continue;
+
+      const item = itemById.get(libraryItemId);
+      if (!item) continue;
+      const library = libraryById.get(item.libraryId);
+
+      const avgEase = easeSums.reduce((a, b) => a + b, 0) / easeSums.length;
+      const easeScore = Math.max(0, Math.min(1, (2.5 - avgEase) / (2.5 - 1.3)));
+      const lapsesPerCard = lapses / easeSums.length;
+      const lapseScore = Math.min(1, lapsesPerCard / 10);
+      const weakScore = easeScore * 0.7 + lapseScore * 0.3;
+
+      spots.push({
+        libraryItemId,
+        itemTitle: item.title,
+        libraryName: library?.name ?? "General",
+        libraryColor: library?.color ?? "#34D399",
+        cardCount: easeSums.length,
+        avgEaseFactor: Math.round(avgEase * 100) / 100,
+        totalLapses: lapses,
+        weakScore: Math.round(weakScore * 100) / 100,
+      });
+    }
+
+    return spots.sort((a, b) => b.weakScore - a.weakScore).slice(0, 5);
+  },
 };
