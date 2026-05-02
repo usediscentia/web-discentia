@@ -40,6 +40,7 @@ export function TodayScreen() {
     startReview,
     accentColors,
     libraryNames,
+    activeFilterItemTitle,
   } = useStudyStore();
 
   const setActiveView = useAppStore((s) => s.setActiveView);
@@ -178,6 +179,12 @@ export function TodayScreen() {
           <span className="text-sm text-muted-foreground mt-2">
             {cards.length === 1 ? "card para revisar hoje" : "cards para revisar hoje"}
           </span>
+          {activeFilterItemTitle && (
+            <span className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 text-[11px] font-medium rounded-full bg-[#F0F0EC] text-[#6B6560]">
+              <BookOpen size={10} />
+              {activeFilterItemTitle}
+            </span>
+          )}
         </motion.div>
 
         {/* Progress bar — only show if some reviewed today */}
