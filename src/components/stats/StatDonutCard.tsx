@@ -2,8 +2,8 @@
 
 const ROSE = "#FB7185";
 const TRACK = "#E8E5E0";
-const SIZE = 84;
-const STROKE = 14;
+const SIZE = 52;
+const STROKE = 7;
 const RADIUS = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
@@ -21,8 +21,8 @@ export function StatDonutCard({ label, value, fill }: StatDonutCardProps) {
   const center = SIZE / 2;
 
   return (
-    <div className="flex h-[160px] flex-col items-center justify-center gap-2 rounded-[12px] border border-[#E8E5E0] bg-white px-5 py-3">
-      <div className="relative flex items-center justify-center">
+    <div className="flex h-[88px] items-center gap-3 rounded-[12px] border border-[#E8E5E0] bg-white px-4">
+      <div className="relative shrink-0 flex items-center justify-center">
         <svg
           width={SIZE}
           height={SIZE}
@@ -49,11 +49,16 @@ export function StatDonutCard({ label, value, fill }: StatDonutCardProps) {
             transform={`rotate(-90 ${center} ${center})`}
           />
         </svg>
-        <span className="absolute text-[16px] font-bold leading-none tracking-tight text-[#1A1814] tabular-nums">
+        <span className="absolute text-[10px] font-bold leading-none text-[#1A1814] tabular-nums">
+          {clamped}%
+        </span>
+      </div>
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <span className="text-[11px] text-[#9C9690] truncate">{label}</span>
+        <span className="text-[18px] font-bold leading-tight tracking-tight text-[#1A1814] tabular-nums truncate">
           {value}
         </span>
       </div>
-      <span className="text-[12px] font-medium text-[#9C9690]">{label}</span>
     </div>
   );
 }
