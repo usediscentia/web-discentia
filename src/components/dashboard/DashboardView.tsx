@@ -10,6 +10,7 @@ import DashboardStatsRow from "./DashboardStats";
 import ReviewHeatmap from "./ReviewHeatmap";
 import LibraryReviews from "./LibraryReviews";
 import ReviewForecast from "./ReviewForecast";
+import WeakSpotsWidget from "./WeakSpotsWidget";
 import { buildWeeklyData } from "@/lib/dashboard-utils";
 import { useAppStore } from "@/stores/app.store";
 
@@ -56,6 +57,7 @@ function DashboardSkeleton() {
           <Skeleton className="h-[220px] flex-1 rounded-[12px]" />
           <Skeleton className="h-[220px] flex-1 rounded-[12px]" />
         </div>
+        <Skeleton className="h-[220px] w-full rounded-[12px]" />
       </div>
     </div>
   );
@@ -155,6 +157,15 @@ export default function DashboardView() {
           <LibraryReviews libraries={insights.dueByLibrary} />
           <ReviewForecast upcoming={insights.upcomingReviews} />
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="flex w-full gap-4"
+        >
+          <WeakSpotsWidget />
+        </motion.div>
       </div>
     </div>
   );
