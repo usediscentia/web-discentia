@@ -14,6 +14,15 @@ No test framework is configured. There are no test files.
 
 Build may fail offline because Next.js fetches Google Fonts (`Inter`) during build.
 
+## Accent Color
+
+When the user says "accent color", they mean the color selected in Settings → Appearance. It is **not** the shadcn `--accent` CSS var.
+
+- CSS var: `var(--brand)` (also `--brand-hover`, `--brand-foreground`, `--brand-soft`, `--brand-ring`)
+- Zustand: `useAppearanceStore((s) => s.accentColor)` — use when you need the raw hex (e.g. for SVG/canvas color scales)
+- Tailwind: `bg-[var(--brand)]`, `text-[var(--brand)]`, etc.
+- Never hardcode a color when the user asks to use "the accent color"
+
 ## Architecture
 
 Discentia is a **local-first study app** — an SPA built on Next.js 16 + React 19. All components are `'use client'`. There is no server-side rendering or API routes.
