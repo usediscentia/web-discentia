@@ -10,6 +10,7 @@ import { ActivityChartCard } from "@/components/ui/activity-chart-card";
 import ReviewHeatmap from "@/components/dashboard/ReviewHeatmap";
 import LibraryReviews from "@/components/dashboard/LibraryReviews";
 import ReviewForecast from "@/components/dashboard/ReviewForecast";
+import WeakSpotsWidget from "@/components/dashboard/WeakSpotsWidget";
 import { buildWeeklyData } from "@/lib/dashboard-utils";
 
 function StatsSkeleton() {
@@ -36,6 +37,7 @@ function StatsSkeleton() {
           <Skeleton className="h-[220px] flex-1 rounded-[12px]" />
           <Skeleton className="h-[220px] flex-1 rounded-[12px]" />
         </div>
+        <Skeleton className="h-[220px] w-full rounded-[12px]" />
       </div>
     </div>
   );
@@ -149,6 +151,15 @@ export default function StatsView() {
           <LibraryReviews libraries={insights.dueByLibrary} />
           <ReviewForecast upcoming={insights.upcomingReviews} />
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="flex w-full gap-4"
+        >
+          <WeakSpotsWidget />
+        </motion.div>
       </div>
     </div>
   );
