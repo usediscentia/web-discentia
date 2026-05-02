@@ -5,12 +5,12 @@ import { Group } from "@visx/group";
 import { HeatmapRect } from "@visx/heatmap";
 import { scaleLinear } from "@visx/scale";
 import { AnimatePresence, motion } from "motion/react";
+import { useAppearanceStore } from "@/stores/appearance.store";
 
 const TOTAL_WEEKS = 26;
 const GAP = 3;
 const MONTH_LABEL_HEIGHT = 18;
 const COLORS_LIGHT = "#EDEDEA";
-const COLORS_DARK = "#1A1814";
 
 interface BinDatum {
   bin: number;
@@ -37,6 +37,7 @@ interface HeatmapChartProps {
 }
 
 export default function HeatmapChart({ activityByDay, width }: HeatmapChartProps) {
+  const accentColor = useAppearanceStore((s) => s.accentColor);
   const [tooltip, setTooltip] = useState<{
     x: number;
     y: number;
@@ -89,7 +90,7 @@ export default function HeatmapChart({ activityByDay, width }: HeatmapChartProps
   const svgHeight = MONTH_LABEL_HEIGHT + 7 * (cellSize + GAP);
 
   const rectColorScale = scaleLinear<string>({
-    range: [COLORS_LIGHT, COLORS_DARK],
+    range: [COLORS_LIGHT, accentColor],
     domain: [0, colorMax || 1],
   });
 
