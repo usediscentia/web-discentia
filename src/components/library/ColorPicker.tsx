@@ -1,49 +1,101 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { LIBRARY_COLORS } from "@/lib/colors";
 
 interface ColorPickerProps {
   value: string;
   onChange: (hex: string) => void;
+  footer?: (colorName: string | undefined) => React.ReactNode;
 }
 
-export default function ColorPicker({ value, onChange }: ColorPickerProps) {
-  const selectedColor = LIBRARY_COLORS.find((c) => c.hex === value);
+export default function ColorPicker({ value, onChange, footer }: ColorPickerProps) {
+  const [hovered, setHovered] = useState<string | null>(null);
+
+  const activeHex = hovered ?? value;
+  const activeColor = LIBRARY_COLORS.find((c) => c.hex === activeHex);
 
   return (
-    <div>
-      <div className="grid grid-cols-6 gap-2.5">
+    <div className="select-none">
+      <div className="flex items-end gap-px">
         {LIBRARY_COLORS.map((color) => {
           const isSelected = value === color.hex;
+          const isActive = hovered === color.hex || isSelected;
+
           return (
-            <button
+            <div
               key={color.hex}
-              type="button"
+              className="flex-1 relative h-14 cursor-pointer"
+              onPointerEnter={() => setHovered(color.hex)}
+              onPointerLeave={() => setHovered(null)}
               onClick={() => onChange(color.hex)}
-              className="w-8 h-8 rounded-full cursor-pointer transition-transform hover:scale-110 flex items-center justify-center"
-              style={{
-                backgroundColor: color.hex,
-                boxShadow: isSelected
-                  ? `0 0 0 2px white, 0 0 0 4px ${color.hex}`
-                  : undefined,
-              }}
-              title={color.name}
             >
-              {isSelected && <Check size={14} className="text-white drop-shadow-sm" />}
-            </button>
+              <motion.div
+                animate={{ y: isActive ? -10 : 0 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className="absolute inset-x-0 bottom-0 h-14 rounded-t-[3px] overflow-hidden"
+                style={{ backgroundColor: color.hex, pointerEvents: "none" }}
+              >
+                {isSelected && (
+                  <motion.div
+                    layoutId="spine-selected"
+                    className="absolute bottom-0 inset-x-0 h-[3px] bg-white/60"
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  />
+                )}
+              </motion.div>
+            </div>
           );
         })}
       </div>
-      {selectedColor && (
-        <p className="mt-3 text-xs text-[#888] flex items-center gap-1.5">
-          Selected:
-          <span
-            className="w-2.5 h-2.5 rounded-full inline-block"
-            style={{ backgroundColor: selectedColor.hex }}
-          />
-          {selectedColor.name}
-        </p>
+
+      {/* shelf board */}
+      <div className="h-[3px] rounded-sm bg-[#d1d5db]" />
+
+      {footer ? (
+        <div className="mt-3 flex items-center justify-between">
+          <AnimatePresence mode="wait">
+            {activeColor && (
+              <motion.span
+                key={activeColor.hex}
+                initial={{ opacity: 0, y: 3 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -3 }}
+                transition={{ duration: 0.1 }}
+                className="text-xs text-[#888] flex items-center gap-1.5"
+              >
+                <span
+                  className="w-2 h-2 rounded-full inline-block shrink-0"
+                  style={{ backgroundColor: activeColor.hex }}
+                />
+                {activeColor.name}
+              </motion.span>
+            )}
+          </AnimatePresence>
+          {footer(activeColor?.name)}
+        </div>
+      ) : (
+        <div className="h-5 mt-2 flex items-center">
+          <AnimatePresence mode="wait">
+            {activeColor && (
+              <motion.span
+                key={activeColor.hex}
+                initial={{ opacity: 0, y: 3 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -3 }}
+                transition={{ duration: 0.1 }}
+                className="text-xs text-[#888] flex items-center gap-1.5"
+              >
+                <span
+                  className="w-2 h-2 rounded-full inline-block shrink-0"
+                  style={{ backgroundColor: activeColor.hex }}
+                />
+                {activeColor.name}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
       )}
     </div>
   );
