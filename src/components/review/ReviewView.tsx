@@ -128,7 +128,8 @@ export default function ReviewView() {
   }, []);
 
   useEffect(() => {
-    loadSessionData();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadSessionData();
   }, [loadSessionData]);
 
   const current = cards[index];
