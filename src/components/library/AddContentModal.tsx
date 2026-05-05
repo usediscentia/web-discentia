@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef, type ChangeEvent, type DragEvent } from "react";
 import {
-  FileText,
-  Upload,
-  Link,
-  Camera,
-  ArrowLeft,
-} from "lucide-react";
+  useState,
+  useRef,
+  useEffect,
+  type ChangeEvent,
+  type DragEvent,
+} from "react";
+import { FileText, Upload, PenLine, ArrowLeft, Clipboard, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Dialog,
@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-type Step = "options" | "paste" | "upload";
+type Step = "options" | "paste" | "upload" | "new-markdown";
 
 interface AddContentModalProps {
   open: boolean;
@@ -32,46 +32,48 @@ interface AddContentModalProps {
     type: "text" | "markdown";
   }) => Promise<void>;
   onAddFiles: (files: File[]) => Promise<void>;
+  onCreateMarkdown: (title: string) => Promise<void>;
 }
+
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const STEP_SPRING = { type: "spring", stiffness: 280, damping: 32, opacity: { duration: 0.15, ease: "easeOut" } } as const;
 
 const OPTIONS = [
   {
     id: "paste" as const,
     icon: FileText,
-    color: "#34D399",
-    bg: "#ECFDF5",
+    color: "#10B981",
+    bg: "#F0FDF4",
     title: "Paste Text",
     description: "Paste notes, sources, or any written content",
-    enabled: true,
   },
   {
     id: "upload" as const,
     icon: Upload,
-    color: "#60A5FA",
+    color: "#3B82F6",
     bg: "#EFF6FF",
     title: "Upload File",
     description: "PDF, TXT, or Markdown files",
-    enabled: true,
   },
   {
-    id: "url" as const,
-    icon: Link,
-    color: "#A78BFA",
+    id: "new-markdown" as const,
+    icon: PenLine,
+    color: "#8B5CF6",
     bg: "#F5F3FF",
-    title: "Import from URL",
-    description: "Fetch content from a web page or article",
-    enabled: false,
-  },
-  {
-    id: "scan" as const,
-    icon: Camera,
-    color: "#FBBF24",
-    bg: "#FFFBEB",
-    title: "Scan Photo",
-    description: "Extract text from an image or photo",
-    enabled: false,
+    title: "New Markdown",
+    description: "Create a blank document and open the editor",
   },
 ];
+
+function looksLikeMarkdown(text: string) {
+  return /^#{1,6}\s|\*\*[^*]+\*\*|^[-*+]\s|^```|^\[.+\]\(.+\)/m.test(text);
+}
+
+function contentStats(text: string) {
+  const lines = text.split("\n").length;
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  return { lines, words };
+}
 
 export default function AddContentModal({
   open,
@@ -80,22 +82,54 @@ export default function AddContentModal({
   isMutating,
   onAddNote,
   onAddFiles,
+  onCreateMarkdown,
 }: AddContentModalProps) {
   const [step, setStep] = useState<Step>("options");
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
+  const [isFirstOptions, setIsFirstOptions] = useState(true);
 
   const [noteTitle, setNoteTitle] = useState("");
   const [noteContent, setNoteContent] = useState("");
   const [noteType, setNoteType] = useState<"text" | "markdown">("text");
+  const [mdTitle, setMdTitle] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
 
+  // Global paste listener when paste step is active
+  useEffect(() => {
+    if (step !== "paste" || !open) return;
+
+    const handler = (e: ClipboardEvent) => {
+      const text = e.clipboardData?.getData("text");
+      if (!text?.trim()) return;
+      setNoteContent(text);
+      if (looksLikeMarkdown(text)) setNoteType("markdown");
+    };
+
+    document.addEventListener("paste", handler);
+    return () => document.removeEventListener("paste", handler);
+  }, [step, open]);
+
+  const goToStep = (next: Exclude<Step, "options">) => {
+    setDirection("forward");
+    setStep(next);
+  };
+
+  const goBack = () => {
+    setDirection("back");
+    setIsFirstOptions(false);
+    setStep("options");
+  };
+
   const reset = () => {
     setStep("options");
+    setIsFirstOptions(true);
     setNoteTitle("");
     setNoteContent("");
     setNoteType("text");
+    setMdTitle("");
     setUploadingFiles([]);
     setDragOver(false);
   };
@@ -108,6 +142,12 @@ export default function AddContentModal({
   const handleSaveNote = async () => {
     if (!noteContent.trim()) return;
     await onAddNote({ title: noteTitle, content: noteContent, type: noteType });
+    reset();
+    onOpenChange(false);
+  };
+
+  const handleCreateMarkdown = async () => {
+    await onCreateMarkdown(mdTitle);
     reset();
     onOpenChange(false);
   };
@@ -142,6 +182,13 @@ export default function AddContentModal({
 
   if (!activeLibraryId) return null;
 
+  const stepTitle = {
+    options: "Add Content",
+    paste: "Paste Text",
+    upload: "Upload File",
+    "new-markdown": "New Markdown",
+  }[step];
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -149,66 +196,59 @@ export default function AddContentModal({
           <DialogTitle className="flex items-center gap-2">
             {step !== "options" && (
               <button
-                onClick={() => setStep("options")}
-                className="cursor-pointer text-[#999] hover:text-[#333] transition-colors"
+                onClick={goBack}
+                className="cursor-pointer text-[#999] hover:text-[#333] transition-colors active:scale-95"
               >
-                <ArrowLeft size={18} />
+                <ArrowLeft size={17} />
               </button>
             )}
-            {step === "options" && "Add Content"}
-            {step === "paste" && "Paste Text"}
-            {step === "upload" && "Upload File"}
+            {stepTitle}
           </DialogTitle>
           {step === "options" && (
             <p className="text-sm text-[#888] font-normal">
-              Add new content to your library from various sources.
+              Choose how to add content to your library.
             </p>
           )}
         </DialogHeader>
 
-        <AnimatePresence mode="wait">
+        <div className="overflow-hidden">
+        <AnimatePresence mode="popLayout">
           {step === "options" && (
             <motion.div
               key="options"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="space-y-2"
+              initial={{ opacity: 0, x: direction === "back" ? -24 : 0 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction === "forward" ? -20 : 0 }}
+              transition={STEP_SPRING}
+              className="space-y-1.5"
             >
               {OPTIONS.map((opt, i) => {
                 const Icon = opt.icon;
                 return (
                   <motion.button
                     key={opt.id}
-                    initial={{ opacity: 0, y: 8 }}
+                    initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05, duration: 0.2 }}
-                    disabled={!opt.enabled}
-                    onClick={() => opt.enabled && setStep(opt.id as Step)}
-                    className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-colors text-left ${
-                      opt.enabled
-                        ? "border-[#E5E7EB] hover:bg-[#F9FAFB] cursor-pointer"
-                        : "border-[#F1F1F1] opacity-50 cursor-not-allowed"
-                    }`}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{
+                      delay: isFirstOptions ? i * 0.04 : 0,
+                      duration: 0.18,
+                      ease: EASE_OUT,
+                      scale: { duration: 0.12, ease: "easeOut" },
+                    }}
+                    onClick={() => goToStep(opt.id)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl border border-[#E5E7EB] hover:bg-[#F9FAFB] cursor-pointer text-left transition-colors"
                   >
                     <div
                       className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                       style={{ backgroundColor: opt.bg }}
                     >
-                      <Icon size={18} style={{ color: opt.color }} />
+                      <Icon size={17} style={{ color: opt.color }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-[#1A1A1A]">
-                          {opt.title}
-                        </span>
-                        {!opt.enabled && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#F3F4F6] text-[#9CA3AF] font-medium">
-                            Coming Soon
-                          </span>
-                        )}
-                      </div>
+                      <p className="text-sm font-medium text-[#1A1A1A]">
+                        {opt.title}
+                      </p>
                       <p className="text-xs text-[#888] mt-0.5">
                         {opt.description}
                       </p>
@@ -222,10 +262,10 @@ export default function AddContentModal({
           {step === "paste" && (
             <motion.div
               key="paste"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.15 }}
+              exit={{ opacity: 0, x: 24 }}
+              transition={STEP_SPRING}
               className="space-y-3"
             >
               <div>
@@ -237,56 +277,99 @@ export default function AddContentModal({
                   className="mt-1"
                 />
               </div>
-              <div>
-                <Label>Content</Label>
-                <textarea
-                  value={noteContent}
-                  onChange={(e) => setNoteContent(e.target.value)}
-                  placeholder="Paste your text or markdown here..."
-                  className="mt-1 w-full min-h-36 rounded-md border border-[#DDD] bg-white px-3 py-2 text-sm outline-none focus:border-[#999] transition-colors resize-y"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  className={`px-2.5 py-1 rounded-md text-xs cursor-pointer border transition-colors ${
-                    noteType === "text"
-                      ? "bg-[#111] text-white border-[#111]"
-                      : "bg-white text-[#555] border-[#DDD] hover:border-[#BBB]"
-                  }`}
-                  onClick={() => setNoteType("text")}
-                >
-                  Text
-                </button>
-                <button
-                  className={`px-2.5 py-1 rounded-md text-xs cursor-pointer border transition-colors ${
-                    noteType === "markdown"
-                      ? "bg-[#111] text-white border-[#111]"
-                      : "bg-white text-[#555] border-[#DDD] hover:border-[#BBB]"
-                  }`}
-                  onClick={() => setNoteType("markdown")}
-                >
-                  Markdown
-                </button>
-              </div>
-              <div className="flex justify-end pt-1">
-                <Button
-                  onClick={handleSaveNote}
-                  disabled={!noteContent.trim() || isMutating}
-                  className="cursor-pointer"
-                >
-                  Save
-                </Button>
-              </div>
+
+              {/* Paste zone */}
+              <AnimatePresence mode="wait">
+                {!noteContent ? (
+                  <motion.div
+                    key="empty"
+                    initial={{ opacity: 0, scale: 0.97 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.97 }}
+                    transition={{ duration: 0.15, ease: EASE_OUT }}
+                    className="flex flex-col items-center justify-center gap-3 py-10 rounded-xl border-2 border-dashed border-[#E0E0E0] bg-[#FAFAFA] select-none"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-white border border-[#E5E5E5] flex items-center justify-center shadow-sm">
+                      <Clipboard size={18} className="text-[#666]" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-[#333]">
+                        Press{" "}
+                        <kbd className="px-1.5 py-0.5 rounded-md bg-white border border-[#D0D0D0] text-[11px] font-mono text-[#444] shadow-[0_1px_0_#ccc]">
+                          ⌘V
+                        </kbd>{" "}
+                        to paste
+                      </p>
+                      <p className="text-xs text-[#AAA] mt-1">
+                        Content will appear here automatically
+                      </p>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="filled"
+                    initial={{ opacity: 0, scale: 0.97 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.97 }}
+                    transition={{ duration: 0.15, ease: EASE_OUT }}
+                    className="rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] overflow-hidden"
+                  >
+                    {/* Stats bar */}
+                    <div className="flex items-center justify-between px-3 py-2 border-b border-[#EFEFEF] bg-white">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-[#555] font-medium">
+                          {contentStats(noteContent).lines}{" "}
+                          <span className="text-[#AAA] font-normal">lines</span>
+                        </span>
+                        <span className="text-[#DDD]">·</span>
+                        <span className="text-xs text-[#555] font-medium">
+                          {contentStats(noteContent).words}{" "}
+                          <span className="text-[#AAA] font-normal">words</span>
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setNoteContent("");
+                            setNoteType("text");
+                          }}
+                          className="flex items-center gap-1 text-[11px] text-[#999] hover:text-[#555] transition-colors cursor-pointer"
+                        >
+                          <RotateCcw size={11} />
+                          Paste again
+                        </button>
+                        <Button
+                          onClick={handleSaveNote}
+                          disabled={isMutating}
+                          size="sm"
+                          className="cursor-pointer h-6 text-xs px-2.5"
+                        >
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Preview */}
+                    <div className="relative px-3 py-2.5 max-h-36 overflow-hidden">
+                      <pre className="text-xs text-[#555] font-mono whitespace-pre-wrap break-all leading-relaxed">
+                        {noteContent.slice(0, 600)}
+                        {noteContent.length > 600 && "…"}
+                      </pre>
+                      <div className="absolute bottom-0 inset-x-0 h-8 bg-gradient-to-t from-[#FAFAFA] to-transparent pointer-events-none" />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
 
           {step === "upload" && (
             <motion.div
               key="upload"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.15 }}
+              exit={{ opacity: 0, x: 24 }}
+              transition={STEP_SPRING}
               className="space-y-3"
             >
               <div
@@ -296,7 +379,7 @@ export default function AddContentModal({
                 onClick={() => fileInputRef.current?.click()}
                 className={`flex flex-col items-center justify-center gap-2 p-8 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${
                   dragOver
-                    ? "border-[#60A5FA] bg-[#EFF6FF]"
+                    ? "border-[#3B82F6] bg-[#EFF6FF]"
                     : "border-[#DDD] hover:border-[#BBB] bg-[#FAFAFA]"
                 }`}
               >
@@ -310,9 +393,9 @@ export default function AddContentModal({
                   </>
                 ) : (
                   <>
-                    <Upload size={24} className="text-[#999]" />
+                    <Upload size={22} className="text-[#999]" />
                     <p className="text-sm text-[#666]">
-                      Drag & drop files here or{" "}
+                      Drag & drop or{" "}
                       <span className="text-[#111] font-medium underline">
                         browse
                       </span>
@@ -333,7 +416,44 @@ export default function AddContentModal({
               />
             </motion.div>
           )}
+
+          {step === "new-markdown" && (
+            <motion.div
+              key="new-markdown"
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 24 }}
+              transition={STEP_SPRING}
+              className="space-y-3"
+            >
+              <div>
+                <Label>Title</Label>
+                <Input
+                  value={mdTitle}
+                  onChange={(e) => setMdTitle(e.target.value)}
+                  placeholder="Untitled"
+                  className="mt-1"
+                  onKeyDown={(e) => e.key === "Enter" && handleCreateMarkdown()}
+                  autoFocus
+                />
+              </div>
+              <p className="text-xs text-[#999]">
+                A blank markdown document will be created and opened in the
+                editor.
+              </p>
+              <div className="flex justify-end pt-1">
+                <Button
+                  onClick={handleCreateMarkdown}
+                  disabled={isMutating}
+                  className="cursor-pointer"
+                >
+                  Create & Open
+                </Button>
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
+        </div>
       </DialogContent>
     </Dialog>
   );

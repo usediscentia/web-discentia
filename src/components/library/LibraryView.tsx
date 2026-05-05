@@ -77,11 +77,6 @@ export default function LibraryView() {
   // Overlay renders from snapshot during return fade-out, otherwise from live dragState
   const overlayData = overlaySnapshot ?? dragState;
 
-  const selectedLibraryName = useMemo(() => {
-    if (!activeLibraryId) return "All libraries";
-    return librariesMap[activeLibraryId]?.name || "Library";
-  }, [activeLibraryId, librariesMap]);
-
   // ── Drag handlers ─────────────────────────────────────────────────────────
   const handleDragStart = useCallback(
     (
@@ -237,6 +232,20 @@ export default function LibraryView() {
       content: data.content,
       type: data.type,
     });
+  };
+
+  const handleCreateMarkdown = async (title: string) => {
+    if (!activeLibraryId) return;
+    const created = await addTextItem({
+      libraryId: activeLibraryId,
+      title: title.trim() || "Untitled",
+      content: `# ${title.trim() || "Untitled"}\n\n`,
+      type: "markdown",
+    });
+    if (created) {
+      setEditorItemId(created.id);
+      setActiveView("editor");
+    }
   };
 
   const handleAddFiles = async (files: File[]) => {
@@ -420,86 +429,94 @@ export default function LibraryView() {
         )}
       </AnimatePresence>
       <div className="flex flex-col h-full overflow-hidden">
-        <div className="px-8 pt-8 pb-4 border-b border-[#ECECEC] bg-white">
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="text-2xl font-semibold text-[#1A1A1A]">My Libraries</h1>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setCreateOpen(true)}
-                className="cursor-pointer"
-              >
-                <Plus size={14} />
-                New Library
-              </Button>
-              <Button
-                onClick={() => setAddOpen(true)}
-                disabled={!activeLibraryId}
-                className="cursor-pointer"
-              >
-                Add Content
-              </Button>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <motion.button
-              onClick={() => setActiveLibraryId(null)}
-              whileTap={{ scale: 0.95 }}
-              transition={{ scale: { duration: 0.12, ease: [0.23, 1, 0.32, 1] } }}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer ${
-                activeLibraryId === null
-                  ? "bg-[#111] text-white border-[#111]"
-                  : "bg-white text-[#555] border-[#E5E7EB] hover:bg-[#F5F5F5] hover:border-[#CCC]"
-              }`}
-              style={{ transition: "background-color 180ms ease-out, border-color 180ms ease-out, color 180ms ease-out" }}
-            >
-              All
-            </motion.button>
-            {libraries.map((library) => {
-              const isActive = activeLibraryId === library.id;
-              return (
+        <div className="px-8 pt-7 pb-4 border-b border-[#ECECEC] bg-white">
+          <div className="flex items-start gap-3">
+            {/* Left: title + pills */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-semibold text-[#1A1A1A]">My Libraries</h1>
+              <div className="mt-4 flex items-center gap-2 flex-wrap">
                 <motion.button
-                  key={library.id}
-                  onClick={() => setActiveLibraryId(library.id)}
+                  onClick={() => setActiveLibraryId(null)}
                   whileTap={{ scale: 0.95 }}
                   transition={{ scale: { duration: 0.12, ease: [0.23, 1, 0.32, 1] } }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer flex items-center gap-1.5 ${
-                    isActive
-                      ? "text-[#111]"
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer ${
+                    activeLibraryId === null
+                      ? "text-[var(--brand-foreground)] border-[var(--brand)]"
                       : "bg-white text-[#555] border-[#E5E7EB] hover:bg-[#F5F5F5] hover:border-[#CCC]"
                   }`}
                   style={{
                     transition: "background-color 180ms ease-out, border-color 180ms ease-out, color 180ms ease-out",
-                    ...(isActive
-                      ? { backgroundColor: `${library.color}28`, borderColor: library.color }
-                      : {}),
+                    ...(activeLibraryId === null ? { backgroundColor: "var(--brand)" } : {}),
                   }}
                 >
-                  <motion.span
-                    className="size-2 rounded-full shrink-0"
-                    animate={{ scale: isActive ? 1.25 : 1 }}
-                    transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-                    style={{ backgroundColor: library.color }}
-                  />
-                  {library.name}
-                  <span className="text-[10px] opacity-60">({library.itemCount})</span>
+                  All
                 </motion.button>
-              );
-            })}
-          </div>
+                {libraries.map((library) => {
+                  const isActive = activeLibraryId === library.id;
+                  return (
+                    <motion.button
+                      key={library.id}
+                      onClick={() => setActiveLibraryId(library.id)}
+                      whileTap={{ scale: 0.95 }}
+                      transition={{ scale: { duration: 0.12, ease: [0.23, 1, 0.32, 1] } }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer flex items-center gap-1.5 ${
+                        isActive
+                          ? "text-[#111]"
+                          : "bg-white text-[#555] border-[#E5E7EB] hover:bg-[#F5F5F5] hover:border-[#CCC]"
+                      }`}
+                      style={{
+                        transition: "background-color 180ms ease-out, border-color 180ms ease-out, color 180ms ease-out",
+                        ...(isActive
+                          ? { backgroundColor: `${library.color}28`, borderColor: library.color }
+                          : {}),
+                      }}
+                    >
+                      <motion.span
+                        className="size-2 rounded-full shrink-0"
+                        animate={{ scale: isActive ? 1.25 : 1 }}
+                        transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                        style={{ backgroundColor: library.color }}
+                      />
+                      {library.name}
+                      <span className="text-[10px] opacity-60">({library.itemCount})</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
 
-          <div className="mt-4 relative w-full max-w-2xl">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
-            />
-            <Input
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder={`Search in ${selectedLibraryName}`}
-              className="pl-9 bg-[#F9F9F9]"
-            />
+            {/* Right: buttons + search stacked, naturally same width */}
+            <div className="flex flex-col gap-2 shrink-0">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setCreateOpen(true)}
+                  className="cursor-pointer"
+                >
+                  <Plus size={14} />
+                  New Library
+                </Button>
+                <Button
+                  onClick={() => setAddOpen(true)}
+                  disabled={!activeLibraryId}
+                  className="cursor-pointer"
+                >
+                  Add Content
+                </Button>
+              </div>
+              <div className="relative w-full">
+                <Search
+                  size={14}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
+                />
+                <Input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder={`Search…`}
+                  className="pl-8 bg-[#F9F9F9] h-8 text-xs w-full"
+                />
+              </div>
+            </div>
           </div>
 
           {error && (
@@ -580,8 +597,8 @@ export default function LibraryView() {
           <DialogHeader>
             <DialogTitle>Create Library</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <div>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
               <Label>Name</Label>
               <Input
                 value={newLibraryName}
@@ -589,21 +606,19 @@ export default function LibraryView() {
                 placeholder="Biology, History, Work..."
               />
             </div>
-            <div>
-              <Label>Color</Label>
-              <div className="mt-1">
-                <ColorPicker value={newLibraryColor} onChange={setNewLibraryColor} />
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <Button
-                onClick={handleCreateLibrary}
-                disabled={!newLibraryName.trim() || isMutating}
-                className="cursor-pointer"
-              >
-                Create
-              </Button>
-            </div>
+            <ColorPicker
+              value={newLibraryColor}
+              onChange={setNewLibraryColor}
+              footer={() => (
+                <Button
+                  onClick={handleCreateLibrary}
+                  disabled={!newLibraryName.trim() || isMutating}
+                  className="cursor-pointer"
+                >
+                  Create
+                </Button>
+              )}
+            />
           </div>
         </DialogContent>
       </Dialog>
@@ -615,6 +630,7 @@ export default function LibraryView() {
         isMutating={isMutating}
         onAddNote={handleAddNote}
         onAddFiles={handleAddFiles}
+        onCreateMarkdown={handleCreateMarkdown}
       />
 
       {activeLibraryId && (
