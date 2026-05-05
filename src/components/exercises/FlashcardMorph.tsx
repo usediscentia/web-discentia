@@ -58,7 +58,7 @@ export function FlashcardMorph({
         setTimeout(() => setCurrentIndex(currentIndex + 1), 80);
       }
     },
-    [currentIndex, knew, total, exerciseId, startTime, onComplete]
+    [cards, currentIndex, knew, total, exerciseId, startTime, onComplete]
   );
 
   const handleRestart = useCallback(() => {
