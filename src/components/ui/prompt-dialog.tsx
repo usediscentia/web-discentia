@@ -20,6 +20,7 @@ export function PromptDialog() {
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValue(options.defaultValue ?? "");
       setTimeout(() => inputRef.current?.select(), 50);
     }

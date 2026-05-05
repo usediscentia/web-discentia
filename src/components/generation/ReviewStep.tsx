@@ -44,6 +44,7 @@ export default function ReviewStep({
   // Clamp index when cards are removed
   useEffect(() => {
     if (activeCards.length > 0 && selectedIndex >= activeCards.length) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedIndex(activeCards.length - 1);
     }
   }, [activeCards.length, selectedIndex]);
