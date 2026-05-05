@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { AnimatePresence, motion } from "motion/react"
 import { BookOpen, MessageSquare, Settings, Sparkles, BarChart2 } from "lucide-react"
 import { useAppStore } from "@/stores/app.store"
 import { useProviderStore } from "@/stores/provider.store"
@@ -85,12 +86,23 @@ export default function AppShell() {
       <div className="flex h-screen overflow-hidden bg-background">
         <Sidebar />
         <main className="flex-1 min-w-0 overflow-hidden pb-[76px] md:pb-0">
-          {activeView === "chat" && <ChatView />}
-          {activeView === "library" && <LibraryView />}
-          {activeView === "editor" && <EditorView />}
-          {activeView === "study" && <StudyView />}
-          {activeView === "settings" && <SettingsPage />}
-          {activeView === "stats" && <StatsView />}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeView}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+              className="h-full"
+            >
+              {activeView === "chat" && <ChatView />}
+              {activeView === "library" && <LibraryView />}
+              {activeView === "editor" && <EditorView />}
+              {activeView === "study" && <StudyView />}
+              {activeView === "settings" && <SettingsPage />}
+              {activeView === "stats" && <StatsView />}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
       <MobileNav />
