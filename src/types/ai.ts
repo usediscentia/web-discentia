@@ -52,14 +52,14 @@ export const PROVIDER_DEFAULTS: Record<
 > = {
   openai: {
     displayName: "OpenAI",
-    models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"],
-    defaultModel: "gpt-4o",
+    models: ["gpt-5.2", "gpt-5.2-pro", "gpt-5-mini", "gpt-5-nano", "gpt-5.1", "gpt-4.1", "gpt-4.1-mini", "gpt-4o", "gpt-4o-mini", "o3", "o4-mini"],
+    defaultModel: "gpt-5.2",
     requiresApiKey: true,
   },
   anthropic: {
-    displayName: "Claude (Anthropic)",
-    models: ["claude-sonnet-4-5-20250929"],
-    defaultModel: "claude-sonnet-4-5-20250929",
+    displayName: "Anthropic",
+    models: ["claude-opus-4-1-20250805", "claude-sonnet-4-20250514", "claude-3-7-sonnet-latest", "claude-3-5-haiku-latest"],
+    defaultModel: "claude-sonnet-4-20250514",
     requiresApiKey: true,
   },
   ollama: {
@@ -71,12 +71,15 @@ export const PROVIDER_DEFAULTS: Record<
   openrouter: {
     displayName: "OpenRouter",
     models: [
+      "openai/gpt-5.2",
+      "openai/gpt-5-mini",
+      "openai/gpt-4.1",
       "openai/gpt-4o",
-      "anthropic/claude-3.5-sonnet",
-      "google/gemini-2.0-flash-exp:free",
-      "meta-llama/llama-3.1-70b-instruct",
+      "anthropic/claude-sonnet-4",
+      "google/gemini-2.5-flash",
+      "meta-llama/llama-3.3-70b-instruct",
     ],
-    defaultModel: "openai/gpt-4o",
+    defaultModel: "openai/gpt-5.2",
     requiresApiKey: true,
   },
   "github-copilot": {

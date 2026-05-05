@@ -9,6 +9,10 @@ import {
   Check,
   BookOpen,
   Zap,
+  Dna,
+  Landmark,
+  Code2,
+  Languages,
   Wifi,
   WifiOff,
   Eye,
@@ -56,13 +60,13 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-white">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto py-6 bg-white">
       {/* Main content card */}
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 w-full max-w-[480px] mx-4"
+        className="relative z-10 w-full max-w-[480px] mx-4 my-auto"
       >
         <div className="mb-4 flex items-center justify-center gap-2.5">
           <DiscentiaLogo size={22} alt="Discentia" />
@@ -85,7 +89,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               className="h-1.5 rounded-full"
               animate={{
                 width: i === step ? 28 : 8,
-                backgroundColor: i <= step ? "#0a0a0a" : "rgba(0,0,0,0.15)",
+                backgroundColor: i <= step ? "var(--brand)" : "rgba(0,0,0,0.15)",
               }}
               transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
             />
@@ -149,6 +153,15 @@ interface StepProps {
 
 /* ─── Step 1: Welcome ─── */
 
+const WELCOME_PILLS = [
+  { icon: Sparkles, label: "AI Exercises", sub: "Flashcards & quizzes", color: "#818CF8" },
+  { icon: BookOpen, label: "Smart Library", sub: "PDFs, text & notes", color: "#34D399" },
+  { icon: Zap, label: "Spaced Repetition", sub: "SM-2 algorithm", color: "#FBBF24" },
+  { icon: Sparkles, label: "AI Exercises", sub: "Flashcards & quizzes", color: "#818CF8" },
+  { icon: BookOpen, label: "Smart Library", sub: "PDFs, text & notes", color: "#34D399" },
+  { icon: Zap, label: "Spaced Repetition", sub: "SM-2 algorithm", color: "#FBBF24" },
+];
+
 function StepWelcome({
   variants,
   direction,
@@ -191,44 +204,36 @@ function StepWelcome({
         </motion.p>
       </div>
 
-      {/* Feature badges */}
-      <div className="flex flex-col flex-1 px-10 py-6 gap-2.5">
-        {[
-          {
-            icon: Sparkles,
-            label: "AI Exercises",
-            sub: "Flashcards & quizzes",
-            color: "#818CF8",
-          },
-          {
-            icon: BookOpen,
-            label: "Smart Library",
-            sub: "PDFs, text & notes",
-            color: "#34D399",
-          },
-          {
-            icon: Zap,
-            label: "Spaced Repetition",
-            sub: "SM-2 algorithm",
-            color: "#FBBF24",
-          },
-        ].map((feat, i) => (
-          <motion.span
-            key={feat.label}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 + i * 0.09, duration: 0.28, ease: [0.23, 1, 0.32, 1] }}
-            className="inline-flex items-center self-start gap-x-2.5 rounded-full border border-[#E5E7EB] bg-white px-3 py-1.5"
-          >
-            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#0a0a0a]">
-              <feat.icon size={12} style={{ color: feat.color }} />
-              {feat.label}
+      {/* Marquee pills */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4, duration: 0.4 }}
+        className="relative overflow-hidden py-6"
+      >
+        <div className="absolute inset-y-0 left-0 w-16 z-10 pointer-events-none bg-gradient-to-r from-white to-transparent" />
+        <div className="absolute inset-y-0 right-0 w-16 z-10 pointer-events-none bg-gradient-to-l from-white to-transparent" />
+        <div
+          className="flex gap-2"
+          style={{ animation: "marquee-roll 16s linear infinite", width: "max-content" }}
+        >
+          {[...WELCOME_PILLS, ...WELCOME_PILLS].map((feat, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center shrink-0 gap-x-2.5 rounded-full border border-[#E5E7EB] bg-white px-3 py-1.5"
+            >
+              <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#0a0a0a]">
+                <feat.icon size={12} style={{ color: feat.color }} />
+                {feat.label}
+              </span>
+              <span className="h-3.5 w-px bg-[#E5E7EB]" />
+              <span className="text-[12px] text-[#9CA3AF]">{feat.sub}</span>
             </span>
-            <span className="h-3.5 w-px bg-[#E5E7EB]" />
-            <span className="text-[12px] text-[#9CA3AF]">{feat.sub}</span>
-          </motion.span>
-        ))}
-      </div>
+          ))}
+        </div>
+      </motion.div>
+
+      <div className="flex-1" />
 
       <div className="px-10 pb-8">
         <motion.button
@@ -238,7 +243,7 @@ function StepWelcome({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={onNext}
-          className="w-full flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full bg-[#0a0a0a] text-white text-[14px] font-semibold cursor-pointer shadow-md shadow-black/10 hover:bg-[#1a1a1a] transition-colors"
+          className="w-full flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full bg-[var(--brand)] text-[var(--brand-foreground)] text-[14px] font-semibold cursor-pointer shadow-md shadow-[var(--brand)]/20 hover:bg-[var(--brand-hover)] transition-colors"
         >
           Get Started
           <ArrowRight size={15} />
@@ -270,14 +275,14 @@ const PROVIDERS: ProviderOption[] = [
     type: "openai",
     lobeKey: "openai",
     label: "OpenAI",
-    description: "GPT-4o, GPT-4o-mini",
+    description: "GPT-5.2, GPT-5 mini, GPT-4.1 and more",
     requiresApiKey: true,
   },
   {
     type: "anthropic",
     lobeKey: "anthropic",
-    label: "Claude",
-    description: "Claude 3.5 Sonnet, Claude 3 Haiku",
+    label: "Anthropic",
+    description: "Claude Opus 4.1, Sonnet 4, Haiku 3.5",
     requiresApiKey: true,
   },
   {
@@ -395,7 +400,7 @@ function StepProvider({
               onClick={() => handleSelectProvider(provider.type)}
               className={`w-full flex items-center gap-3.5 p-4 rounded-xl border-2 cursor-pointer text-left ${
                 isSelected
-                  ? "border-[#0a0a0a] bg-[#FAFAFA] [transition:border-color_150ms_ease,background-color_150ms_ease]"
+                  ? "border-[var(--brand)] bg-[#FAFAFA] [transition:border-color_150ms_ease,background-color_150ms_ease]"
                   : "border-[#E5E7EB] hover:border-[#D1D5DB] hover:bg-[#FAFAFA] [transition:border-color_150ms_ease,background-color_150ms_ease]"
               }`}
             >
@@ -436,7 +441,7 @@ function StepProvider({
               <div
                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
                   isSelected
-                    ? "border-[#0a0a0a] bg-[#0a0a0a]"
+                    ? "border-[var(--brand)] bg-[var(--brand)]"
                     : "border-[#D1D5DB]"
                 }`}
               >
@@ -457,7 +462,7 @@ function StepProvider({
             transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <div className="mt-4">
+            <div className="mt-4 px-1 pb-1">
               <label className="text-[13px] font-medium text-[#374151] block mb-1.5">
                 API Key
               </label>
@@ -500,7 +505,7 @@ function StepProvider({
           disabled={!canContinue}
           className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-[14px] font-semibold transition-all cursor-pointer ${
             canContinue
-              ? "bg-[#0a0a0a] text-white shadow-lg shadow-black/10 hover:bg-[#1a1a1a]"
+              ? "bg-[var(--brand)] text-[var(--brand-foreground)] shadow-lg shadow-[var(--brand)]/20 hover:bg-[var(--brand-hover)]"
               : "bg-[#F3F4F6] text-[#C0C0C0] cursor-not-allowed"
           }`}
         >
@@ -515,10 +520,10 @@ function StepProvider({
 /* ─── Step 3: Create First Library ─── */
 
 const TEMPLATES = [
-  { name: "Biology", emoji: "🔬", color: "#34D399" },
-  { name: "History", emoji: "🏛️", color: "#FBBF24" },
-  { name: "Computer Science", emoji: "💻", color: "#818CF8" },
-  { name: "Languages", emoji: "🌍", color: "#F87171" },
+  { name: "Biology", icon: Dna, color: "#34D399" },
+  { name: "History", icon: Landmark, color: "#FBBF24" },
+  { name: "Computer Science", icon: Code2, color: "#818CF8" },
+  { name: "Languages", icon: Languages, color: "#F87171" },
 ];
 
 function StepLibrary({
@@ -556,7 +561,7 @@ function StepLibrary({
       animate="center"
       exit="exit"
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-      className="flex flex-col flex-1 px-8 py-8"
+      className="flex flex-col flex-1 px-8 py-6"
     >
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9CA3AF]">
@@ -584,36 +589,48 @@ function StepLibrary({
             setSelectedColor(template.color);
           }
         }}
-        className="mt-5 grid grid-cols-2 gap-2 w-full"
+        className="mt-3 grid grid-cols-2 gap-2 w-full"
       >
-        {TEMPLATES.map((template, i) => (
-          <motion.div
-            key={template.name}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + i * 0.06, duration: 0.3 }}
-          >
-            <ToggleGroupItem
-              value={template.name}
-              aria-label={template.name}
-              className="flex h-auto w-full flex-col items-center gap-2 p-4 rounded-2xl cursor-pointer"
+        {TEMPLATES.map((template, i) => {
+          const isTemplateSelected = libraryName === template.name;
+          const TemplateIcon = template.icon;
+          return (
+            <motion.div
+              key={template.name}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 + i * 0.06, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div
-                className="flex size-14 items-center justify-center"
-                style={{ borderRadius: "28%" }}
+              <ToggleGroupItem
+                value={template.name}
+                aria-label={template.name}
+                className="flex h-auto w-full flex-col items-center gap-1.5 pt-3 pb-2 px-2 rounded-2xl cursor-pointer transition-[border-color,background-color] duration-150"
+                style={isTemplateSelected ? { borderColor: template.color, backgroundColor: `${template.color}12` } : undefined}
               >
-                <span className="text-[34px] leading-none select-none">{template.emoji}</span>
-              </div>
-              <span className="text-[12px] font-medium leading-tight">
-                {template.name}
-              </span>
-            </ToggleGroupItem>
-          </motion.div>
-        ))}
+                <div className="flex size-16 items-center justify-center">
+                  <motion.div
+                    className="flex size-14 items-center justify-center rounded-2xl"
+                    style={{
+                      backgroundColor: `${template.color}18`,
+                      color: template.color,
+                    }}
+                    animate={{ scale: isTemplateSelected ? 1.12 : 1 }}
+                    transition={{ type: "spring", duration: 0.4, bounce: 0.35 }}
+                  >
+                    <TemplateIcon size={28} strokeWidth={1.8} />
+                  </motion.div>
+                </div>
+                <span className="text-[13px] font-medium leading-tight">
+                  {template.name}
+                </span>
+              </ToggleGroupItem>
+            </motion.div>
+          );
+        })}
       </ToggleGroup>
 
       {/* Name input */}
-      <div className="mt-4">
+      <div className="mt-3">
         <Input
           type="text"
           value={libraryName}
@@ -624,15 +641,14 @@ function StepLibrary({
       </div>
 
       {/* Book-spine color picker */}
-      <div className="mt-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9CA3AF] mb-3">
+      <div className="mt-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9CA3AF] mb-2">
           Colour
         </p>
         <div className="flex items-end gap-1.5">
           {LIBRARY_COLORS.map((color, i) => {
             const isSelected = selectedColor === color.hex;
-            // Vary spine heights for a bookshelf feel
-            const heights = [44, 52, 40, 56, 48, 44, 52, 40, 56, 48, 44, 52];
+            const heights = [34, 40, 30, 44, 36, 34, 40, 30, 44, 36, 34, 40];
             const h = heights[i % heights.length];
             return (
               <motion.button
@@ -641,7 +657,7 @@ function StepLibrary({
                 onClick={() => setSelectedColor(color.hex)}
                 animate={{
                   y: isSelected ? -4 : 0,
-                  opacity: isSelected ? 1 : 0.5,
+                  opacity: isSelected ? 1 : 0.68,
                 }}
                 transition={{ type: "spring", stiffness: 400, damping: 22 }}
                 className="relative flex-1 rounded-t-sm rounded-b-[2px] cursor-pointer focus:outline-none"
@@ -668,7 +684,7 @@ function StepLibrary({
       <div className="flex-1" />
 
       {/* Navigation */}
-      <div className="flex items-center justify-between mt-5">
+      <div className="flex items-center justify-between mt-4">
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 text-[13px] text-[#9CA3AF] hover:text-[#6B7280] cursor-pointer transition-colors"
@@ -690,7 +706,7 @@ function StepLibrary({
             disabled={!libraryName.trim() || creating}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-[14px] font-semibold transition-all cursor-pointer ${
               libraryName.trim() && !creating
-                ? "bg-[#0a0a0a] text-white shadow-lg shadow-black/10 hover:bg-[#1a1a1a]"
+                ? "bg-[var(--brand)] text-[var(--brand-foreground)] shadow-lg shadow-[var(--brand)]/20 hover:bg-[var(--brand-hover)]"
                 : "bg-[#F3F4F6] text-[#C0C0C0] cursor-not-allowed"
             }`}
           >
@@ -790,7 +806,7 @@ function StepReady({
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={onFinish}
-          className="flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-[#0a0a0a] text-white text-[15px] font-semibold cursor-pointer shadow-md shadow-black/10 hover:bg-[#1a1a1a] [transition:background-color_150ms_ease]"
+          className="flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-[var(--brand)] text-[var(--brand-foreground)] text-[15px] font-semibold cursor-pointer shadow-md shadow-[var(--brand)]/20 hover:bg-[var(--brand-hover)] [transition:background-color_150ms_ease]"
         >
           <Sparkles size={16} />
           Start Learning

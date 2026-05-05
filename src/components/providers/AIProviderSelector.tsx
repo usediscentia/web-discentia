@@ -24,7 +24,7 @@ interface ProviderMeta {
 const providers: ProviderMeta[] = [
   {
     id: "anthropic",
-    name: "Claude",
+    name: "Anthropic",
     lobeProvider: "anthropic",
     badgeLabel: "Anthropic",
     badgeBg: "#FEF3C7",
@@ -67,13 +67,28 @@ const providers: ProviderMeta[] = [
 // ── Model tags ──
 
 const MODEL_TAGS: Record<string, string> = {
+  "gpt-5.2": "Latest",
+  "gpt-5.2-pro": "Power",
+  "gpt-5-mini": "Fast",
+  "gpt-5-nano": "Cheap",
+  "gpt-5.1": "Smart",
+  "gpt-4.1": "Smart",
+  "gpt-4.1-mini": "Fast",
   "gpt-4o": "Fast",
   "gpt-4o-mini": "Cheap",
-  "gpt-4-turbo": "Power",
+  "o3": "Reason",
+  "o4-mini": "Reason",
+  "claude-opus-4-1-20250805": "Power",
+  "claude-sonnet-4-20250514": "Smart",
+  "claude-3-7-sonnet-latest": "Reason",
+  "claude-3-5-haiku-latest": "Fast",
+  "openai/gpt-5.2": "Latest",
+  "openai/gpt-5-mini": "Fast",
+  "openai/gpt-4.1": "Smart",
   "openai/gpt-4o": "Fast",
-  "anthropic/claude-3.5-sonnet": "Smart",
-  "google/gemini-2.0-flash-exp:free": "Free",
-  "meta-llama/llama-3.1-70b-instruct": "Open",
+  "anthropic/claude-sonnet-4": "Smart",
+  "google/gemini-2.5-flash": "Free",
+  "meta-llama/llama-3.3-70b-instruct": "Open",
 };
 
 // ── Model grouping for large lists ──
@@ -144,7 +159,6 @@ export function AIProviderSelector({
   const [modelSearchByProvider, setModelSearchByProvider] = useState<
     Partial<Record<AIProviderType, string>>
   >({});
-  const [expandedProvider, setExpandedProvider] = useState<AIProviderType | null>(selectedProvider);
 
   useEffect(() => {
     if (isOpen) {
@@ -179,7 +193,6 @@ export function AIProviderSelector({
 
   const handleSelectProvider = (id: AIProviderType) => {
     setSelectedProvider(id);
-    setExpandedProvider((prev) => (prev === id ? null : id));
   };
 
   const handleSelectModel = (providerId: AIProviderType, model: string) => {
