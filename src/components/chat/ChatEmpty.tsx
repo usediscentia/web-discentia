@@ -6,7 +6,7 @@ import {
   QuestionMarkCircleIcon,
 } from "@heroicons/react/24/outline";
 import { ProviderIcon } from "@lobehub/icons";
-import { KeyRound } from "lucide-react";
+import { ChevronRight, KeyRound } from "lucide-react";
 import { DiscentiaLogo } from "@/components/brand/DiscentiaLogo";
 import { useProviderStore } from "@/stores/provider.store";
 import { useAppStore } from "@/stores/app.store";
@@ -153,43 +153,69 @@ export function ChatEmpty({ onPromptClick }: ChatEmptyProps) {
   ];
 
   return (
-    <div className="flex flex-col items-center justify-center flex-1 gap-6 w-full">
+    <div className="flex flex-col items-center justify-center flex-1 gap-9 w-full px-4">
+      {/* Mark */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col items-center gap-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.28, ease: [0.23, 1, 0.32, 1] }}
+        className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#111] shadow-sm"
       >
-        <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-[#1A1A1A]">
-          <DiscentiaLogo size={32} alt="Discentia" />
-        </div>
-        <h1 className="text-2xl font-semibold text-[#1A1A1A] tracking-[-0.5px]">
-          Start learning. Ask anything.
-        </h1>
-        <p className="text-[15px] text-[#9CA3AF]">
-          Chat with your documents. Generate flashcards and quizzes. Review with spaced repetition.
-        </p>
+        <DiscentiaLogo size={26} alt="Discentia" />
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="flex items-center gap-3"
-      >
-        {prompts.map((prompt) => (
-          <button
+      {/* Headline */}
+      <div className="flex flex-col items-center gap-1 text-center">
+        <motion.span
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.32, delay: 0.05, ease: [0.23, 1, 0.32, 1] }}
+          className="block text-[34px] font-semibold text-[#0F0F0F] tracking-[-0.9px] leading-[1.1]"
+        >
+          Start learning.
+        </motion.span>
+        <motion.span
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.32, delay: 0.09, ease: [0.23, 1, 0.32, 1] }}
+          className="block text-[34px] font-normal text-[#C8C8C8] tracking-[-0.9px] leading-[1.1]"
+        >
+          Ask anything.
+        </motion.span>
+      </div>
+
+      {/* Action rows */}
+      <div className="flex flex-col gap-2 w-full max-w-[300px]">
+        {prompts.map((prompt, i) => (
+          <motion.button
             key={prompt.text}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.28, delay: 0.14 + i * 0.05, ease: [0.23, 1, 0.32, 1] }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => onPromptClick?.(prompt.text)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-3xl border border-[#E5E7EB] cursor-pointer hover:bg-[#F3F4F6] transition-colors"
+            className="group flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-white border border-[#E8E8E8] cursor-pointer text-left"
+            style={{ transition: "border-color 140ms ease-out, background-color 140ms ease-out" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "#D0D0D0"; (e.currentTarget as HTMLElement).style.backgroundColor = "#FAFAFA"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "#E8E8E8"; (e.currentTarget as HTMLElement).style.backgroundColor = "white"; }}
           >
-            <prompt.icon className="w-4 h-4 text-[#9CA3AF]" />
-            <span className="text-[13px] font-medium text-[#6B7280]">
+            <div
+              className="flex items-center justify-center w-7 h-7 rounded-lg shrink-0"
+              style={{ background: "var(--brand-soft)" }}
+            >
+              <prompt.icon className="w-[14px] h-[14px]" style={{ color: "var(--brand)" }} />
+            </div>
+            <span className="text-[13px] font-medium text-[#3A3A3A] flex-1">
               {prompt.text}
             </span>
-          </button>
+            <ChevronRight
+              size={13}
+              className="shrink-0 text-[#D4D4D4]"
+              style={{ transition: "color 140ms ease-out, transform 140ms ease-out" }}
+            />
+          </motion.button>
         ))}
-      </motion.div>
+      </div>
     </div>
   );
 }
