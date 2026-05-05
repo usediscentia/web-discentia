@@ -8,6 +8,7 @@ import {
   useMemo,
   type KeyboardEvent,
 } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   BoltIcon,
   ArrowUpIcon,
@@ -84,51 +85,74 @@ export function InputBar({
   return (
     <div className="flex flex-col items-center w-full gap-2 px-4 pt-3 pb-4 md:px-8 md:pb-6">
       <div className="w-full max-w-[720px] mx-auto flex flex-wrap gap-1.5 min-h-5">
-        {selectedLibraries.map((library) => (
-          <button
-            key={library.id}
-            onClick={() => onToggleLibrary?.(library.id)}
-            className="inline-flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-full border cursor-pointer"
-            style={{
-              borderColor: library.color,
-              backgroundColor: `${library.color}22`,
-              color: "#1A1A1A",
-            }}
-            title="Remove library"
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: library.color }}
-            />
-            {library.name}
-          </button>
-        ))}
+        <AnimatePresence mode="popLayout">
+          {selectedLibraries.map((library) => (
+            <motion.button
+              key={library.id}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.14, ease: [0.23, 1, 0.32, 1] }}
+              layout
+              whileTap={{ scale: 0.94 }}
+              onClick={() => onToggleLibrary?.(library.id)}
+              className="inline-flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-full border cursor-pointer"
+              style={{
+                borderColor: library.color,
+                backgroundColor: `${library.color}22`,
+                color: "#1A1A1A",
+              }}
+              title="Remove library"
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: library.color }}
+              />
+              {library.name}
+            </motion.button>
+          ))}
+        </AnimatePresence>
       </div>
 
       <div className="relative w-full max-w-[720px] mx-auto">
         <div className="flex items-center gap-2.5 h-[52px] bg-white rounded-[26px] border border-[#E5E7EB] pl-4 pr-1.5">
-          <button
+          <motion.button
             type="button"
-            className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1 shrink-0 cursor-pointer ${
-              selectedLibraryIds.length > 0 ? "bg-[#34D39922]" : "bg-[#F3F4F6]"
-            }`}
+            layout
+            className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1 shrink-0 cursor-pointer`}
+            style={{
+              backgroundColor: selectedLibraryIds.length > 0 ? "#34D39922" : "#F3F4F6",
+              transition: "background-color 200ms ease",
+            }}
             onClick={() => setLibrariesMenuOpen((open) => !open)}
+            whileTap={{ scale: 0.96 }}
           >
             <div
-              className={`w-2 h-2 rounded-full ${
-                selectedLibraryIds.length > 0 ? "bg-[#34D399]" : "bg-[#9CA3AF]"
-              }`}
+              className="w-2 h-2 rounded-full"
+              style={{
+                backgroundColor: selectedLibraryIds.length > 0 ? "#34D399" : "#9CA3AF",
+                transition: "background-color 200ms ease",
+              }}
             />
-            <span
-              className={`text-xs font-medium ${
-                selectedLibraryIds.length > 0 ? "text-[#146C5A]" : "text-[#9CA3AF]"
-              }`}
-            >
-              {selectedLibraryIds.length > 0
-                ? `${selectedLibraryIds.length} libraries`
-                : "Add context"}
-            </span>
-          </button>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={selectedLibraryIds.length > 0 ? "count" : "label"}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.14, ease: [0.23, 1, 0.32, 1] }}
+                className="text-xs font-medium"
+                style={{
+                  color: selectedLibraryIds.length > 0 ? "#146C5A" : "#9CA3AF",
+                  transition: "color 200ms ease",
+                }}
+              >
+                {selectedLibraryIds.length > 0
+                  ? `${selectedLibraryIds.length} ${selectedLibraryIds.length === 1 ? "library" : "libraries"}`
+                  : "Add context"}
+              </motion.span>
+            </AnimatePresence>
+          </motion.button>
 
           <input
             type="text"
@@ -173,39 +197,51 @@ export function InputBar({
           )}
         </div>
 
-        {librariesMenuOpen && (
-          <div
-            ref={menuRef}
-            className="absolute bottom-[58px] left-0 w-72 bg-white border border-[#E5E7EB] rounded-xl shadow-md p-2 z-30"
-          >
-            <p className="text-xs font-semibold text-[#444] px-2 py-1">Select libraries</p>
-            <div className="max-h-56 overflow-auto">
-              {libraries.length === 0 ? (
-                <p className="text-xs text-[#888] px-2 py-2">No libraries yet.</p>
-              ) : (
-                libraries.map((library) => {
-                  const checked = selectedLibraryIds.includes(library.id);
-                  return (
-                    <button
-                      key={library.id}
-                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left cursor-pointer ${
-                        checked ? "bg-[#F2FBF8]" : "hover:bg-[#F8F8F8]"
-                      }`}
-                      onClick={() => onToggleLibrary?.(library.id)}
-                    >
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: library.color }}
-                      />
-                      <span className="text-xs text-[#222] flex-1">{library.name}</span>
-                      <input type="checkbox" checked={checked} readOnly />
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {librariesMenuOpen && (
+            <motion.div
+              ref={menuRef}
+              initial={{ opacity: 0, scale: 0.95, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 6 }}
+              transition={{ duration: 0.16, ease: [0.23, 1, 0.32, 1] }}
+              style={{ transformOrigin: "bottom left" }}
+              className="absolute bottom-[58px] left-0 w-72 bg-white border border-[#E5E7EB] rounded-xl shadow-md p-2 z-30"
+            >
+              <p className="text-xs font-semibold text-[#444] px-2 py-1">Select libraries</p>
+              <div className="max-h-56 overflow-auto">
+                {libraries.length === 0 ? (
+                  <p className="text-xs text-[#888] px-2 py-2">No libraries yet.</p>
+                ) : (
+                  libraries.map((library, i) => {
+                    const checked = selectedLibraryIds.includes(library.id);
+                    return (
+                      <motion.button
+                        key={library.id}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.16, delay: i * 0.03, ease: [0.23, 1, 0.32, 1] }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left cursor-pointer ${
+                          checked ? "bg-[#F2FBF8]" : "hover:bg-[#F8F8F8]"
+                        }`}
+                        style={{ transition: "background-color 120ms ease" }}
+                        onClick={() => onToggleLibrary?.(library.id)}
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: library.color }}
+                        />
+                        <span className="text-xs text-[#222] flex-1">{library.name}</span>
+                        <input type="checkbox" checked={checked} readOnly />
+                      </motion.button>
+                    );
+                  })
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
