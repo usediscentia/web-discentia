@@ -22,8 +22,8 @@ const LEGACY_STORAGE_KEYS: Record<AppearanceStorageKey, string> = {
 };
 
 export const ACCENT_COLORS = [
-  { hex: "#1A7A6D", label: "Teal" },
   { hex: "#3B82F6", label: "Blue" },
+  { hex: "#1A7A6D", label: "Teal" },
   { hex: "#8B5CF6", label: "Violet" },
   { hex: "#F59E0B", label: "Amber" },
   { hex: "#EF4444", label: "Red" },

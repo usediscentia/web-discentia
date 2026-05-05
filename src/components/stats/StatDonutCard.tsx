@@ -1,6 +1,5 @@
 "use client";
 
-const ROSE = "#FB7185";
 const TRACK = "#E8E5E0";
 const SIZE = 52;
 const STROKE = 7;
@@ -42,7 +41,7 @@ export function StatDonutCard({ label, value, fill }: StatDonutCardProps) {
             cy={center}
             r={RADIUS}
             fill="none"
-            stroke={ROSE}
+            stroke="var(--brand)"
             strokeWidth={STROKE}
             strokeDasharray={`${dash} ${gap}`}
             strokeLinecap="round"
