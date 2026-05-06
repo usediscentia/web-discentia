@@ -9,10 +9,6 @@ import {
   Check,
   BookOpen,
   Zap,
-  Dna,
-  Landmark,
-  Code2,
-  Languages,
   Wifi,
   WifiOff,
   Eye,
@@ -520,10 +516,10 @@ function StepProvider({
 /* ─── Step 3: Create First Library ─── */
 
 const TEMPLATES = [
-  { name: "Biology", icon: Dna, color: "#34D399" },
-  { name: "History", icon: Landmark, color: "#FBBF24" },
-  { name: "Computer Science", icon: Code2, color: "#818CF8" },
-  { name: "Languages", icon: Languages, color: "#F87171" },
+  { name: "Biology", image: "/onboarding-biology.png", color: "#34D399" },
+  { name: "History", image: "/onboarding-history.png", color: "#FBBF24" },
+  { name: "Computer Science", image: "/onboarding-computer-science.png", color: "#818CF8" },
+  { name: "Languages", image: "/onboarding-languages.png", color: "#F87171" },
 ];
 
 function StepLibrary({
@@ -593,7 +589,6 @@ function StepLibrary({
       >
         {TEMPLATES.map((template, i) => {
           const isTemplateSelected = libraryName === template.name;
-          const TemplateIcon = template.icon;
           return (
             <motion.div
               key={template.name}
@@ -607,18 +602,15 @@ function StepLibrary({
                 className="flex h-auto w-full flex-col items-center gap-1.5 pt-3 pb-2 px-2 rounded-2xl cursor-pointer transition-[border-color,background-color] duration-150"
                 style={isTemplateSelected ? { borderColor: template.color, backgroundColor: `${template.color}12` } : undefined}
               >
-                <div className="flex size-16 items-center justify-center">
-                  <motion.div
-                    className="flex size-14 items-center justify-center rounded-2xl"
-                    style={{
-                      backgroundColor: `${template.color}18`,
-                      color: template.color,
-                    }}
+                <div className="flex size-16 items-center justify-center overflow-visible">
+                  <motion.img
+                    src={template.image}
+                    alt=""
+                    aria-hidden="true"
+                    className="size-16 object-contain"
                     animate={{ scale: isTemplateSelected ? 1.12 : 1 }}
                     transition={{ type: "spring", duration: 0.4, bounce: 0.35 }}
-                  >
-                    <TemplateIcon size={28} strokeWidth={1.8} />
-                  </motion.div>
+                  />
                 </div>
                 <span className="text-[13px] font-medium leading-tight">
                   {template.name}
