@@ -56,6 +56,10 @@ phase-*-implementation*.md
 *.png
 *.jpg
 *.jpeg
+!public/onboarding-biology.png
+!public/onboarding-history.png
+!public/onboarding-computer-science.png
+!public/onboarding-languages.png
 
 # internal tooling
 .claude/
