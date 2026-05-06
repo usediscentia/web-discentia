@@ -607,7 +607,7 @@ function StepLibrary({
                     src={template.image}
                     alt=""
                     aria-hidden="true"
-                    className="size-16 object-contain"
+                    className="size-16 object-contain mix-blend-multiply"
                     animate={{ scale: isTemplateSelected ? 1.12 : 1 }}
                     transition={{ type: "spring", duration: 0.4, bounce: 0.35 }}
                   />
