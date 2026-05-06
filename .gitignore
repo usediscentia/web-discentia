@@ -65,5 +65,6 @@ docs/
 .conductor/
 skills-lock.json
 AGENTS.md
+CLAUDE.md
 .cursor/
 .aider*
