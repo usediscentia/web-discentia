@@ -18,24 +18,28 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { GitHubCopilotConnect } from "@/components/providers/GitHubCopilotConnect";
 
-const providerOrder: AIProviderType[] = ["ollama", "openai", "openrouter", "github-copilot", "anthropic"];
+const providerOrder: AIProviderType[] = ["ollama", "lm-studio", "openai", "openrouter", "github-copilot", "anthropic"];
 
 export function SettingsDialog() {
   const { settingsOpen, setSettingsOpen } = useAppStore();
-  const { providerConfigs, setProviderConfig, ollamaStatus, ollamaModels, checkOllamaConnection } =
-    useProviderStore();
+  const {
+    providerConfigs, setProviderConfig,
+    ollamaStatus, ollamaModels, checkOllamaConnection,
+    lmStudioStatus, lmStudioModels, checkLmStudioConnection,
+  } = useProviderStore();
 
   const [localKeys, setLocalKeys] = useState<Record<AIProviderType, string>>({
     openai: "",
     anthropic: "",
     ollama: "",
+    "lm-studio": "",
     openrouter: "",
     "github-copilot": "",
   });
   const [testing, setTesting] = useState<AIProviderType | null>(null);
   const [results, setResults] = useState<
     Record<AIProviderType, "success" | "error" | null>
-  >({ openai: null, anthropic: null, ollama: null, openrouter: null, "github-copilot": null });
+  >({ openai: null, anthropic: null, ollama: null, "lm-studio": null, openrouter: null, "github-copilot": null });
 
   const handleOpenChange = (open: boolean) => {
     if (open) {
@@ -43,10 +47,11 @@ export function SettingsDialog() {
         openai: providerConfigs.openai.apiKey,
         anthropic: providerConfigs.anthropic.apiKey,
         ollama: "",
+        "lm-studio": "",
         openrouter: providerConfigs.openrouter.apiKey,
         "github-copilot": providerConfigs["github-copilot"].apiKey,
       });
-      setResults({ openai: null, anthropic: null, ollama: null, openrouter: null, "github-copilot": null });
+      setResults({ openai: null, anthropic: null, ollama: null, "lm-studio": null, openrouter: null, "github-copilot": null });
       checkOllamaConnection();
     }
     setSettingsOpen(open);
@@ -61,8 +66,8 @@ export function SettingsDialog() {
     setTesting(type);
     setResults((prev) => ({ ...prev, [type]: null }));
 
-    // Save key to store (skip for ollama)
-    if (type !== "ollama") {
+    // Save key to store (skip for local providers that need no API key)
+    if (PROVIDER_DEFAULTS[type].requiresApiKey) {
       setProviderConfig(type, {
         ...providerConfigs[type],
         apiKey,
@@ -80,7 +85,7 @@ export function SettingsDialog() {
     setResults((prev) => ({ ...prev, [type]: valid ? "success" : "error" }));
     setTesting(null);
 
-    if (valid && type !== "ollama") {
+    if (valid && PROVIDER_DEFAULTS[type].requiresApiKey) {
       setTimeout(() => {
         void useProviderStore.getState().saveProviderConfig(type, apiKey);
       }, 0);
@@ -94,9 +99,8 @@ export function SettingsDialog() {
       }
     }
 
-    if (type === "ollama") {
-      checkOllamaConnection();
-    }
+    if (type === "ollama") checkOllamaConnection(true);
+    if (type === "lm-studio") checkLmStudioConnection(true);
   };
 
   return (
@@ -118,8 +122,11 @@ export function SettingsDialog() {
             const result = results[type];
             const isTesting = testing === type;
 
-            // Ollama: special UI (no API key, just connection test)
-            if (type === "ollama") {
+            // Local providers: special UI (no API key, just connection test)
+            if (type === "ollama" || type === "lm-studio") {
+              const localStatus = type === "lm-studio" ? lmStudioStatus : ollamaStatus;
+              const localModels = type === "lm-studio" ? lmStudioModels : ollamaModels;
+              const website = type === "lm-studio" ? "https://lmstudio.ai" : "https://ollama.com";
               return (
                 <div key={type} className="flex flex-col gap-2">
                   <Label className="text-sm font-medium">
@@ -129,17 +136,17 @@ export function SettingsDialog() {
                     <div className="flex items-center gap-2 flex-1">
                       <span
                         className={`inline-block w-2 h-2 rounded-full ${
-                          ollamaStatus === "connected"
+                          localStatus === "connected"
                             ? "bg-green-500"
-                            : ollamaStatus === "disconnected"
+                            : localStatus === "disconnected"
                             ? "bg-red-400"
                             : "bg-gray-300"
                         }`}
                       />
                       <span className="text-sm text-muted-foreground">
-                        {ollamaStatus === "connected"
+                        {localStatus === "connected"
                           ? "Connected"
-                          : ollamaStatus === "disconnected"
+                          : localStatus === "disconnected"
                           ? "Not running"
                           : "Not checked"}
                       </span>
@@ -147,7 +154,7 @@ export function SettingsDialog() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleSaveAndTest("ollama")}
+                      onClick={() => handleSaveAndTest(type)}
                       disabled={isTesting}
                       className="shrink-0"
                     >
@@ -156,24 +163,24 @@ export function SettingsDialog() {
                   </div>
                   {result === "success" && (
                     <p className="text-xs text-green-600 flex items-center gap-1">
-                      <span>&#10003;</span> Ollama is running
-                      {ollamaModels.length > 0 && (
+                      <span>&#10003;</span> {defaults.displayName} is running
+                      {localModels.length > 0 && (
                         <span className="text-muted-foreground ml-1">
-                          — {ollamaModels.length} model{ollamaModels.length !== 1 ? "s" : ""}: {ollamaModels.join(", ")}
+                          — {localModels.length} model{localModels.length !== 1 ? "s" : ""}: {localModels.join(", ")}
                         </span>
                       )}
                     </p>
                   )}
                   {result === "error" && (
                     <p className="text-xs text-red-600 flex items-center gap-1">
-                      <span>&#10007;</span> Could not connect. Make sure Ollama is running.{" "}
+                      <span>&#10007;</span> Could not connect. Make sure {defaults.displayName} is running.{" "}
                       <a
-                        href="https://ollama.com"
+                        href={website}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="underline"
                       >
-                        Get Ollama
+                        Get {defaults.displayName}
                       </a>
                     </p>
                   )}

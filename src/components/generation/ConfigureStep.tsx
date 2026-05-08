@@ -16,6 +16,7 @@ const LOBE_PROVIDER_MAP: Record<AIProviderType, string> = {
   openai: "openai",
   anthropic: "anthropic",
   ollama: "ollama",
+  "lm-studio": "lmstudio",
   openrouter: "openrouter",
   "github-copilot": "github",
 };
