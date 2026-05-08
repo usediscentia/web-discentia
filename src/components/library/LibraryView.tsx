@@ -597,7 +597,7 @@ export default function LibraryView() {
           <DialogHeader>
             <DialogTitle>Create Library</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-7.5">
             <div className="space-y-1.5">
               <Label>Name</Label>
               <Input

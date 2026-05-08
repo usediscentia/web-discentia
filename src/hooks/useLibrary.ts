@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StorageService } from "@/services/storage";
 import type { ContentChunk, Library, LibraryItem, LibraryItemType } from "@/types/library";
 import { LIBRARY_COLORS } from "@/lib/colors";
+import { useAppStore } from "@/stores/app.store";
 import { chunkPageItems, detectHeaderFooterTexts } from "@/lib/pdf-chunker";
 
 function previewFromContent(content: string): string {
@@ -232,29 +233,34 @@ export interface CreateTextItemInput {
 export function useLibrary() {
   const [libraries, setLibraries] = useState<Library[]>([]);
   const [items, setItems] = useState<LibraryItem[]>([]);
-  const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
+  const { activeLibraryId, setActiveLibraryId } = useAppStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [hasInitialized, setHasInitialized] = useState(false);
+  // Tracks whether we've done the initial library selection in this mount.
+  // useRef so it doesn't affect the dependency chain that causes re-runs.
+  const hasInitializedRef = useRef(false);
 
   const refreshLibraries = useCallback(async () => {
     const allLibraries = await StorageService.listLibraries();
     setLibraries(allLibraries);
-    setActiveLibraryId((current) => {
-      // After first load, preserve null (= "All") as an intentional choice
-      if (hasInitialized) {
-        if (current === null) return null;
-        if (allLibraries.some((library) => library.id === current)) return current;
-        return allLibraries[0]?.id || null;
+    const current = useAppStore.getState().activeLibraryId;
+    if (!hasInitializedRef.current) {
+      // First run in this mount: initialize selection if needed
+      if (current === null || !allLibraries.some((lib) => lib.id === current)) {
+        setActiveLibraryId(allLibraries[0]?.id || null);
       }
-      // First load: default to first library
-      return allLibraries[0]?.id || null;
-    });
-    setHasInitialized(true);
-  }, [hasInitialized]);
+      hasInitializedRef.current = true;
+    } else {
+      // Subsequent runs: only fix if the selected library was deleted
+      if (current !== null && !allLibraries.some((lib) => lib.id === current)) {
+        setActiveLibraryId(allLibraries[0]?.id || null);
+      }
+      // null = "All" is preserved
+    }
+  }, [setActiveLibraryId]);
 
   const refreshItems = useCallback(async () => {
     const query = searchQuery.trim();
