@@ -16,6 +16,7 @@ interface AppState {
   libraryFocusItemId: string | null;
   editorItemId: string | null;
   studyFilterItemId: string | null;
+  activeLibraryId: string | null;
   setStudyFilterItemId: (id: string | null) => void;
   setActiveView: (view: ActiveView) => void;
   setSettingsOpen: (open: boolean) => void;
@@ -23,6 +24,7 @@ interface AppState {
   setSidebarCollapsed: (collapsed: boolean) => void;
   setLibraryFocusItemId: (id: string | null) => void;
   setEditorItemId: (id: string | null) => void;
+  setActiveLibraryId: (id: string | null) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -36,6 +38,7 @@ export const useAppStore = create<AppState>((set) => ({
   libraryFocusItemId: null,
   editorItemId: null,
   studyFilterItemId: null,
+  activeLibraryId: null,
   setActiveView: (view) => set({ activeView: view }),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
@@ -48,4 +51,5 @@ export const useAppStore = create<AppState>((set) => ({
   setLibraryFocusItemId: (id) => set({ libraryFocusItemId: id }),
   setEditorItemId: (id) => set({ editorItemId: id }),
   setStudyFilterItemId: (id) => set({ studyFilterItemId: id }),
+  setActiveLibraryId: (id) => set({ activeLibraryId: id }),
 }));

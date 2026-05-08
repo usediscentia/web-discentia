@@ -7,7 +7,7 @@ import {
   type ChangeEvent,
   type DragEvent,
 } from "react";
-import { FileText, Upload, PenLine, ArrowLeft, Clipboard, RotateCcw } from "lucide-react";
+import { FileText, Upload, PenLine, ArrowLeft, Clipboard, RotateCcw, Folder } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Dialog,
@@ -186,32 +186,56 @@ export default function AddContentModal({
     options: "Add Content",
     paste: "Paste Text",
     upload: "Upload File",
-    "new-markdown": "New Markdown",
+    "new-markdown": "Creating a new markdown note",
   }[step];
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {step !== "options" && (
-              <button
-                onClick={goBack}
-                className="cursor-pointer text-[#999] hover:text-[#333] transition-colors active:scale-95"
+      <DialogContent className="sm:max-w-md p-0">
+        {/* Inner wrapper owns the padding + clipping context */}
+        <div className="relative overflow-hidden rounded-lg p-6 flex flex-col gap-4">
+          {/* Dotted grid background — only when creating markdown */}
+          <AnimatePresence>
+            {step === "new-markdown" && (
+              <motion.div
+                key="dots-bg"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle, #C8C8C8 1px, transparent 1px)",
+                  backgroundSize: "20px 20px",
+                }}
               >
-                <ArrowLeft size={17} />
-              </button>
+                <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent" />
+              </motion.div>
             )}
-            {stepTitle}
-          </DialogTitle>
-          {step === "options" && (
-            <p className="text-sm text-[#888] font-normal">
-              Choose how to add content to your library.
-            </p>
-          )}
-        </DialogHeader>
+          </AnimatePresence>
 
-        <div className="overflow-hidden">
+          <DialogHeader className="relative">
+            <DialogTitle className="flex items-center gap-2">
+              {step !== "options" && (
+                <button
+                  onClick={goBack}
+                  className="cursor-pointer text-[#999] hover:text-[#333] transition-colors active:scale-95"
+                >
+                  <ArrowLeft size={17} />
+                </button>
+              )}
+              {stepTitle}
+            </DialogTitle>
+            {step === "options" && (
+              <p className="text-sm text-[#888] font-normal">
+                Choose how to add content to your library.
+              </p>
+            )}
+          </DialogHeader>
+
+          <div className="overflow-hidden relative">
         <AnimatePresence mode="popLayout">
           {step === "options" && (
             <motion.div
@@ -424,35 +448,92 @@ export default function AddContentModal({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 24 }}
               transition={STEP_SPRING}
-              className="space-y-3"
             >
-              <div>
-                <Label>Title</Label>
-                <Input
-                  value={mdTitle}
-                  onChange={(e) => setMdTitle(e.target.value)}
-                  placeholder="Untitled"
-                  className="mt-1"
-                  onKeyDown={(e) => e.key === "Enter" && handleCreateMarkdown()}
-                  autoFocus
-                />
+              {/* macOS window mock */}
+              <div className="relative" style={{ height: 268 }}>
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{
+                    delay: 0.08,
+                    duration: 0.28,
+                    ease: [0.23, 1, 0.32, 1],
+                  }}
+                  className="absolute overflow-hidden rounded-xl"
+                  style={{
+                    inset: "20px 0px 20px 16px",
+                    background: "white",
+                    boxShadow:
+                      "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  {/* Title bar */}
+                  <div
+                    className="flex items-center gap-3 px-4"
+                    style={{
+                      height: 52,
+                      background: "#ECECEC",
+                      borderBottom: "1px solid #D8D8D8",
+                    }}
+                  >
+                    {/* Traffic lights */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ background: "#FF5F57" }}
+                      />
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ background: "#FEBC2E" }}
+                      />
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ background: "#28C840" }}
+                      />
+                    </div>
+
+                    {/* Folder + editable title */}
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <Folder size={20} className="text-[#777] shrink-0" />
+                      <input
+                        value={mdTitle}
+                        onChange={(e) => setMdTitle(e.target.value)}
+                        placeholder="New Markdown"
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && handleCreateMarkdown()
+                        }
+                        autoFocus
+                        className="flex-1 min-w-0 bg-transparent border-none outline-none font-bold text-[#1A1A1A] placeholder:text-[#AAAAAA] caret-[#333] truncate"
+                        style={{ fontSize: 22 }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Window body */}
+                  <div
+                    className="w-full"
+                    style={{
+                      height: "calc(100% - 52px)",
+                      background: "white",
+                    }}
+                  />
+                </motion.div>
               </div>
-              <p className="text-xs text-[#999]">
-                A blank markdown document will be created and opened in the
-                editor.
-              </p>
-              <div className="flex justify-end pt-1">
+
+              {/* Footer */}
+              <div className="flex justify-end pt-3">
                 <Button
                   onClick={handleCreateMarkdown}
                   disabled={isMutating}
                   className="cursor-pointer"
                 >
-                  Create & Open
+                  Create
                 </Button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
