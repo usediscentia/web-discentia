@@ -1,6 +1,6 @@
 export const OPENAI_API_URL = "https://api.openai.com/v1";
 export const OLLAMA_API_URL = "http://localhost:11434";
-export const LM_STUDIO_API_URL = "http://127.0.0.1:1234/api/v1";
+export const LM_STUDIO_API_URL = "http://127.0.0.1:1234/v1";
 export const OPENROUTER_API_URL = "https://openrouter.ai/api/v1";
 export const GITHUB_COPILOT_API_URL = "https://api.githubcopilot.com";
 

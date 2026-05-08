@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   const body = (await req.json()) as { baseUrl?: string; [key: string]: unknown };
   const { baseUrl, ...chatBody } = body;
 
-  const url = `${baseUrl || LM_STUDIO_API_URL}/chat`;
+  const url = `${baseUrl || LM_STUDIO_API_URL}/chat/completions`;
 
   try {
     const upstream = await fetch(url, {
