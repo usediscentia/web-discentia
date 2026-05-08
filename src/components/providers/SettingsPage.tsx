@@ -72,6 +72,12 @@ const providerDisplays: ProviderDisplay[] = [
     comingSoon: false,
   },
   {
+    type: "lm-studio",
+    lobeProvider: "lmstudio",
+    description: "Run local models via LM Studio's OpenAI-compatible server. No API key required.",
+    comingSoon: false,
+  },
+  {
     type: "openai",
     lobeProvider: "openai",
     description: "Access GPT-4o, GPT-4 Turbo, and other OpenAI models.",
@@ -133,6 +139,9 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
     ollamaStatus,
     ollamaModels,
     checkOllamaConnection,
+    lmStudioStatus,
+    lmStudioModels,
+    checkLmStudioConnection,
     saveProviderConfig,
   } = useProviderStore();
 
@@ -160,16 +169,24 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
     }
   }, [expanded]); // eslint-disable-line react-hooks/exhaustive-deps -- only resets form on expand/collapse, not on every config change mid-edit
 
-  const isOllama = display.type === "ollama";
+  const isLocalProvider = display.type === "ollama" || display.type === "lm-studio";
   const hasKey = config.apiKey.length > 0;
+
+  const localStatus = display.type === "lm-studio" ? lmStudioStatus : ollamaStatus;
+  const localModels = display.type === "lm-studio" ? lmStudioModels : ollamaModels;
+  const checkLocalConnection = display.type === "lm-studio" ? checkLmStudioConnection : checkOllamaConnection;
+  const localBaseUrlPlaceholder = display.type === "lm-studio" ? "http://127.0.0.1:1234/api/v1" : "http://localhost:11434";
+  const providerWebsite = display.type === "lm-studio" ? "https://lmstudio.ai" : "https://ollama.com";
+  const providerWebsiteLabel = display.type === "lm-studio" ? "Get LM Studio" : "Get Ollama";
 
   const handleTest = async () => {
     setTesting(true);
     setResult(null);
 
-    if (isOllama) {
-      await checkOllamaConnection();
-      const status = useProviderStore.getState().ollamaStatus;
+    if (isLocalProvider) {
+      await checkLocalConnection(true);
+      const s = useProviderStore.getState();
+      const status = display.type === "lm-studio" ? s.lmStudioStatus : s.ollamaStatus;
       setResult(status === "connected" ? "success" : "error");
     } else {
       const key = localKey.trim();
@@ -220,8 +237,8 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
   };
 
   const statusBadge = () => {
-    if (isOllama) {
-      if (ollamaStatus === "connected") {
+    if (isLocalProvider) {
+      if (localStatus === "connected") {
         return (
           <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -229,7 +246,7 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
           </span>
         );
       }
-      if (ollamaStatus === "disconnected") {
+      if (localStatus === "disconnected") {
         return (
           <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
@@ -311,32 +328,32 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
             className="overflow-hidden"
           >
             <div className="border-t border-border px-5 pb-5 pt-1">
-              {isOllama ? (
+              {isLocalProvider ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">
-                      {ollamaStatus === "connected" && ollamaModels.length > 0 ? (
+                      {localStatus === "connected" && localModels.length > 0 ? (
                         <>
                           <span className="font-medium text-foreground">
-                            {ollamaModels.length} model{ollamaModels.length !== 1 ? "s" : ""} available:
+                            {localModels.length} model{localModels.length !== 1 ? "s" : ""} available:
                           </span>{" "}
-                          {ollamaModels.slice(0, 5).join(", ")}
-                          {ollamaModels.length > 5 && ` +${ollamaModels.length - 5} more`}
+                          {localModels.slice(0, 5).join(", ")}
+                          {localModels.length > 5 && ` +${localModels.length - 5} more`}
                         </>
                       ) : (
-                        "Make sure Ollama is running on your machine."
+                        `Make sure ${defaults.displayName} is running on your machine.`
                       )}
                     </div>
                   </div>
-                  {ollamaStatus === "connected" && ollamaModels.length > 0 && (
+                  {localStatus === "connected" && localModels.length > 0 && (
                     <div>
                       <Label className="mb-1.5 block text-xs font-medium text-foreground">Model</Label>
-                      <Select value={ollamaModels.includes(config.model) ? config.model : ollamaModels[0]} onValueChange={handleModelChange}>
+                      <Select value={localModels.includes(config.model) ? config.model : localModels[0]} onValueChange={handleModelChange}>
                         <SelectTrigger className="text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {ollamaModels.map((m) => (
+                          {localModels.map((m) => (
                             <SelectItem key={m} value={m}>{m}</SelectItem>
                           ))}
                         </SelectContent>
@@ -368,7 +385,7 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                       value={localBaseUrl}
                       onChange={(e) => setLocalBaseUrl(e.target.value)}
                       onBlur={handleBaseUrlBlur}
-                      placeholder="http://localhost:11434"
+                      placeholder={localBaseUrlPlaceholder}
                       className="text-sm font-mono"
                     />
                   </div>
@@ -382,16 +399,16 @@ function ProviderRow({ display }: { display: ProviderDisplay }) {
                       {testing ? "Testing..." : "Test Connection"}
                     </button>
                     <a
-                      href="https://ollama.com"
+                      href={providerWebsite}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      Get Ollama
+                      {providerWebsiteLabel}
                       <ExternalLink size={10} />
                     </a>
                   </div>
-                  {result && <ResultBadge result={result} type="ollama" />}
+                  {result && <ResultBadge result={result} type={display.type} />}
                 </div>
               ) : display.type === "github-copilot" ? (
                   <GitHubCopilotConnect />
@@ -498,6 +515,9 @@ function ResultBadge({
   result: "success" | "error";
   type: AIProviderType;
 }) {
+  const isLocal = type === "ollama" || type === "lm-studio";
+  const displayName = PROVIDER_DEFAULTS[type].displayName;
+
   if (result === "success") {
     return (
       <motion.div
@@ -506,7 +526,7 @@ function ResultBadge({
         className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg"
       >
         <Check size={13} className="text-emerald-600" />
-        {type === "ollama" ? "Ollama is running and reachable." : "Connected successfully. API key saved."}
+        {isLocal ? `${displayName} is running and reachable.` : "Connected successfully. API key saved."}
       </motion.div>
     );
   }
@@ -518,8 +538,8 @@ function ResultBadge({
       className="flex items-center gap-1.5 text-xs text-red-700 bg-red-50 px-3 py-2 rounded-lg"
     >
       <X size={13} className="text-red-500" />
-      {type === "ollama"
-        ? "Could not connect. Make sure Ollama is running."
+      {isLocal
+        ? `Could not connect. Make sure ${displayName} is running.`
         : "Invalid API key. Please check and try again."}
     </motion.div>
   );
@@ -1066,11 +1086,12 @@ function ShortcutsSection() {
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingsSection>("providers");
 
-  const { checkOllamaConnection } = useProviderStore();
+  const { checkOllamaConnection, checkLmStudioConnection } = useProviderStore();
 
   useEffect(() => {
     checkOllamaConnection();
-  }, [checkOllamaConnection]);
+    checkLmStudioConnection();
+  }, [checkOllamaConnection, checkLmStudioConnection]);
 
   return (
     <div className="flex h-full w-full bg-background text-foreground">

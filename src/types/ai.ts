@@ -2,6 +2,7 @@ export type AIProviderType =
   | "openai"
   | "anthropic"
   | "ollama"
+  | "lm-studio"
   | "openrouter"
   | "github-copilot";
 
@@ -64,6 +65,12 @@ export const PROVIDER_DEFAULTS: Record<
   },
   ollama: {
     displayName: "Ollama (Local)",
+    models: [],
+    defaultModel: "",
+    requiresApiKey: false,
+  },
+  "lm-studio": {
+    displayName: "LM Studio",
     models: [],
     defaultModel: "",
     requiresApiKey: false,

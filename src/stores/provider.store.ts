@@ -4,6 +4,7 @@ import { PROVIDER_DEFAULTS } from "@/types/ai";
 import {
   STORAGE_KEYS,
   OLLAMA_API_URL,
+  LM_STUDIO_API_URL,
   GITHUB_COPILOT_USERNAME_KEY,
 } from "@/lib/constants";
 import { decrypt, encrypt } from "@/lib/crypto";
@@ -22,6 +23,7 @@ const defaultConfigs: Record<AIProviderType, ProviderConfigState> = {
   openai: { apiKey: "", model: PROVIDER_DEFAULTS.openai.defaultModel },
   anthropic: { apiKey: "", model: PROVIDER_DEFAULTS.anthropic.defaultModel },
   ollama: { apiKey: "", model: PROVIDER_DEFAULTS.ollama.defaultModel },
+  "lm-studio": { apiKey: "", model: PROVIDER_DEFAULTS["lm-studio"].defaultModel },
   openrouter: { apiKey: "", model: PROVIDER_DEFAULTS.openrouter.defaultModel },
   "github-copilot": { apiKey: "", model: PROVIDER_DEFAULTS["github-copilot"].defaultModel },
 };
@@ -82,6 +84,8 @@ async function readProviderConfigs(): Promise<Record<AIProviderType, ProviderCon
 
 let ollamaCheckPromise: Promise<void> | null = null;
 let lastOllamaCheckAt = 0;
+let lmStudioCheckPromise: Promise<void> | null = null;
+let lastLmStudioCheckAt = 0;
 
 interface ProviderState {
   selectedProvider: AIProviderType;
@@ -89,6 +93,8 @@ interface ProviderState {
   providerConfigs: Record<AIProviderType, ProviderConfigState>;
   ollamaStatus: OllamaStatus;
   ollamaModels: string[];
+  lmStudioStatus: OllamaStatus;
+  lmStudioModels: string[];
   githubCopilotModels: string[];
   githubCopilotError: string | null;
 
@@ -98,7 +104,8 @@ interface ProviderState {
   getActiveProviderConfig: () => ProviderConfig;
   loadProviderConfigs: () => Promise<void>;
   saveProviderConfig: (type: AIProviderType, apiKey: string) => Promise<void>;
-  checkOllamaConnection: () => Promise<void>;
+  checkOllamaConnection: (force?: boolean) => Promise<void>;
+  checkLmStudioConnection: (force?: boolean) => Promise<void>;
   fetchGithubCopilotModels: () => Promise<void>;
   clearGithubCopilotConnection: (error?: string | null) => Promise<void>;
 }
@@ -109,6 +116,8 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
   providerConfigs: { ...defaultConfigs },
   ollamaStatus: "unknown",
   ollamaModels: [],
+  lmStudioStatus: "unknown",
+  lmStudioModels: [],
   githubCopilotModels: [],
   githubCopilotError: null,
 
@@ -218,12 +227,12 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
     await persistProviderConfigs(nextConfigs);
   },
 
-  checkOllamaConnection: async () => {
+  checkOllamaConnection: async (force = false) => {
     if (ollamaCheckPromise) {
       return ollamaCheckPromise;
     }
 
-    if (Date.now() - lastOllamaCheckAt < 5000) {
+    if (!force && Date.now() - lastOllamaCheckAt < 5000) {
       return;
     }
 
@@ -281,6 +290,60 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
     })();
 
     return ollamaCheckPromise;
+  },
+
+  checkLmStudioConnection: async (force = false) => {
+    if (lmStudioCheckPromise) {
+      return lmStudioCheckPromise;
+    }
+
+    if (!force && Date.now() - lastLmStudioCheckAt < 5000) {
+      return;
+    }
+
+    lastLmStudioCheckAt = Date.now();
+    lmStudioCheckPromise = (async () => {
+    try {
+      const baseUrl = get().providerConfigs["lm-studio"].baseUrl ?? LM_STUDIO_API_URL;
+      const params = new URLSearchParams({ baseUrl });
+      const response = await fetch(`/api/lm-studio/models?${params}`);
+      if (!response.ok) {
+        set({ lmStudioStatus: "disconnected", lmStudioModels: [] });
+        return;
+      }
+      const data = (await response.json()) as {
+        data?: Array<{ id: string }>;
+      };
+      const models: string[] = (data.data ?? []).map((m) => m.id);
+      set({ lmStudioStatus: "connected", lmStudioModels: models });
+
+      // Auto-select first available model if current one isn't loaded
+      const state = get();
+      const currentModel = state.providerConfigs["lm-studio"].model;
+      if (models.length > 0 && !models.includes(currentModel)) {
+        const nextConfigs = {
+          ...state.providerConfigs,
+          "lm-studio": { ...state.providerConfigs["lm-studio"], model: models[0] },
+        };
+        set({
+          providerConfigs: nextConfigs,
+          ...(state.selectedProvider === "lm-studio"
+            ? { selectedModel: models[0] }
+            : {}),
+        });
+        void persistProviderConfigs(nextConfigs);
+        if (state.selectedProvider === "lm-studio") {
+          localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, models[0]);
+        }
+      }
+    } catch {
+      set({ lmStudioStatus: "disconnected", lmStudioModels: [] });
+    } finally {
+      lmStudioCheckPromise = null;
+    }
+    })();
+
+    return lmStudioCheckPromise;
   },
 
   fetchGithubCopilotModels: async () => {

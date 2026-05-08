@@ -123,11 +123,16 @@ function SetupCard() {
 export function ChatEmpty({ onPromptClick }: ChatEmptyProps) {
   const providerConfigs = useProviderStore((s) => s.providerConfigs);
   const ollamaStatus = useProviderStore((s) => s.ollamaStatus);
+  const lmStudioStatus = useProviderStore((s) => s.lmStudioStatus);
 
   const isConfigured = (() => {
     for (const [type, config] of Object.entries(providerConfigs)) {
       if (type === "ollama") {
         if (ollamaStatus === "connected") return true;
+        continue;
+      }
+      if (type === "lm-studio") {
+        if (lmStudioStatus === "connected") return true;
         continue;
       }
       if (PROVIDER_DEFAULTS[type as AIProviderType]?.requiresApiKey && config.apiKey) {

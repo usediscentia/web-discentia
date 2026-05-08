@@ -47,6 +47,14 @@ const providers: ProviderMeta[] = [
     badgeText: "#6B21A8",
   },
   {
+    id: "lm-studio" as AIProviderType,
+    name: "LM Studio",
+    lobeProvider: "lmstudio",
+    badgeLabel: "Local",
+    badgeBg: "#F3E8FF",
+    badgeText: "#6B21A8",
+  },
+  {
     id: "openrouter",
     name: "OpenRouter",
     lobeProvider: "openrouter",
@@ -151,6 +159,8 @@ export function AIProviderSelector({
     setSelectedModel,
     ollamaModels,
     checkOllamaConnection,
+    lmStudioModels,
+    checkLmStudioConnection,
     githubCopilotModels,
     fetchGithubCopilotModels,
   } = useProviderStore();
@@ -163,16 +173,18 @@ export function AIProviderSelector({
   useEffect(() => {
     if (isOpen) {
       checkOllamaConnection();
+      checkLmStudioConnection();
       if (selectedProvider === "github-copilot") {
         void fetchGithubCopilotModels();
       }
     }
-  }, [isOpen, checkOllamaConnection, selectedProvider, fetchGithubCopilotModels]);
+  }, [isOpen, checkOllamaConnection, checkLmStudioConnection, selectedProvider, fetchGithubCopilotModels]);
 
   const modelSearch = modelSearchByProvider[selectedProvider] ?? "";
 
   const getModels = (id: AIProviderType): string[] => {
     if (id === "ollama") return ollamaModels;
+    if (id === "lm-studio") return lmStudioModels;
     if (id === "github-copilot") return githubCopilotModels;
     return PROVIDER_DEFAULTS[id].models;
   };
@@ -329,8 +341,8 @@ export function AIProviderSelector({
                         )}
                       </div>
 
-                      {/* Local hint for Ollama only */}
-                      {provider.id === "ollama" && !isSelected && (
+                      {/* Local hint for local providers */}
+                      {(provider.id === "ollama" || provider.id === "lm-studio") && !isSelected && (
                         <span className="text-[11px] text-[#C4C4C4] shrink-0">local</span>
                       )}
 
