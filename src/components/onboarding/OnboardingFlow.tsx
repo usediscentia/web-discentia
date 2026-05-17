@@ -56,7 +56,17 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto py-6 bg-white">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto py-6"
+      style={{
+        backgroundColor: "#ffffff",
+        backgroundImage: [
+          "radial-gradient(ellipse 70% 70% at center, transparent 20%, rgba(255,255,255,0.98) 100%)",
+          "radial-gradient(circle, rgba(0,0,0,0.12) 1px, transparent 1px)",
+        ].join(", "),
+        backgroundSize: "100% 100%, 16px 16px",
+      }}
+    >
       {/* Main content card */}
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.96 }}
@@ -64,36 +74,35 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         className="relative z-10 w-full max-w-[480px] mx-4 my-auto"
       >
-        <div className="mb-4 flex items-center justify-center gap-2.5">
-          <DiscentiaLogo size={22} alt="Discentia" />
-          <span
-            className="text-[17px] font-bold text-[#0a0a0a]"
-            style={{
-              fontFamily: "Helvetica, Arial, sans-serif",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            Discentia
-          </span>
-        </div>
-
-        {/* Progress dots */}
-        <div className="flex items-center justify-center gap-2 mb-5">
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-            <motion.div
-              key={i}
-              className="h-1.5 rounded-full"
-              animate={{
-                width: i === step ? 28 : 8,
-                backgroundColor: i <= step ? "var(--brand)" : "rgba(0,0,0,0.15)",
-              }}
-              transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-            />
-          ))}
-        </div>
-
         {/* Step content */}
         <div className="bg-white rounded-3xl shadow-lg overflow-hidden min-h-[480px] flex flex-col border border-black/[0.06]">
+          {/* Logo header — static across all steps */}
+          <div className="flex items-center justify-between px-7 pt-6 pb-0">
+            <div className="flex items-center gap-2.5">
+              <DiscentiaLogo size={34} alt="Discentia" />
+              <span
+                className="text-[24px] font-bold text-[#0a0a0a]"
+                style={{ fontFamily: "Helvetica, Arial, sans-serif", letterSpacing: "-0.02em" }}
+              >
+                Discentia
+              </span>
+            </div>
+            {/* Progress dots */}
+            <div className="flex items-center gap-1.5">
+              {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="h-1.5 rounded-full"
+                  animate={{
+                    width: i === step ? 20 : 6,
+                    backgroundColor: i <= step ? "var(--brand)" : "rgba(0,0,0,0.15)",
+                  }}
+                  transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+                />
+              ))}
+            </div>
+          </div>
+
           <AnimatePresence mode="wait" custom={direction}>
             {step === 0 && (
               <StepWelcome
@@ -174,7 +183,7 @@ function StepWelcome({
       className="flex flex-col flex-1"
     >
       {/* Hero area */}
-      <div className="relative px-10 pt-12 pb-8">
+      <div className="relative px-10 pt-7 pb-8">
 
         {/* Display headline */}
         <motion.h1
@@ -268,6 +277,13 @@ const PROVIDERS: ProviderOption[] = [
     requiresApiKey: false,
   },
   {
+    type: "lm-studio",
+    lobeKey: "lmstudio",
+    label: "LM Studio",
+    description: "Run local models via LM Studio. No API key needed.",
+    requiresApiKey: false,
+  },
+  {
     type: "openai",
     lobeKey: "openai",
     label: "OpenAI",
@@ -302,6 +318,8 @@ function StepProvider({
     saveProviderConfig,
     checkOllamaConnection,
     ollamaStatus,
+    checkLmStudioConnection,
+    lmStudioStatus,
     providerConfigs,
   } = useProviderStore();
 
@@ -309,13 +327,18 @@ function StepProvider({
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [ollamaChecking, setOllamaChecking] = useState(false);
+  const [lmStudioChecking, setLmStudioChecking] = useState(false);
 
-  // Auto-detect Ollama on mount
+  // Auto-detect local providers on mount
   useEffect(() => {
-    const startTimeout = window.setTimeout(() => setOllamaChecking(true), 0);
+    const startTimeout = window.setTimeout(() => {
+      setOllamaChecking(true);
+      setLmStudioChecking(true);
+    }, 0);
     checkOllamaConnection().finally(() => setOllamaChecking(false));
+    checkLmStudioConnection().finally(() => setLmStudioChecking(false));
     return () => window.clearTimeout(startTimeout);
-  }, [checkOllamaConnection]);
+  }, [checkOllamaConnection, checkLmStudioConnection]);
 
   const handleSelectProvider = useCallback(
     (type: AIProviderType) => {
@@ -384,8 +407,10 @@ function StepProvider({
       <div className="mt-6 space-y-2.5">
         {PROVIDERS.map((provider, i) => {
           const isSelected = selected === provider.type;
-          const isOllamaConnected =
-            provider.type === "ollama" && ollamaStatus === "connected";
+          const isLocalProvider = provider.type === "ollama" || provider.type === "lm-studio";
+          const localStatus = provider.type === "lm-studio" ? lmStudioStatus : ollamaStatus;
+          const isLocalChecking = provider.type === "lm-studio" ? lmStudioChecking : ollamaChecking;
+          const isLocalConnected = isLocalProvider && localStatus === "connected";
 
           return (
             <motion.button
@@ -408,23 +433,23 @@ function StepProvider({
                   <span className="text-[14px] font-semibold text-[#0a0a0a]">
                     {provider.label}
                   </span>
-                  {provider.type === "ollama" && !ollamaChecking && (
+                  {isLocalProvider && !isLocalChecking && (
                     <span
                       className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                        isOllamaConnected
+                        isLocalConnected
                           ? "bg-emerald-50 text-emerald-600"
                           : "bg-red-50 text-red-400"
                       }`}
                     >
-                      {isOllamaConnected ? (
+                      {isLocalConnected ? (
                         <Wifi size={10} />
                       ) : (
                         <WifiOff size={10} />
                       )}
-                      {isOllamaConnected ? "Connected" : "Not found"}
+                      {isLocalConnected ? "Connected" : "Not found"}
                     </span>
                   )}
-                  {provider.type === "ollama" && ollamaChecking && (
+                  {isLocalProvider && isLocalChecking && (
                     <span className="text-[10px] text-[#9CA3AF] font-medium">
                       Checking...
                     </span>
