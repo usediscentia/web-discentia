@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Check } from "lucide-react";
-import { useDialKit } from "dialkit";
 import { cn } from "@/lib/utils";
 
 interface CardSelectorOption {
@@ -152,18 +151,14 @@ function CardOption({
   );
 }
 
-export function CardSelector({ selectedAmount, onSelect, disabled, className }: CardSelectorProps) {
-  const dial = useDialKit("Card Hover", {
-    spring: { type: "spring" as const, visualDuration: 0.4, bounce: 0.25 },
-    hoverScale: [1.03, 1.0, 1.05, 0.01] as [number, number, number, number],
-    shadowBlur: [12, 0, 40, 1] as [number, number, number, number],
-  });
+const ANIM: CardOptionAnimProps = {
+  hoverScale: 1.03,
+  shadowBlur: 12,
+  spring: { type: "spring", visualDuration: 0.4, bounce: 0.25 },
+};
 
-  const anim: CardOptionAnimProps = {
-    hoverScale: dial.hoverScale,
-    shadowBlur: dial.shadowBlur,
-    spring: dial.spring as CardOptionAnimProps["spring"],
-  };
+export function CardSelector({ selectedAmount, onSelect, disabled, className }: CardSelectorProps) {
+  const anim = ANIM;
 
   return (
     <div
