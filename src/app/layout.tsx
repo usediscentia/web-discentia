@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import "dialkit/styles.css";
-import { DialRoot } from "dialkit";
 import { getAppearanceBootScript } from "@/lib/appearance";
 
 export const metadata: Metadata = {
@@ -21,7 +19,6 @@ export default function RootLayout({
       </head>
       <body className="h-full bg-background font-sans text-foreground antialiased">
         {children}
-        <DialRoot />
       </body>
     </html>
   );
