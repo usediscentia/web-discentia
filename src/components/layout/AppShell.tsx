@@ -15,6 +15,7 @@ import StudyView from "@/components/study/StudyView"
 import StatsView from "@/components/stats/StatsView"
 import { CommandPalette } from "@/components/search/CommandPalette"
 import OnboardingFlow from "@/components/onboarding/OnboardingFlow"
+import GenerationModal from "@/components/generation/GenerationModal"
 
 function MobileNav() {
   const { activeView, setActiveView } = useAppStore()
@@ -107,6 +108,7 @@ export default function AppShell() {
       </div>
       <MobileNav />
       {showOnboarding && <OnboardingFlow onComplete={() => setShowOnboarding(false)} />}
+      <GenerationModal />
     </>
   )
 }

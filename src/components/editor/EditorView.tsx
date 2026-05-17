@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useAppStore } from "@/stores/app.store";
-import { useChatStore } from "@/stores/chat.store";
+import { useGenerationStore } from "@/stores/generation.store";
 import { StorageService } from "@/services/storage";
 import MarkdownEditor from "./MarkdownEditor";
 import { useEditorAutosave } from "./useEditorAutosave";
@@ -377,7 +377,7 @@ function EditorEmptyState() {
 // --- Main EditorView ---
 export default function EditorView() {
   const { editorItemId, setEditorItemId, setActiveView } = useAppStore();
-  const { setPendingMessage, setSelectedLibraryIds } = useChatStore();
+  const openGeneration = useGenerationStore((s) => s.open);
 
   const [title, setTitle] = useState("");
   const [libraryId, setLibraryId] = useState<string | null>(null);
@@ -524,28 +524,10 @@ export default function EditorView() {
 
   const handleAIAction = useCallback(
     (type: "flashcards" | "quiz") => {
-      if (!hasContent) return;
-
-      const labels = {
-        flashcards: "flashcards",
-        quiz: "a quiz",
-      };
-      const prompt = `Create ${labels[type]} about the following content:\n\n${editorMarkdown}`;
-
-      setPendingMessage(prompt);
-      if (libraryId) {
-        setSelectedLibraryIds([libraryId]);
-      }
-      setActiveView("chat");
+      if (!hasContent || !editorItemId) return;
+      openGeneration(editorItemId, title || "Untitled", type === "flashcards" ? "flashcards" : "quiz");
     },
-    [
-      hasContent,
-      editorMarkdown,
-      libraryId,
-      setPendingMessage,
-      setSelectedLibraryIds,
-      setActiveView,
-    ]
+    [hasContent, editorItemId, title, openGeneration]
   );
 
   const [statusNow, setStatusNow] = useState(() => Date.now());
