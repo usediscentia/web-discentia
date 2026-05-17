@@ -31,7 +31,6 @@ import { useChatStore } from "@/stores/chat.store";
 import { useGenerationStore } from "@/stores/generation.store";
 import ContentPreview from "./ContentPreview";
 import StudyHistory from "./StudyHistory";
-import GenerationModal from "@/components/generation/GenerationModal";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -579,7 +578,6 @@ export default function DocumentDetailPage({
         </div>
       </motion.div>
 
-      <GenerationModal item={item} />
     </>
   );
 }

@@ -15,7 +15,6 @@ import { parseExerciseFromResponse } from "@/services/ai/parsers/exercise.parser
 import { getAIProvider } from "@/services/ai";
 import { useProviderStore } from "@/stores/provider.store";
 import type { FlashcardData } from "@/types/exercise";
-import type { LibraryItem } from "@/types/library";
 import { distributeCards } from "@/lib/distribute-cards";
 import { useAppStore } from "@/stores/app.store";
 import ConfigureStep from "./ConfigureStep";
@@ -25,16 +24,13 @@ import ScheduleStep from "./ScheduleStep";
 import SuccessStep from "./SuccessStep";
 import ErrorStep from "./ErrorStep";
 
-interface GenerationModalProps {
-  item: LibraryItem;
-}
-
-export default function GenerationModal({ item }: GenerationModalProps) {
+export default function GenerationModal() {
   const {
     isOpen,
     step,
     cardCount,
     focusPrompt,
+    documentId,
     close,
     setStep,
     setError,
@@ -81,13 +77,14 @@ export default function GenerationModal({ item }: GenerationModalProps) {
       "Generate flashcards about the main concepts, definitions, and examples taught in this material";
 
     // Build context from item chunks
-    const chunks = item.metadata.chunks ?? [];
-    const scoredItem = {
+    const item = documentId ? await StorageService.getLibraryItem(documentId) : null;
+    const chunks = item?.metadata.chunks ?? [];
+    const scoredItem = item ? {
       item,
       score: 1,
       matchedChunks: chunks.map((chunk) => ({ chunk, chunkScore: 1 })),
-    };
-    const { contextText } = buildContextSnippet([scoredItem], 4000);
+    } : null;
+    const { contextText } = buildContextSnippet(scoredItem ? [scoredItem] : [], 4000);
     const fullPrompt = buildFlashcardPrompt(prompt, contextText || undefined, cardCount);
 
     // Simulate incremental progress while streaming
@@ -149,7 +146,7 @@ export default function GenerationModal({ item }: GenerationModalProps) {
       abortControllerRef.current = null;
       setError(err.message ?? "Generation failed.");
     });
-  }, [focusPrompt, cardCount, item, setStep, setError, setGenerationProgress, setGeneratedCards]);
+  }, [focusPrompt, cardCount, documentId, setStep, setError, setGenerationProgress, setGeneratedCards]);
 
   const handleSave = useCallback(async () => {
     const activeCards = generatedCards.filter(
@@ -162,7 +159,7 @@ export default function GenerationModal({ item }: GenerationModalProps) {
         activeCards.map((c) => ({
           front: c.front,
           back: c.back,
-          libraryItemId: item.id,
+          libraryItemId: documentId ?? "",
         }))
       );
       setSavedCardIds(created.map((c) => c.id));
@@ -170,7 +167,7 @@ export default function GenerationModal({ item }: GenerationModalProps) {
     } finally {
       setSaving(false);
     }
-  }, [generatedCards, removedCardIds, item.id, setStep, setSavedCardIds]);
+  }, [generatedCards, removedCardIds, documentId, setStep, setSavedCardIds]);
 
   const handleScheduleConfirm = useCallback(async (targetDate: Date) => {
     const timestamps = distributeCards(savedCardIds.length, targetDate);
@@ -182,6 +179,20 @@ export default function GenerationModal({ item }: GenerationModalProps) {
     setStep("success");
   }, [savedCardIds, setStep]);
 
+  const handleClose = useCallback(() => {
+    if (step === "generating") {
+      abortGeneration();
+      clearProgress();
+    }
+    if (step === "schedule" && savedCardIds.length > 0) {
+      const fallbackDate = new Date();
+      fallbackDate.setDate(fallbackDate.getDate() + 14);
+      void handleScheduleConfirm(fallbackDate);
+    }
+    close();
+    if (step !== "generating") setTimeout(reset, 300);
+  }, [step, savedCardIds, handleScheduleConfirm, close, reset]);
+
   const handleAutoClose = useCallback(() => {
     abortGeneration();
     clearProgress();
@@ -192,86 +203,73 @@ export default function GenerationModal({ item }: GenerationModalProps) {
 
   return (
     <>
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          key="generation-backdrop"
-          className="fixed inset-0 z-[49] bg-black/50 pointer-events-none"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        />
-      )}
-    </AnimatePresence>
-    <Dialog
-      modal={false}
-      open={isOpen}
-      onOpenChange={(open) => {
-        if (!open) {
-          if (step === "generating") {
-            abortGeneration();
-            clearProgress();
-          }
-          // If closing during schedule step, apply 2-week fallback
-          if (step === "schedule" && savedCardIds.length > 0) {
-            const fallbackDate = new Date();
-            fallbackDate.setDate(fallbackDate.getDate() + 14);
-            void handleScheduleConfirm(fallbackDate);
-          }
-          close();
-          if (step !== "generating") setTimeout(reset, 300);
-        }
-      }}
-    >
-      <DialogContent
-        showCloseButton
-        onInteractOutside={(e) => e.preventDefault()}
-        className="sm:max-w-[440px] rounded-2xl p-6 bg-white border-[#E4E3E1] shadow-[0_24px_48px_-8px_rgba(0,0,0,0.12),0_8px_16px_-4px_rgba(0,0,0,0.06)]"
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            key="generation-backdrop"
+            className="fixed inset-0 z-[49] bg-black/50 pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+        )}
+      </AnimatePresence>
+      <Dialog
+        modal={false}
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) handleClose();
+        }}
       >
-        <DialogTitle className="sr-only">Generate Exercises</DialogTitle>
-        <AnimatePresence mode="wait">
-          {step === "configure" && (
-            <ConfigureStep key="configure" onGenerate={handleGenerate} />
-          )}
-          {step === "generating" && <GeneratingStep key="generating" />}
-          {step === "review" && (
-            <ReviewStep
-              key="review"
-              saving={saving}
-              onSave={handleSave}
-              onRegenerate={() => setStep("configure")}
-              onBackToSettings={() => setStep("configure")}
-            />
-          )}
-          {step === "schedule" && (
-            <ScheduleStep
-              key="schedule"
-              cardCount={
-                generatedCards.filter((c) => !removedCardIds.has(c.id)).length
-              }
-              onConfirm={handleScheduleConfirm}
-            />
-          )}
-          {step === "success" && (
-            <SuccessStep
-              key="success"
-              cardCount={
-                generatedCards.filter((c) => !removedCardIds.has(c.id)).length
-              }
-              onAutoClose={handleAutoClose}
-            />
-          )}
-          {step === "error" && (
-            <ErrorStep
-              key="error"
-              message={errorMessage ?? "Something went wrong."}
-              onRetry={() => setStep("configure")}
-            />
-          )}
-        </AnimatePresence>
-      </DialogContent>
-    </Dialog>
+        <DialogContent
+          showCloseButton
+          onInteractOutside={(e) => e.preventDefault()}
+          className="sm:max-w-[440px] rounded-2xl p-6 bg-white border-[#E4E3E1] shadow-[0_24px_48px_-8px_rgba(0,0,0,0.12),0_8px_16px_-4px_rgba(0,0,0,0.06)]"
+        >
+          <DialogTitle className="sr-only">Generate Exercises</DialogTitle>
+          <AnimatePresence mode="wait">
+            {step === "configure" && (
+              <ConfigureStep key="configure" onGenerate={handleGenerate} />
+            )}
+            {step === "generating" && <GeneratingStep key="generating" />}
+            {step === "review" && (
+              <ReviewStep
+                key="review"
+                saving={saving}
+                onSave={handleSave}
+                onRegenerate={() => setStep("configure")}
+                onBackToSettings={() => setStep("configure")}
+              />
+            )}
+            {step === "schedule" && (
+              <ScheduleStep
+                key="schedule"
+                cardCount={
+                  generatedCards.filter((c) => !removedCardIds.has(c.id)).length
+                }
+                onConfirm={handleScheduleConfirm}
+              />
+            )}
+            {step === "success" && (
+              <SuccessStep
+                key="success"
+                cardCount={
+                  generatedCards.filter((c) => !removedCardIds.has(c.id)).length
+                }
+                onAutoClose={handleAutoClose}
+              />
+            )}
+            {step === "error" && (
+              <ErrorStep
+                key="error"
+                message={errorMessage ?? "Something went wrong."}
+                onRetry={() => setStep("configure")}
+              />
+            )}
+          </AnimatePresence>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
