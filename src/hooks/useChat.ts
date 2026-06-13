@@ -13,7 +13,6 @@ import {
   parseExerciseFromResponse,
 } from "@/services/ai/parsers/exercise.parser";
 import { buildExercisePrompt } from "@/services/ai/prompts/exercise.prompts";
-import { getDB } from "@/services/storage/database";
 import {
   buildContextSnippet,
   DEFAULT_CONTEXT_TOKEN_BUDGET,
@@ -292,7 +291,7 @@ export function useChat() {
                 try {
                   parsedExercise.messageId = savedMessage.id;
                   parsedExercise.sourceItemId = injectedChunks[0]?.libraryItemId;
-                  await getDB().exercises.add(parsedExercise);
+                  await StorageService.saveExercise(parsedExercise);
                 } catch {
                   // Exercise storage failed — message is already saved
                 }
