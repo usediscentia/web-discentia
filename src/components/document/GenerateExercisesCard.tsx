@@ -31,24 +31,21 @@ export default function GenerateExercisesCard({
         <ExerciseTile
           icon={<Layers size={22} />}
           label="Flashcards"
-          onClick={() => open(documentId, documentTitle, "flashcards")}
+          onClick={() => open(documentId, documentTitle, "flashcard")}
         />
         <ExerciseTile
           icon={<BrainCircuit size={22} />}
           label="Quiz"
-          disabled
           onClick={() => open(documentId, documentTitle, "quiz")}
         />
         <ExerciseTile
           icon={<Zap size={22} />}
           label="Sprint"
-          disabled
           onClick={() => open(documentId, documentTitle, "sprint")}
         />
         <ExerciseTile
           icon={<Link2 size={22} />}
           label="Connections"
-          disabled
           onClick={() => open(documentId, documentTitle, "connections")}
         />
       </div>

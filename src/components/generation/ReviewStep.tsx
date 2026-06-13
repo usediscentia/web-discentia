@@ -6,7 +6,16 @@ import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useGenerationStore } from "@/stores/generation.store";
+import type { Exercise } from "@/types/exercise";
 import FlashcardSlide from "./FlashcardSlide";
+
+function getNonFlashcardItemInfo(exercise: Exercise): { count: number; label: string } {
+  const data = exercise.data as unknown as Record<string, unknown>;
+  if (Array.isArray(data.questions)) return { count: (data.questions as unknown[]).length, label: "questions" };
+  if (Array.isArray(data.groups)) return { count: (data.groups as unknown[]).length, label: "groups" };
+  if (Array.isArray(data.gaps)) return { count: (data.gaps as unknown[]).length, label: "gaps" };
+  return { count: 0, label: "items" };
+}
 
 interface ReviewStepProps {
   onSave: () => void;
@@ -23,6 +32,8 @@ export default function ReviewStep({
 }: ReviewStepProps) {
   const {
     generatedCards,
+    generatedExercise,
+    exerciseType,
     removedCardIds,
     editingCardId,
     setEditingCard,
@@ -41,7 +52,6 @@ export default function ReviewStep({
     [generatedCards, removedCardIds]
   );
 
-  // Clamp index when cards are removed
   useEffect(() => {
     if (activeCards.length > 0 && selectedIndex >= activeCards.length) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -84,17 +94,67 @@ export default function ReviewStep({
   }, [currentCard, removeCard]);
 
   const slideVariants = {
-    enter: (d: number) => ({
-      x: prefersReducedMotion ? 0 : d * 32,
-      opacity: 0,
-    }),
+    enter: (d: number) => ({ x: prefersReducedMotion ? 0 : d * 32, opacity: 0 }),
     center: { x: 0, opacity: 1 },
-    exit: (d: number) => ({
-      x: prefersReducedMotion ? 0 : d * -32,
-      opacity: 0,
-    }),
+    exit: (d: number) => ({ x: prefersReducedMotion ? 0 : d * -32, opacity: 0 }),
   };
 
+  // Non-flashcard types: compact summary view
+  if (generatedExercise && exerciseType !== "flashcard") {
+    const { count, label } = getNonFlashcardItemInfo(generatedExercise);
+    const typeLabel = exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1);
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: prefersReducedMotion ? 0 : -8, transition: { duration: 0.12, ease: [0.55, 0, 1, 0.45] } }}
+        transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
+        className="flex flex-col min-w-0"
+      >
+        <div className="flex items-center gap-2.5 mb-5 pr-8">
+          <h2 className="text-2xl font-bold leading-none text-[#0C0C0C] tracking-tight">Review</h2>
+        </div>
+        <div className="bg-[#F8F8F7] rounded-xl p-5 mb-5">
+          <p className="text-[10px] font-medium tracking-widest uppercase text-[#A8A5A0] mb-1.5">
+            {typeLabel}
+          </p>
+          <p className="text-base font-semibold text-[#0C0C0C] leading-snug">
+            {generatedExercise.title}
+          </p>
+          <p className="text-sm text-[#7C7974] mt-1">
+            {count} {label}
+          </p>
+        </div>
+        <Separator className="mb-4" />
+        <Button
+          onClick={onSave}
+          disabled={saving}
+          className="w-full h-11 rounded-lg bg-gradient-to-b from-[#222018] to-[#171614] hover:brightness-110 active:scale-[0.97] text-white text-sm font-medium cursor-pointer shadow-[0_0_0_0.5px_rgba(0,0,0,0.4),inset_0_0_0_1px_rgba(255,255,255,0.04),inset_0_1px_0_rgba(255,255,255,0.07),0_1px_2px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.08),0_4px_8px_rgba(0,0,0,0.04)] [text-shadow:0_1px_1px_rgba(0,0,0,0.2)]"
+          style={{ transition: "filter 150ms ease, transform 150ms ease" }}
+        >
+          {saving ? "Saving..." : "Save exercise"}
+        </Button>
+        <div className="flex items-center justify-center gap-2 mt-3">
+          <button
+            onClick={onRegenerate}
+            className="text-xs text-[#A8A5A0] hover:text-[#5C5A56] transition-colors cursor-pointer"
+          >
+            Regenerate
+          </button>
+          <span className="text-xs text-[#D3D1CE]">·</span>
+          <button
+            onClick={onBackToSettings}
+            className="text-xs text-[#A8A5A0] hover:text-[#5C5A56] transition-colors cursor-pointer"
+          >
+            Back to settings
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Flashcard: card carousel (unchanged from original)
   if (activeCards.length === 0) {
     return (
       <motion.div
@@ -128,17 +188,15 @@ export default function ReviewStep({
       transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
       className="flex flex-col min-w-0"
     >
-      {/* Header — title + counter badge, leaves space for Dialog's X button */}
+      {/* Header */}
       <div className="flex items-center gap-2.5 mb-5 pr-8">
-        <h2 className="text-2xl font-bold leading-none text-[#0C0C0C] tracking-tight">
-          Review
-        </h2>
+        <h2 className="text-2xl font-bold leading-none text-[#0C0C0C] tracking-tight">Review</h2>
         <span className="text-xs font-medium text-[#7C7974] bg-[#F5F2EE] px-2.5 py-1 rounded-full tabular-nums">
           {selectedIndex + 1} of {activeCards.length}
         </span>
       </div>
 
-      {/* Body — AnimatePresence switches card view ↔ edit form */}
+      {/* Body */}
       <AnimatePresence mode="wait">
         {isEditing ? (
           <motion.div
@@ -150,9 +208,7 @@ export default function ReviewStep({
             className="flex flex-col gap-4"
           >
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-semibold text-[#A8A5A0] tracking-widest uppercase">
-                Front
-              </label>
+              <label className="text-[10px] font-semibold text-[#A8A5A0] tracking-widest uppercase">Front</label>
               <textarea
                 value={editFront}
                 onChange={(e) => setEditFront(e.target.value)}
@@ -162,9 +218,7 @@ export default function ReviewStep({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-semibold text-[#A8A5A0] tracking-widest uppercase">
-                Back
-              </label>
+              <label className="text-[10px] font-semibold text-[#A8A5A0] tracking-widest uppercase">Back</label>
               <textarea
                 value={editBack}
                 onChange={(e) => setEditBack(e.target.value)}
@@ -198,7 +252,6 @@ export default function ReviewStep({
             transition={{ duration: 0.15 }}
             className="flex flex-col gap-4"
           >
-            {/* Card with directional slide animation */}
             <div className="overflow-hidden rounded-xl">
               <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
@@ -215,7 +268,6 @@ export default function ReviewStep({
               </AnimatePresence>
             </div>
 
-            {/* Navigation */}
             <div className="flex items-center justify-between">
               <button
                 onClick={goPrev}
@@ -268,7 +320,6 @@ export default function ReviewStep({
 
             <Separator />
 
-            {/* Actions */}
             <div className="flex items-center justify-center gap-1">
               <button
                 onClick={handleStartEdit}
@@ -291,7 +342,6 @@ export default function ReviewStep({
 
             <Separator />
 
-            {/* Primary CTA */}
             <Button
               onClick={onSave}
               disabled={saving}
@@ -303,7 +353,6 @@ export default function ReviewStep({
                 : `Add ${activeCards.length} card${activeCards.length !== 1 ? "s" : ""} to deck`}
             </Button>
 
-            {/* Secondary actions */}
             <div className="flex items-center justify-center gap-2">
               <button
                 onClick={onRegenerate}

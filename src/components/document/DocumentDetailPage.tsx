@@ -136,10 +136,10 @@ function BookCover({ item, library }: { item: LibraryItem; library?: Library }) 
 // ── Overview Tab ───────────────────────────────────────────────────────────────
 
 const GENERATE_TILES = [
-  { icon: Layers, label: "Flashcards", mode: "flashcards" as const, disabled: false },
-  { icon: BrainCircuit, label: "Quiz", mode: "quiz" as const, disabled: true },
-  { icon: Zap, label: "Sprint", mode: "sprint" as const, disabled: true },
-  { icon: Link2, label: "Connections", mode: "connections" as const, disabled: true },
+  { icon: Layers, label: "Flashcards", mode: "flashcard" as const, disabled: false },
+  { icon: BrainCircuit, label: "Quiz", mode: "quiz" as const, disabled: false },
+  { icon: Zap, label: "Sprint", mode: "sprint" as const, disabled: false },
+  { icon: Link2, label: "Connections", mode: "connections" as const, disabled: false },
 ] as const;
 
 function OverviewTab({ item, library }: { item: LibraryItem; library?: Library }) {
