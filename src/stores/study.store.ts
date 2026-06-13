@@ -7,7 +7,7 @@ import type { ReviewRating } from "@/lib/sm2";
 import { StorageService } from "@/services/storage";
 import { useProviderStore } from "@/stores/provider.store";
 import { getAIProvider } from "@/services/ai";
-import { buildEvaluationPrompt } from "@/services/ai/prompts/review.prompts";
+import { evaluateAnswer } from "@/services/ai/evaluation";
 
 type Phase = "loading" | "today" | "answering" | "evaluating" | "evaluated" | "complete";
 type AIVerdict = "correct" | "partial" | "incorrect";
@@ -233,60 +233,11 @@ export const useStudyStore = create<StudyState>((set, get) => ({
 
     set({ phase: "evaluating" });
 
-    let verdict: AIVerdict;
-    let explanation: string;
-    let keyMissing: string | null;
+    const config = useProviderStore.getState().getActiveProviderConfig();
+    const provider = getAIProvider(config.type);
+    const sourceContext = card.libraryItemId ? sourceContexts[card.libraryItemId] : undefined;
 
-    try {
-      const config = useProviderStore.getState().getActiveProviderConfig();
-      const provider = getAIProvider(config.type);
-      if (!provider) throw new Error(`No provider found for type: ${config.type}`);
-
-      const sourceContext = card.libraryItemId
-        ? sourceContexts[card.libraryItemId]
-        : undefined;
-
-      const prompt = buildEvaluationPrompt({
-        front: card.front,
-        back: card.back,
-        userAnswer: answer,
-        sourceContext,
-      });
-
-      const raw = await new Promise<string>((resolve, reject) => {
-        provider.sendMessage(
-          [{ role: "user", content: prompt }],
-          config,
-          {
-            onToken: () => {},
-            onComplete: (fullText) => resolve(fullText),
-            onError: (err) => reject(err),
-          }
-        ).catch(reject);
-      });
-
-      // Strip markdown fences before parsing
-      const cleaned = raw
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/\s*```$/i, "")
-        .trim();
-
-      const parsed = JSON.parse(cleaned) as {
-        verdict: AIVerdict;
-        explanation: string;
-        keyMissing: string | null;
-      };
-
-      const VALID_VERDICTS = ["correct", "partial", "incorrect"] as const;
-      const parsedVerdict = parsed.verdict;
-      verdict = VALID_VERDICTS.includes(parsedVerdict) ? parsedVerdict : "partial";
-      explanation = parsed.explanation;
-      keyMissing = parsed.keyMissing ?? null;
-    } catch {
-      verdict = answer.length > 10 ? "partial" : "incorrect";
-      explanation = "Could not evaluate — check the correct answer.";
-      keyMissing = null;
-    }
+    const { verdict, explanation, keyMissing } = await evaluateAnswer(card, answer, sourceContext, provider, config);
 
     const result: SessionResult = {
       card,
