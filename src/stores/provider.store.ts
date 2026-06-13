@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import type { AIProviderType, ProviderConfig } from "@/types/ai";
+import type { AIProviderType, AIServiceProvider, ProviderConfig } from "@/types/ai";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
+import { getAIProvider } from "@/services/ai";
 import {
   STORAGE_KEYS,
   OLLAMA_API_URL,
@@ -102,6 +103,7 @@ interface ProviderState {
   setSelectedModel: (model: string) => void;
   setProviderConfig: (type: AIProviderType, config: ProviderConfigState) => void;
   getActiveProviderConfig: () => ProviderConfig;
+  getConfiguredProvider: () => { config: ProviderConfig; provider: AIServiceProvider | undefined };
   loadProviderConfigs: () => Promise<void>;
   saveProviderConfig: (type: AIProviderType, apiKey: string) => Promise<void>;
   checkOllamaConnection: (force?: boolean) => Promise<void>;
@@ -168,6 +170,11 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
       temperature: config.temperature,
       baseUrl: config.baseUrl,
     };
+  },
+
+  getConfiguredProvider: () => {
+    const config = get().getActiveProviderConfig();
+    return { config, provider: getAIProvider(config.type) };
   },
 
   loadProviderConfigs: async () => {
