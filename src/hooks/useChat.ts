@@ -5,7 +5,6 @@ import { useChatStore } from "@/stores/chat.store";
 import { useProviderStore } from "@/stores/provider.store";
 import { useAppStore } from "@/stores/app.store";
 import { StorageService } from "@/services/storage";
-import { getAIProvider } from "@/services/ai";
 import { SYSTEM_PROMPT } from "@/lib/constants";
 import { stripCitationsBlock, extractCitationsFromChunks } from "@/lib/citations";
 import {
@@ -46,7 +45,7 @@ export function useChat() {
   const toggleLibrary = useChatStore(s => s.toggleLibrary);
   const clearLibraries = useChatStore(s => s.clearLibraries);
 
-  const { getActiveProviderConfig } = useProviderStore();
+  const { getConfiguredProvider } = useProviderStore();
   const { setActiveView } = useAppStore();
 
   const refreshLibraries = useCallback(async () => {
@@ -109,14 +108,13 @@ export function useChat() {
 
   const sendMessage = useCallback(
     async (content: string) => {
-      const config = getActiveProviderConfig();
+      const { config, provider } = getConfiguredProvider();
 
       if (PROVIDER_DEFAULTS[config.type].requiresApiKey && !config.apiKey) {
         setActiveView("settings");
         return;
       }
 
-      const provider = getAIProvider(config.type);
       if (!provider) {
         setError(`Provider "${config.type}" is not available.`);
         return;
@@ -337,7 +335,7 @@ export function useChat() {
       }
     },
     [
-      getActiveProviderConfig,
+      getConfiguredProvider,
       appendMessage,
       selectedLibraryIds,
       setActiveConversationId,

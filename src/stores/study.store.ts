@@ -6,7 +6,6 @@ import { sm2 } from "@/lib/sm2";
 import type { ReviewRating } from "@/lib/sm2";
 import { StorageService } from "@/services/storage";
 import { useProviderStore } from "@/stores/provider.store";
-import { getAIProvider } from "@/services/ai";
 import { evaluateAnswer } from "@/services/ai/evaluation";
 
 type Phase = "loading" | "today" | "answering" | "evaluating" | "evaluated" | "complete";
@@ -233,8 +232,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
 
     set({ phase: "evaluating" });
 
-    const config = useProviderStore.getState().getActiveProviderConfig();
-    const provider = getAIProvider(config.type);
+    const { config, provider } = useProviderStore.getState().getConfiguredProvider();
     const sourceContext = card.libraryItemId ? sourceContexts[card.libraryItemId] : undefined;
 
     const { verdict, explanation, keyMissing } = await evaluateAnswer(card, answer, sourceContext, provider, config);

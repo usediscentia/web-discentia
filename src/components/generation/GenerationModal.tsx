@@ -13,7 +13,6 @@ import { StorageService } from "@/services/storage";
 import { buildContextSnippet } from "@/lib/tokens";
 import { buildExercisePrompt } from "@/services/ai/prompts/exercise.prompts";
 import { parseExerciseFromResponse } from "@/services/ai/parsers/exercise.parser";
-import { getAIProvider } from "@/services/ai";
 import { useProviderStore } from "@/stores/provider.store";
 import type { Exercise, FlashcardData } from "@/types/exercise";
 import { distributeCards } from "@/lib/distribute-cards";
@@ -92,8 +91,7 @@ export default function GenerationModal() {
     setStep("generating");
     setGenerationProgress(0, 0);
 
-    const config = useProviderStore.getState().getActiveProviderConfig();
-    const provider = getAIProvider(config.type);
+    const { config, provider } = useProviderStore.getState().getConfiguredProvider();
     if (!provider) {
       setError("No AI provider available.");
       return;
