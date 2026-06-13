@@ -1,9 +1,10 @@
 "use client";
 
 import { create } from "zustand";
+import type { Exercise } from "@/types/exercise";
 
 export type GenerationStep = "configure" | "generating" | "review" | "schedule" | "success" | "error";
-export type ExerciseGenerationType = "flashcards" | "quiz" | "sprint" | "connections";
+export type ExerciseGenerationType = "flashcard" | "quiz" | "sprint" | "connections" | "fillgap";
 
 export interface FlashcardDraft {
   id: string;
@@ -25,6 +26,7 @@ interface GenerationState {
 
   // Generating
   generatedCards: FlashcardDraft[];
+  generatedExercise: Exercise | null;
   generationProgress: number;
   currentGeneratingIndex: number;
 
@@ -34,7 +36,7 @@ interface GenerationState {
 
   // Schedule
   targetDate: Date | null;
-  savedCardIds: string[]; // IDs of cards saved to DB (for distribution)
+  savedCardIds: string[];
 
   // Error
   errorMessage: string | null;
@@ -46,7 +48,9 @@ interface GenerationState {
   setError: (message: string) => void;
   setFocusPrompt: (prompt: string) => void;
   setCardCount: (count: number) => void;
+  setExerciseType: (type: ExerciseGenerationType) => void;
   setGeneratedCards: (cards: FlashcardDraft[]) => void;
+  setGeneratedExercise: (exercise: Exercise | null) => void;
   setGenerationProgress: (progress: number, index: number) => void;
   removeCard: (id: string) => void;
   updateCard: (id: string, front: string, back: string) => void;
@@ -59,12 +63,13 @@ interface GenerationState {
 const initialState = {
   isOpen: false,
   step: "configure" as GenerationStep,
-  exerciseType: "flashcards" as ExerciseGenerationType,
+  exerciseType: "flashcard" as ExerciseGenerationType,
   documentId: null as string | null,
   documentTitle: "",
   focusPrompt: "",
   cardCount: 5,
   generatedCards: [] as FlashcardDraft[],
+  generatedExercise: null as Exercise | null,
   generationProgress: 0,
   currentGeneratingIndex: 0,
   removedCardIds: new Set<string>(),
@@ -84,10 +89,10 @@ export const useGenerationStore = create<GenerationState>((set) => ({
       exerciseType: type,
       documentId,
       documentTitle,
-      // Preserve focusPrompt and cardCount from previous open
       focusPrompt: state.documentId === documentId ? state.focusPrompt : "",
       cardCount: state.cardCount,
       generatedCards: [],
+      generatedExercise: null,
       generationProgress: 0,
       currentGeneratingIndex: 0,
       removedCardIds: new Set(),
@@ -105,7 +110,11 @@ export const useGenerationStore = create<GenerationState>((set) => ({
 
   setCardCount: (cardCount) => set({ cardCount }),
 
+  setExerciseType: (exerciseType) => set({ exerciseType }),
+
   setGeneratedCards: (generatedCards) => set({ generatedCards }),
+
+  setGeneratedExercise: (generatedExercise) => set({ generatedExercise }),
 
   setGenerationProgress: (generationProgress, currentGeneratingIndex) =>
     set({ generationProgress, currentGeneratingIndex }),

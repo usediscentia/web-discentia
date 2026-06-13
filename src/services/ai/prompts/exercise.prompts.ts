@@ -273,23 +273,26 @@ Rules:
 - Boss name should be thematic and fun`;
 }
 
-const PROMPT_BUILDERS: Record<
-  ExerciseType,
-  (topic: string, context?: string) => string
-> = {
-  flashcard: buildFlashcardPrompt,
-  quiz: buildQuizPrompt,
-  sprint: buildSprintPrompt,
-  connections: buildConnectionsPrompt,
-  fillgap: buildFillGapPrompt,
-  crossword: buildCrosswordPrompt,
-  bossfight: buildBossFightPrompt,
-};
-
 export function buildExercisePrompt(
   type: ExerciseType,
   topic: string,
-  context?: string
+  context?: string,
+  count?: number
 ): string {
-  return PROMPT_BUILDERS[type](topic, context);
+  switch (type) {
+    case "flashcard":
+      return buildFlashcardPrompt(topic, context, count);
+    case "quiz":
+      return buildQuizPrompt(topic, context, count);
+    case "sprint":
+      return buildSprintPrompt(topic, context, count);
+    case "connections":
+      return buildConnectionsPrompt(topic, context);
+    case "fillgap":
+      return buildFillGapPrompt(topic, context);
+    case "crossword":
+      return buildCrosswordPrompt(topic, context);
+    case "bossfight":
+      return buildBossFightPrompt(topic, context);
+  }
 }

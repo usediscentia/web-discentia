@@ -8,13 +8,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useGenerationStore } from "@/stores/generation.store";
+import type { ExerciseGenerationType } from "@/stores/generation.store";
 import { StorageService } from "@/services/storage";
 import { buildContextSnippet } from "@/lib/tokens";
-import { buildFlashcardPrompt } from "@/services/ai/prompts/exercise.prompts";
+import { buildExercisePrompt } from "@/services/ai/prompts/exercise.prompts";
 import { parseExerciseFromResponse } from "@/services/ai/parsers/exercise.parser";
 import { getAIProvider } from "@/services/ai";
 import { useProviderStore } from "@/stores/provider.store";
-import type { FlashcardData } from "@/types/exercise";
+import type { Exercise, FlashcardData } from "@/types/exercise";
 import { distributeCards } from "@/lib/distribute-cards";
 import { useAppStore } from "@/stores/app.store";
 import ConfigureStep from "./ConfigureStep";
@@ -24,19 +25,46 @@ import ScheduleStep from "./ScheduleStep";
 import SuccessStep from "./SuccessStep";
 import ErrorStep from "./ErrorStep";
 
+const SUPPORTS_COUNT: Record<ExerciseGenerationType, boolean> = {
+  flashcard: true,
+  quiz: true,
+  sprint: true,
+  connections: false,
+  fillgap: false,
+};
+
+const DEFAULT_PROMPTS: Record<ExerciseGenerationType, string> = {
+  flashcard: "Generate flashcards about the main concepts, definitions, and examples taught in this material",
+  quiz: "Generate a quiz about the main concepts taught in this material",
+  sprint: "Generate a speed quiz about the key facts in this material",
+  connections: "Generate a connections puzzle about the key terms in this material",
+  fillgap: "Generate a fill-in-the-gap exercise based on important sentences from this material",
+};
+
+function getExerciseItemCount(exercise: Exercise | null): number {
+  if (!exercise) return 0;
+  const data = exercise.data as unknown as Record<string, unknown>;
+  if (Array.isArray(data.questions)) return (data.questions as unknown[]).length;
+  if (Array.isArray(data.groups)) return (data.groups as unknown[]).length;
+  if (Array.isArray(data.gaps)) return (data.gaps as unknown[]).length;
+  return 0;
+}
+
 export default function GenerationModal() {
   const {
     isOpen,
     step,
+    exerciseType,
     cardCount,
-    focusPrompt,
     documentId,
     close,
     setStep,
     setError,
     setGeneratedCards,
+    setGeneratedExercise,
     setGenerationProgress,
     generatedCards,
+    generatedExercise,
     removedCardIds,
     savedCardIds,
     setSavedCardIds,
@@ -66,68 +94,61 @@ export default function GenerationModal() {
 
     const config = useProviderStore.getState().getActiveProviderConfig();
     const provider = getAIProvider(config.type);
-
     if (!provider) {
       setError("No AI provider available.");
       return;
     }
 
-    const prompt =
-      focusPrompt.trim() ||
-      "Generate flashcards about the main concepts, definitions, and examples taught in this material";
+    const { exerciseType, focusPrompt, cardCount, documentId } = useGenerationStore.getState();
+    const prompt = focusPrompt.trim() || DEFAULT_PROMPTS[exerciseType];
 
-    // Build context from item chunks
     const item = documentId ? await StorageService.getLibraryItem(documentId) : null;
     const chunks = item?.metadata.chunks ?? [];
-    const scoredItem = item ? {
-      item,
-      score: 1,
-      matchedChunks: chunks.map((chunk) => ({ chunk, chunkScore: 1 })),
-    } : null;
+    const scoredItem = item
+      ? { item, score: 1, matchedChunks: chunks.map((chunk) => ({ chunk, chunkScore: 1 })) }
+      : null;
     const { contextText } = buildContextSnippet(scoredItem ? [scoredItem] : [], 4000);
-    const fullPrompt = buildFlashcardPrompt(prompt, contextText || undefined, cardCount);
 
-    // Simulate incremental progress while streaming
+    const fullPrompt = buildExercisePrompt(
+      exerciseType,
+      prompt,
+      contextText || undefined,
+      SUPPORTS_COUNT[exerciseType] ? cardCount : undefined
+    );
+
     let fakeProgress = 0;
     clearProgress();
     progressRef.current = setInterval(() => {
       fakeProgress = Math.min(fakeProgress + Math.random() * 8, 88);
-      setGenerationProgress(
-        fakeProgress,
-        Math.ceil((fakeProgress / 100) * cardCount)
-      );
+      setGenerationProgress(fakeProgress, Math.ceil((fakeProgress / 100) * cardCount));
     }, 600);
 
-    // Fresh controller per generation; prior one (if any) was aborted at close.
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    // Follow the exact same pattern as useFlashcardGenerator but push to Zustand store
     const sendPromise = provider.sendMessage(
       [{ role: "user", content: fullPrompt }],
       config,
       {
-        onToken: () => {
-          // streaming — progress bar handles visual feedback
-        },
+        onToken: () => {},
         onComplete: (fullText: string) => {
           clearProgress();
           if (controller.signal.aborted) return;
           abortControllerRef.current = null;
 
           const exercise = parseExerciseFromResponse(fullText, "");
-          if (exercise && exercise.type === "flashcard") {
-            const data = exercise.data as FlashcardData;
-            const cards = data.cards.map((c) => ({
-              id: c.id,
-              front: c.front,
-              back: c.back,
-            }));
-            setGeneratedCards(cards);
+          if (exercise && exercise.type === exerciseType) {
+            if (exerciseType === "flashcard") {
+              const data = exercise.data as FlashcardData;
+              setGeneratedCards(data.cards.map((c) => ({ id: c.id, front: c.front, back: c.back })));
+            } else {
+              setGeneratedExercise({ ...exercise, sourceItemId: documentId ?? undefined });
+            }
             setGenerationProgress(100, cardCount);
             setTimeout(() => setStep("review"), 400);
           } else {
-            setError("Could not parse flashcards from the AI response. Try again.");
+            const typeName = exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1);
+            setError(`Could not parse ${typeName} from the AI response. Try again.`);
           }
         },
         onError: (err: Error) => {
@@ -146,28 +167,36 @@ export default function GenerationModal() {
       abortControllerRef.current = null;
       setError(err.message ?? "Generation failed.");
     });
-  }, [focusPrompt, cardCount, documentId, setStep, setError, setGenerationProgress, setGeneratedCards]);
+  }, [setStep, setError, setGenerationProgress, setGeneratedCards, setGeneratedExercise]);
 
   const handleSave = useCallback(async () => {
-    const activeCards = generatedCards.filter(
-      (c) => !removedCardIds.has(c.id)
-    );
-    if (activeCards.length === 0) return;
-    setSaving(true);
-    try {
-      const created = await StorageService.createSRSCards(
-        activeCards.map((c) => ({
-          front: c.front,
-          back: c.back,
-          libraryItemId: documentId ?? "",
-        }))
-      );
-      setSavedCardIds(created.map((c) => c.id));
-      setStep("schedule");
-    } finally {
-      setSaving(false);
+    const { exerciseType, generatedCards, removedCardIds, generatedExercise, documentId } =
+      useGenerationStore.getState();
+
+    if (exerciseType === "flashcard") {
+      const activeCards = generatedCards.filter((c) => !removedCardIds.has(c.id));
+      if (activeCards.length === 0) return;
+      setSaving(true);
+      try {
+        const created = await StorageService.createSRSCards(
+          activeCards.map((c) => ({ front: c.front, back: c.back, libraryItemId: documentId ?? "" }))
+        );
+        setSavedCardIds(created.map((c) => c.id));
+        setStep("schedule");
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      if (!generatedExercise) return;
+      setSaving(true);
+      try {
+        await StorageService.saveExercise(generatedExercise);
+        setStep("success");
+      } finally {
+        setSaving(false);
+      }
     }
-  }, [generatedCards, removedCardIds, documentId, setStep, setSavedCardIds]);
+  }, [setSavedCardIds, setStep]);
 
   const handleScheduleConfirm = useCallback(async (targetDate: Date) => {
     const timestamps = distributeCards(savedCardIds.length, targetDate);
@@ -194,12 +223,18 @@ export default function GenerationModal() {
   }, [step, savedCardIds, handleScheduleConfirm, close, reset]);
 
   const handleAutoClose = useCallback(() => {
+    const { exerciseType } = useGenerationStore.getState();
     abortGeneration();
     clearProgress();
     close();
     setTimeout(reset, 300);
-    useAppStore.getState().setActiveView("study");
+    useAppStore.getState().setActiveView(exerciseType === "flashcard" ? "study" : "library");
   }, [close, reset]);
+
+  const successCardCount =
+    exerciseType === "flashcard"
+      ? generatedCards.filter((c) => !removedCardIds.has(c.id)).length
+      : getExerciseItemCount(generatedExercise);
 
   return (
     <>
@@ -245,18 +280,16 @@ export default function GenerationModal() {
             {step === "schedule" && (
               <ScheduleStep
                 key="schedule"
-                cardCount={
-                  generatedCards.filter((c) => !removedCardIds.has(c.id)).length
-                }
+                cardCount={generatedCards.filter((c) => !removedCardIds.has(c.id)).length}
                 onConfirm={handleScheduleConfirm}
               />
             )}
             {step === "success" && (
               <SuccessStep
                 key="success"
-                cardCount={
-                  generatedCards.filter((c) => !removedCardIds.has(c.id)).length
-                }
+                cardCount={successCardCount}
+                subtitle={exerciseType === "flashcard" ? undefined : "exercise saved to your library"}
+                badge={exerciseType === "flashcard" ? undefined : "Ready to practice"}
                 onAutoClose={handleAutoClose}
               />
             )}

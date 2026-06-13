@@ -14,6 +14,7 @@ import type {
   LibraryItemType,
 } from "@/types/library";
 import type { SRSCard, ActivityEvent } from "@/types/srs";
+import type { Exercise } from "@/types/exercise";
 import type { DashboardInsights, DashboardStats } from "@/types/dashboard";
 
 export interface CreateLibraryInput {
@@ -558,6 +559,11 @@ export const StorageService = {
   async listExercisesBySourceItem(sourceItemId: string) {
     const all = await getDB().exercises.orderBy("createdAt").reverse().toArray();
     return all.filter((e) => e.sourceItemId === sourceItemId);
+  },
+
+  async saveExercise(exercise: Exercise): Promise<Exercise> {
+    await getDB().exercises.add(exercise);
+    return exercise;
   },
 
   async listMessagesCitingItem(

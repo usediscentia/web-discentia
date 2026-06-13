@@ -523,9 +523,9 @@ export default function EditorView() {
   }, [setEditorItemId, resetAutosave]);
 
   const handleAIAction = useCallback(
-    (type: "flashcards" | "quiz") => {
+    (type: "flashcard" | "quiz") => {
       if (!hasContent || !editorItemId) return;
-      openGeneration(editorItemId, title || "Untitled", type === "flashcards" ? "flashcards" : "quiz");
+      openGeneration(editorItemId, title || "Untitled", type);
     },
     [hasContent, editorItemId, title, openGeneration]
   );
@@ -675,7 +675,7 @@ export default function EditorView() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => handleAIAction("flashcards")}
+            onClick={() => handleAIAction("flashcard")}
             disabled={!hasContent}
             className="flex items-center gap-1.5 text-[13px] font-medium px-3.5 py-1.5 rounded-lg border border-[#E5E7EB] text-[#374151] bg-white hover:bg-[#F9FAFB] hover:border-[#D1D5DB] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
