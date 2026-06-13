@@ -13,7 +13,6 @@ import { useChatStore } from "@/stores/chat.store";
 import type { Citation } from "@/types/chat";
 import type { Exercise } from "@/types/exercise";
 import { StorageService } from "@/services/storage";
-import { getDB } from "@/services/storage/database";
 import {
   Dialog,
   DialogContent,
@@ -85,8 +84,7 @@ export default function ChatView() {
 
     // Small delay to handle the timing gap between message save and exercise save
     const timeout = window.setTimeout(() => {
-      const db = getDB();
-      Promise.all(exerciseIds.map((id) => db.exercises.get(id)))
+      Promise.all(exerciseIds.map((id) => StorageService.getExercise(id)))
         .then((results) => {
           if (cancelled) return;
           const map: Record<string, Exercise> = {};
@@ -105,7 +103,7 @@ export default function ChatView() {
           if (missing.length > 0) {
             window.setTimeout(() => {
               if (cancelled) return;
-              Promise.all(missing.map((id) => db.exercises.get(id)))
+              Promise.all(missing.map((id) => StorageService.getExercise(id)))
                 .then((retryResults) => {
                   if (cancelled) return;
                   let hasNew = false;

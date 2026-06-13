@@ -14,7 +14,7 @@ import type {
   LibraryItemType,
 } from "@/types/library";
 import type { SRSCard, ActivityEvent } from "@/types/srs";
-import type { Exercise } from "@/types/exercise";
+import type { Exercise, ExerciseResult } from "@/types/exercise";
 import type { DashboardInsights, DashboardStats } from "@/types/dashboard";
 
 export interface CreateLibraryInput {
@@ -48,6 +48,18 @@ export interface ScoredLibraryItem {
   item: LibraryItem;
   score: number;
   matchedChunks?: MatchedChunk[]; // top chunks for items with chunk metadata
+}
+
+export interface ExportData {
+  version: number;
+  exportedAt: string;
+  conversations: Conversation[];
+  messages: Message[];
+  libraries: Library[];
+  libraryItems: LibraryItem[];
+  exercises: Exercise[];
+  srsCards: SRSCard[];
+  activityEvents: ActivityEvent[];
 }
 
 export interface CreateSRSCardInput {
@@ -564,6 +576,62 @@ export const StorageService = {
   async saveExercise(exercise: Exercise): Promise<Exercise> {
     await getDB().exercises.add(exercise);
     return exercise;
+  },
+
+  async getExercise(id: string): Promise<Exercise | undefined> {
+    return getDB().exercises.get(id);
+  },
+
+  async updateExerciseResults(id: string, result: ExerciseResult): Promise<void> {
+    const db = getDB();
+    const current = await db.exercises.get(id);
+    if (current) {
+      await db.exercises.update(id, { results: [...current.results, result] });
+    }
+  },
+
+  async exportAllData(): Promise<ExportData> {
+    const db = getDB();
+    const [conversations, messages, libraries, libraryItems, exercises, srsCards, activityEvents] =
+      await Promise.all([
+        db.conversations.toArray(),
+        db.messages.toArray(),
+        db.libraries.toArray(),
+        db.libraryItems.toArray(),
+        db.exercises.toArray(),
+        db.srsCards.toArray(),
+        db.activityEvents.toArray(),
+      ]);
+    return { version: 1, exportedAt: new Date().toISOString(), conversations, messages, libraries, libraryItems, exercises, srsCards, activityEvents };
+  },
+
+  async importAllData(data: ExportData): Promise<void> {
+    const db = getDB();
+    await db.transaction("rw", [
+      db.conversations, db.messages, db.libraries, db.libraryItems,
+      db.exercises, db.srsCards, db.activityEvents,
+    ], async () => {
+      if (data.conversations?.length) await db.conversations.bulkPut(data.conversations);
+      if (data.messages?.length) await db.messages.bulkPut(data.messages);
+      if (data.libraries?.length) await db.libraries.bulkPut(data.libraries);
+      if (data.libraryItems?.length) await db.libraryItems.bulkPut(data.libraryItems);
+      if (data.exercises?.length) await db.exercises.bulkPut(data.exercises);
+      if (data.srsCards?.length) await db.srsCards.bulkPut(data.srsCards);
+      if (data.activityEvents?.length) await db.activityEvents.bulkPut(data.activityEvents);
+    });
+  },
+
+  async clearAllData(): Promise<void> {
+    const db = getDB();
+    await Promise.all([
+      db.conversations.clear(),
+      db.messages.clear(),
+      db.libraries.clear(),
+      db.libraryItems.clear(),
+      db.exercises.clear(),
+      db.srsCards.clear(),
+      db.activityEvents.clear(),
+    ]);
   },
 
   async listMessagesCitingItem(
