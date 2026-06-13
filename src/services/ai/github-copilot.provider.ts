@@ -6,6 +6,7 @@ import type {
 } from "@/types/ai";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
 import { GITHUB_COPILOT_API_URL } from "@/lib/constants";
+import { streamSSE } from "./stream";
 
 // ── Session token cache (module-level, shared across calls) ──
 
@@ -104,8 +105,6 @@ export const githubCopilotProvider: AIServiceProvider = {
     callbacks: StreamCallbacks,
     signal?: AbortSignal
   ): Promise<void> {
-    const parts: string[] = [];
-
     try {
       const doFetch = async (token: string) =>
         fetch(`${GITHUB_COPILOT_API_URL}/chat/completions`, {
@@ -151,57 +150,11 @@ export const githubCopilotProvider: AIServiceProvider = {
         throw new Error(errorMessage);
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error("GitHub Copilot returned empty stream body");
-
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            buffer += decoder.decode();
-            break;
-          }
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed || !trimmed.startsWith("data: ")) continue;
-
-            const data = trimmed.slice(6);
-            if (data === "[DONE]") {
-              callbacks.onComplete(parts.join(""));
-              return;
-            }
-
-            try {
-              const parsed = JSON.parse(data) as {
-                choices?: Array<{ delta?: { content?: string } }>;
-              };
-              const token = parsed.choices?.[0]?.delta?.content;
-              if (token) {
-                parts.push(token);
-                callbacks.onToken(token);
-              }
-            } catch {
-              // skip malformed JSON chunks
-            }
-          }
-        }
-
-        callbacks.onComplete(parts.join(""));
-      } finally {
-        try { reader.releaseLock(); } catch { /* reader already released */ }
-      }
+      await streamSSE(response, signal, callbacks);
     } catch (error) {
-      // Handle abort at any phase (pre-stream fetch, 401 retry, or during streaming)
+      // Handle abort during pre-stream phases (session token fetch, 401 retry)
       if (signal?.aborted) {
-        callbacks.onComplete(parts.join(""));
+        callbacks.onComplete("");
         return;
       }
       throw error;
