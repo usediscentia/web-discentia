@@ -11,7 +11,6 @@ import {
   parseExerciseFromResponse,
 } from "@/services/ai/parsers/exercise.parser";
 import type { Library } from "@/types/library";
-import type { AIMessage } from "@/types/ai";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
 import { buildChatContext } from "@/lib/chat-context";
 
