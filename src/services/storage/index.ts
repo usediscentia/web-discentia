@@ -14,6 +14,7 @@ import type {
   LibraryItemType,
 } from "@/types/library";
 import type { SRSCard, ActivityEvent } from "@/types/srs";
+import { INBOX_DECK_ID, INBOX_DECK_NAME } from "./deck-migration";
 import type { Exercise, ExerciseResult } from "@/types/exercise";
 import type { DashboardInsights, DashboardStats } from "@/types/dashboard";
 
@@ -66,6 +67,7 @@ export interface CreateSRSCardInput {
   front: string;
   back: string;
   libraryItemId?: string;
+  deckId?: string;
 }
 
 async function syncLibraryItemCount(libraryId: string): Promise<void> {
@@ -452,8 +454,21 @@ export const StorageService = {
 
   async createSRSCards(inputs: CreateSRSCardInput[]): Promise<SRSCard[]> {
     const now = Date.now();
+    if (inputs.some((input) => !input.deckId)) {
+      // Callers without a deck (until generation flow passes one) fall back to Inbox
+      const inbox = await getDB().decks.get(INBOX_DECK_ID);
+      if (!inbox) {
+        await getDB().decks.add({
+          id: INBOX_DECK_ID,
+          name: INBOX_DECK_NAME,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
     const cards: SRSCard[] = inputs.map((input) => ({
       id: nanoid(),
+      deckId: input.deckId ?? INBOX_DECK_ID,
       libraryItemId: input.libraryItemId,
       front: input.front,
       back: input.back,

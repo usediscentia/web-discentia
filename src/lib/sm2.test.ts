@@ -4,6 +4,7 @@ import type { SRSCard } from "@/types/srs";
 
 const base: SRSCard = {
   id: "card-1",
+  deckId: "deck-1",
   front: "Q",
   back: "A",
   easeFactor: 2.5,
