@@ -594,7 +594,7 @@ export const StorageService = {
 
     return decks.map((deck) => {
       const g = groups.get(deck.id);
-      // Same gate as getWeakSpots: need at least 2 reviewed cards to score
+      // Need at least 2 reviewed cards to score (getWeakSpots relies on this gate)
       const weakScore =
         g && g.eases.length >= 2 ? computeWeakScore(g.eases, g.lapses) : 0;
       return {
@@ -1051,52 +1051,18 @@ export const StorageService = {
   },
 
   async getWeakSpots(): Promise<import("@/types/dashboard").WeakSpot[]> {
-    const db = getDB();
-
-    const [allCards, libraryItems, libraries] = await Promise.all([
-      db.srsCards.toArray(),
-      db.libraryItems.toArray(),
-      db.libraries.toArray(),
-    ]);
-
-    const itemById = new Map(libraryItems.map((i) => [i.id, i]));
-    const libraryById = new Map(libraries.map((l) => [l.id, l]));
-
-    const reviewed = allCards.filter((c) => c.libraryItemId && c.repetitions > 0);
-
-    const groups = new Map<string, { easeSums: number[]; lapses: number }>();
-    for (const card of reviewed) {
-      const id = card.libraryItemId!;
-      const g = groups.get(id) ?? { easeSums: [], lapses: 0 };
-      g.easeSums.push(card.easeFactor);
-      g.lapses += card.lapses;
-      groups.set(id, g);
-    }
-
-    const spots: import("@/types/dashboard").WeakSpot[] = [];
-
-    for (const [libraryItemId, { easeSums, lapses }] of groups) {
-      if (easeSums.length < 2) continue;
-
-      const item = itemById.get(libraryItemId);
-      if (!item) continue;
-      const library = libraryById.get(item.libraryId);
-
-      const avgEase = easeSums.reduce((a, b) => a + b, 0) / easeSums.length;
-      const weakScore = computeWeakScore(easeSums, lapses);
-
-      spots.push({
-        libraryItemId,
-        itemTitle: item.title,
-        libraryName: library?.name ?? "General",
-        libraryColor: library?.color ?? "#34D399",
-        cardCount: easeSums.length,
-        avgEaseFactor: Math.round(avgEase * 100) / 100,
-        totalLapses: lapses,
-        weakScore: Math.round(weakScore * 100) / 100,
-      });
-    }
-
-    return spots.sort((a, b) => b.weakScore - a.weakScore).slice(0, 5);
+    // weakScore comes from listDecksWithCounts — one formula, one place.
+    // Decks with < 2 reviewed cards score 0 there, so the filter drops them.
+    const decks = await StorageService.listDecksWithCounts();
+    return decks
+      .filter((d) => d.weakScore > 0)
+      .sort((a, b) => b.weakScore - a.weakScore)
+      .slice(0, 5)
+      .map((d) => ({
+        deckId: d.id,
+        deckName: d.name,
+        cardCount: d.cardCount,
+        weakScore: d.weakScore,
+      }));
   },
 };

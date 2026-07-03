@@ -1,6 +1,6 @@
 # 06 — Weak spots regrouped by deck
 
-Status: ready-for-agent
+Status: ready-for-human
 Depends on: 04
 
 ## Scope
@@ -19,3 +19,11 @@ Depends on: 04
 - No references to `setStudyFilterItemId` remain in the widget.
 
 ## Comments
+
+- 2026-07-03 (agent): Done. `getWeakSpots` now derives from `listDecksWithCounts`
+  (single weakScore formula + min-2-reviewed gate live there). `WeakSpot` slimmed to
+  deckId/deckName/cardCount/weakScore — old library fields had no other consumers.
+  Widget click → `setStudyFilterDeck(id, true)` → weakest-cards cram.
+  Verified: tsc/lint deltas zero vs base (5 pre-existing tsc errors in
+  exercise.parser.test.ts, 1 pre-existing lint error in AppShell.tsx), weak-score
+  tests 12/12 pass, no `setStudyFilterItemId` refs left in widget.
