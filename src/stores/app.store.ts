@@ -16,8 +16,11 @@ interface AppState {
   libraryFocusItemId: string | null;
   editorItemId: string | null;
   studyFilterItemId: string | null;
+  studyFilterDeckId: string | null;
+  studyFilterDeckWeakest: boolean;
   activeLibraryId: string | null;
   setStudyFilterItemId: (id: string | null) => void;
+  setStudyFilterDeck: (id: string | null, weakest?: boolean) => void;
   setActiveView: (view: ActiveView) => void;
   setSettingsOpen: (open: boolean) => void;
   setCommandPaletteOpen: (open: boolean) => void;
@@ -38,6 +41,8 @@ export const useAppStore = create<AppState>((set) => ({
   libraryFocusItemId: null,
   editorItemId: null,
   studyFilterItemId: null,
+  studyFilterDeckId: null,
+  studyFilterDeckWeakest: false,
   activeLibraryId: null,
   setActiveView: (view) => set({ activeView: view }),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
@@ -51,5 +56,7 @@ export const useAppStore = create<AppState>((set) => ({
   setLibraryFocusItemId: (id) => set({ libraryFocusItemId: id }),
   setEditorItemId: (id) => set({ editorItemId: id }),
   setStudyFilterItemId: (id) => set({ studyFilterItemId: id }),
+  setStudyFilterDeck: (id, weakest = false) =>
+    set({ studyFilterDeckId: id, studyFilterDeckWeakest: id ? weakest : false }),
   setActiveLibraryId: (id) => set({ activeLibraryId: id }),
 }));

@@ -16,7 +16,7 @@ import type {
 import type { SRSCard, ActivityEvent, Deck } from "@/types/srs";
 import { INBOX_DECK_ID, INBOX_DECK_NAME } from "./deck-migration";
 import { parseSearchQuery, matchesParsedQuery } from "@/lib/search-query";
-import { computeWeakScore } from "@/lib/weak-score";
+import { computeWeakScore, sortWeakestCards } from "@/lib/weak-score";
 import type { Exercise, ExerciseResult } from "@/types/exercise";
 import type { DashboardInsights, DashboardStats } from "@/types/dashboard";
 
@@ -1022,6 +1022,32 @@ export const StorageService = {
       [result[i], result[j]] = [result[j], result[i]];
     }
     return result;
+  },
+
+  async getDueCardsByDeck(deckId: string): Promise<SRSCard[]> {
+    const now = Date.now();
+    const cards = await getDB()
+      .srsCards.where("deckId")
+      .equals(deckId)
+      .toArray();
+
+    // Cram = real review: due cards first, else the whole deck
+    const due = cards.filter((c) => c.nextReviewDate <= now);
+    const result = due.length > 0 ? due : cards;
+
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  },
+
+  async getWeakestCardsByDeck(deckId: string, limit = 10): Promise<SRSCard[]> {
+    const cards = await getDB()
+      .srsCards.where("deckId")
+      .equals(deckId)
+      .toArray();
+    return sortWeakestCards(cards, limit);
   },
 
   async getWeakSpots(): Promise<import("@/types/dashboard").WeakSpot[]> {

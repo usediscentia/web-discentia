@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useStudyStore } from "@/stores/study.store";
 import { useAppStore } from "@/stores/app.store";
 import { TodayScreen } from "./TodayScreen";
+import { DeckGrid } from "./DeckGrid";
 import { StudyRail } from "./StudyRail";
 import { StudyCard } from "./StudyCard";
 import { StudyInput } from "./StudyInput";
@@ -33,10 +34,21 @@ export default function StudyView() {
   } = useStudyStore();
 
   useEffect(() => {
-    const { studyFilterItemId, setStudyFilterItemId } = useAppStore.getState();
-    const filterId = studyFilterItemId ?? undefined;
+    const {
+      studyFilterItemId,
+      studyFilterDeckId,
+      studyFilterDeckWeakest,
+      setStudyFilterItemId,
+      setStudyFilterDeck,
+    } = useAppStore.getState();
+    const filter = studyFilterDeckId
+      ? { deckId: studyFilterDeckId, weakestOnly: studyFilterDeckWeakest }
+      : studyFilterItemId
+        ? { libraryItemId: studyFilterItemId }
+        : undefined;
     setStudyFilterItemId(null);
-    initSession(filterId);
+    setStudyFilterDeck(null);
+    initSession(filter);
   }, [initSession]);
 
   const current = cards[currentIndex];
@@ -58,9 +70,16 @@ export default function StudyView() {
     );
   }
 
-  // Today screen (landing)
+  // Today screen (landing) — hero on top, deck grid below, one scroll
   if (phase === "today") {
-    return <TodayScreen />;
+    return (
+      <div className="h-full overflow-y-auto">
+        <div className="h-full shrink-0">
+          <TodayScreen />
+        </div>
+        <DeckGrid />
+      </div>
+    );
   }
 
   // Session complete

@@ -13,3 +13,15 @@ export function computeWeakScore(
   const lapseScore = Math.min(1, totalLapses / easeFactors.length / 10);
   return easeScore * 0.7 + lapseScore * 0.3;
 }
+
+/**
+ * Weakest cards first: lowest ease factor, then most lapses. Fresh cards
+ * (default ease, no lapses) naturally sort last.
+ */
+export function sortWeakestCards<
+  T extends { easeFactor: number; lapses: number },
+>(cards: T[], limit: number): T[] {
+  return [...cards]
+    .sort((a, b) => a.easeFactor - b.easeFactor || b.lapses - a.lapses)
+    .slice(0, limit);
+}
