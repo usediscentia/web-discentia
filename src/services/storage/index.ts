@@ -537,6 +537,14 @@ export const StorageService = {
     return getDB().decks.get(id);
   },
 
+  async getOrCreateDeckByName(name: string): Promise<Deck> {
+    const trimmed = name.trim() || "Untitled deck";
+    const decks = await getDB().decks.toArray();
+    const existing = decks.find((d) => d.name === trimmed);
+    if (existing) return existing;
+    return StorageService.createDeck(trimmed);
+  },
+
   async listDecks(): Promise<Deck[]> {
     return getDB().decks.orderBy("updatedAt").reverse().toArray();
   },
