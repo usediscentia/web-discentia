@@ -1,6 +1,6 @@
 # 05 — Deck detail: card browser + CRUD
 
-Status: ready-for-agent
+Status: ready-for-human
 Depends on: 04
 
 ## Scope
@@ -22,3 +22,14 @@ New deck detail surface inside Study view (`src/components/study/DeckDetail.tsx`
 - Deck delete removes deck + cards, confirm shows correct count.
 
 ## Comments
+
+**2026-07-03 (agent):** Implemented as `src/components/study/DeckDetail.tsx`, rendered inside
+StudyView's "today" phase via local `detailDeckId` state. Deck card click now opens detail
+(cram moved to explicit "Estudar" hover button on the tile; empty decks are clickable too, so
+they're no longer a dead end). Includes: search (token + quoted exact via `searchCards`),
+add-card form (joins queue due now), inline edit, move via deck `<select>` in edit mode,
+card delete + deck delete with `window.confirm` (matches Sidebar/LibraryView pattern; deck
+confirm states card count). On back, StudyView re-runs `initSession()` so the Today queue
+reflects added/deleted cards. Verified end-to-end in headless Chrome against the running app:
+all Verify items pass, edits survive full reload. Note: sidebar due badge doesn't refresh
+after deck delete (pre-existing staleness, not introduced here).

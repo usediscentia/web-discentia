@@ -6,7 +6,11 @@ import { StorageService, type DeckWithCounts } from "@/services/storage";
 import { useStudyStore } from "@/stores/study.store";
 import { DeckCard } from "./DeckCard";
 
-export function DeckGrid() {
+interface DeckGridProps {
+  onOpenDeck: (deckId: string) => void;
+}
+
+export function DeckGrid({ onOpenDeck }: DeckGridProps) {
   const [decks, setDecks] = useState<DeckWithCounts[] | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
@@ -47,6 +51,7 @@ export function DeckGrid() {
           <DeckCard
             key={deck.id}
             deck={deck}
+            onOpen={() => onOpenDeck(deck.id)}
             onCram={() => startCram(deck.id)}
             onWeakestCram={() => startCram(deck.id, true)}
           />

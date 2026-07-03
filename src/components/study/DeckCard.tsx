@@ -11,11 +11,12 @@ function weakColor(score: number): string {
 
 interface DeckCardProps {
   deck: DeckWithCounts;
+  onOpen: () => void;
   onCram: () => void;
   onWeakestCram: () => void;
 }
 
-export function DeckCard({ deck, onCram, onWeakestCram }: DeckCardProps) {
+export function DeckCard({ deck, onOpen, onCram, onWeakestCram }: DeckCardProps) {
   const isWeak = deck.weakScore > 0.35;
   const isEmpty = deck.cardCount === 0;
 
@@ -24,9 +25,9 @@ export function DeckCard({ deck, onCram, onWeakestCram }: DeckCardProps) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 400, damping: 28 }}
-      onClick={isEmpty ? undefined : onCram}
-      className={`group flex flex-col gap-3 rounded-[12px] border border-[#E8E5E0] bg-white p-4 transition-colors ${
-        isEmpty ? "opacity-60" : "cursor-pointer hover:border-[#D8D4CE] hover:bg-[#FAFAF8]"
+      onClick={onOpen}
+      className={`group flex flex-col gap-3 rounded-[12px] border border-[#E8E5E0] bg-white p-4 cursor-pointer transition-colors hover:border-[#D8D4CE] hover:bg-[#FAFAF8] ${
+        isEmpty ? "opacity-60" : ""
       }`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -62,10 +63,16 @@ export function DeckCard({ deck, onCram, onWeakestCram }: DeckCardProps) {
           </span>
         )}
         {!isEmpty && (
-          <span className="ml-auto flex items-center gap-1 text-[#C8C4BE] opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onCram();
+            }}
+            className="ml-auto flex items-center gap-1 text-[#C8C4BE] opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity hover:text-[#6B6560]"
+          >
             <Play size={10} />
             Estudar
-          </span>
+          </button>
         )}
       </div>
     </motion.div>

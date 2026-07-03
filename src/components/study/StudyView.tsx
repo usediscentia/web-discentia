@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Loader2 } from "lucide-react";
 import { useStudyStore } from "@/stores/study.store";
 import { useAppStore } from "@/stores/app.store";
 import { TodayScreen } from "./TodayScreen";
 import { DeckGrid } from "./DeckGrid";
+import { DeckDetail } from "./DeckDetail";
 import { StudyRail } from "./StudyRail";
 import { StudyCard } from "./StudyCard";
 import { StudyInput } from "./StudyInput";
@@ -32,6 +33,8 @@ export default function StudyView() {
     deleteCard,
     initSession,
   } = useStudyStore();
+
+  const [detailDeckId, setDetailDeckId] = useState<string | null>(null);
 
   useEffect(() => {
     const {
@@ -72,13 +75,27 @@ export default function StudyView() {
 
   // Today screen (landing) — hero on top, deck grid below, one scroll
   if (phase === "today") {
+    if (detailDeckId) {
+      return (
+        <div className="h-full overflow-y-auto">
+          <DeckDetail
+            deckId={detailDeckId}
+            onBack={() => {
+              setDetailDeckId(null);
+              // Cards may have been added/edited/deleted — rebuild today's queue
+              void initSession();
+            }}
+          />
+        </div>
+      );
+    }
     return (
       <div className="h-full overflow-y-auto">
         {/* Slightly under full height so the deck section peeks above the fold */}
         <div className="h-[calc(100%-96px)] min-h-[420px]">
           <TodayScreen />
         </div>
-        <DeckGrid />
+        <DeckGrid onOpenDeck={setDetailDeckId} />
       </div>
     );
   }
