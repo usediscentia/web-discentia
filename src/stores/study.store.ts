@@ -300,7 +300,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
 
   deleteCard: async (cardId: string) => {
     const { cards, currentIndex, results, phase } = get();
-    await StorageService.deleteSRSCard(cardId);
+    await StorageService.deleteCard(cardId);
 
     const newCards = cards.filter((c) => c.id !== cardId);
     // If in evaluated phase, drop the result for the deleted card
