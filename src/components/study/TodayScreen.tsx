@@ -81,7 +81,7 @@ export function TodayScreen() {
             onClick={() => setActiveView("library")}
             className="mt-2"
           >
-            Criar meu primeiro deck
+            Adicionar conteúdo
           </Button>
         </motion.div>
       </div>

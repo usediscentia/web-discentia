@@ -7,7 +7,7 @@ import { useStudyStore } from "@/stores/study.store";
 import { DeckCard } from "./DeckCard";
 
 export function DeckGrid() {
-  const [decks, setDecks] = useState<DeckWithCounts[]>([]);
+  const [decks, setDecks] = useState<DeckWithCounts[] | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
 
@@ -15,7 +15,8 @@ export function DeckGrid() {
     StorageService.listDecksWithCounts().then(setDecks);
   }, []);
 
-  if (decks.length === 0) return null;
+  // Still loading — avoid flashing the create tile before decks arrive
+  if (decks === null) return null;
 
   const createDeck = async () => {
     const name = newName.trim();
@@ -37,7 +38,9 @@ export function DeckGrid() {
       <div className="flex items-center gap-2 mb-4">
         <Layers size={14} className="text-[#9C9690]" />
         <h2 className="text-[13px] font-semibold text-[#1A1814]">Decks</h2>
-        <span className="text-[11px] text-[#9C9690]">{decks.length}</span>
+        {decks.length > 0 && (
+          <span className="text-[11px] text-[#9C9690]">{decks.length}</span>
+        )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {decks.map((deck) => (

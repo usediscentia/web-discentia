@@ -52,3 +52,10 @@ grid — dashed tile → inline name input (Enter/blur creates via
 `StorageService.createDeck`, Escape cancels, empty name cancels). Tile hidden when
 grid is empty (zero decks = zero cards → TodayScreen empty state owns that flow).
 Empty decks show in grid at 0 cards, cram disabled; "add card" lands in issue 05.
+
+**2026-07-03 (agent, fix):** Hiding the tile at zero decks was wrong — human hit the
+empty state and had no way to create a deck, while the hero CTA still said "Criar meu
+primeiro deck" (it opens the library). Grid section now always renders (null only
+while loading, to avoid tile flash), so "Novo deck" works from a fresh DB — useful
+because the generation Schedule picker can then target that deck. Hero CTA relabeled
+"Adicionar conteúdo" to match what it does.
