@@ -46,3 +46,9 @@ Depends on: 02, 03
 - Verified: vitest 87 passing, tsc clean for touched files, build green.
   Manual check pending (human): cram shows only deck's cards, Today queue
   unchanged.
+
+**2026-07-03 (agent, follow-up):** Manual "New deck" (PRD decision 3) added to the
+grid — dashed tile → inline name input (Enter/blur creates via
+`StorageService.createDeck`, Escape cancels, empty name cancels). Tile hidden when
+grid is empty (zero decks = zero cards → TodayScreen empty state owns that flow).
+Empty decks show in grid at 0 cards, cram disabled; "add card" lands in issue 05.
