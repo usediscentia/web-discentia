@@ -74,7 +74,8 @@ export default function StudyView() {
   if (phase === "today") {
     return (
       <div className="h-full overflow-y-auto">
-        <div className="h-full shrink-0">
+        {/* Slightly under full height so the deck section peeks above the fold */}
+        <div className="h-[calc(100%-96px)] min-h-[420px]">
           <TodayScreen />
         </div>
         <DeckGrid />
