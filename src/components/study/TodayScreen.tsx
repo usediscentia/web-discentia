@@ -1,11 +1,12 @@
 "use client";
 
 import { motion } from "motion/react";
-import { CheckCircle2, BookOpen, Flame, ArrowRight } from "lucide-react";
+import { CheckCircle2, BookOpen, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStudyStore } from "@/stores/study.store";
 import { useAppStore } from "@/stores/app.store";
 import { CardOrbit } from "./CardOrbit";
+import { StreakCard } from "./StreakCard";
 
 function formatDateLocale(date: Date): string {
   return date.toLocaleDateString("pt-BR", {
@@ -34,6 +35,7 @@ export function TodayScreen() {
     dueToday,
     reviewedToday,
     streak,
+    activityByDay,
     totalCardsInSystem,
     nextSessionDate,
     nextSessionCount,
@@ -118,19 +120,7 @@ export function TodayScreen() {
             )}
           </div>
 
-          {streak > 0 && (
-            <motion.div
-              className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-2"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 500, damping: 15, delay: 0.2 }}
-            >
-              <Flame size={14} className="text-orange-500" />
-              <span className="text-sm font-medium text-orange-600">
-                {streak === 1 ? "Streak começou!" : `${streak} dias de streak!`}
-              </span>
-            </motion.div>
-          )}
+          <StreakCard streak={streak} activityByDay={activityByDay} />
 
           <button
             onClick={() => setActiveView("library")}
@@ -227,19 +217,14 @@ export function TodayScreen() {
         </motion.div>
 
         {/* Streak */}
-        {streak > 0 && (
-          <motion.div
-            className="flex items-center gap-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Flame size={14} className="text-orange-500" />
-            <span className="text-sm font-medium text-orange-600">
-              {streak} {streak === 1 ? "dia" : "dias"} de streak
-            </span>
-          </motion.div>
-        )}
+        <motion.div
+          className="w-full max-w-xs"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <StreakCard streak={streak} activityByDay={activityByDay} />
+        </motion.div>
 
         {/* Footer meta */}
         <motion.p

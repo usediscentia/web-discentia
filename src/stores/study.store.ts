@@ -44,6 +44,7 @@ interface StudyState {
 
   // Dashboard context
   streak: number;
+  activityByDay: Record<string, number>;
   dueToday: number;
   reviewedToday: number;
   upcomingReviews: UpcomingBucket[];
@@ -87,6 +88,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
   sessionStartTime: 0,
 
   streak: 0,
+  activityByDay: {},
   dueToday: 0,
   reviewedToday: 0,
   upcomingReviews: [],
@@ -146,6 +148,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     set({
       cards,
       streak: stats.streak,
+      activityByDay: stats.activityByDay,
       dueToday: stats.dueToday,
       reviewedToday: stats.reviewedToday,
       upcomingReviews,
