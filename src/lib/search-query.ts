@@ -40,3 +40,16 @@ export function matchesParsedQuery(
     parsed.tokens.every((token) => haystack.includes(token))
   );
 }
+
+/**
+ * Filters decks by name against a raw query (quoted phrases + tokens).
+ * Empty query returns no decks — the palette shows recents instead.
+ */
+export function filterDecksByQuery<T extends { name: string }>(
+  decks: T[],
+  raw: string
+): T[] {
+  const parsed = parseSearchQuery(raw);
+  if (parsed.phrases.length === 0 && parsed.tokens.length === 0) return [];
+  return decks.filter((deck) => matchesParsedQuery(deck.name, parsed));
+}

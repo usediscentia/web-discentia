@@ -18,9 +18,13 @@ interface AppState {
   studyFilterItemId: string | null;
   studyFilterDeckId: string | null;
   studyFilterDeckWeakest: boolean;
+  deckDetailId: string | null;
+  deckDetailCardId: string | null;
   activeLibraryId: string | null;
   setStudyFilterItemId: (id: string | null) => void;
   setStudyFilterDeck: (id: string | null, weakest?: boolean) => void;
+  setDeckDetail: (deckId: string | null, cardId?: string | null) => void;
+  clearDeckDetailCard: () => void;
   setActiveView: (view: ActiveView) => void;
   setSettingsOpen: (open: boolean) => void;
   setCommandPaletteOpen: (open: boolean) => void;
@@ -43,6 +47,8 @@ export const useAppStore = create<AppState>((set) => ({
   studyFilterItemId: null,
   studyFilterDeckId: null,
   studyFilterDeckWeakest: false,
+  deckDetailId: null,
+  deckDetailCardId: null,
   activeLibraryId: null,
   setActiveView: (view) => set({ activeView: view }),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
@@ -58,5 +64,8 @@ export const useAppStore = create<AppState>((set) => ({
   setStudyFilterItemId: (id) => set({ studyFilterItemId: id }),
   setStudyFilterDeck: (id, weakest = false) =>
     set({ studyFilterDeckId: id, studyFilterDeckWeakest: id ? weakest : false }),
+  setDeckDetail: (deckId, cardId = null) =>
+    set({ deckDetailId: deckId, deckDetailCardId: deckId ? cardId : null }),
+  clearDeckDetailCard: () => set({ deckDetailCardId: null }),
   setActiveLibraryId: (id) => set({ activeLibraryId: id }),
 }));

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Loader2 } from "lucide-react";
 import { useStudyStore } from "@/stores/study.store";
@@ -34,7 +34,10 @@ export default function StudyView() {
     initSession,
   } = useStudyStore();
 
-  const [detailDeckId, setDetailDeckId] = useState<string | null>(null);
+  const deckDetailId = useAppStore((s) => s.deckDetailId);
+  const deckDetailCardId = useAppStore((s) => s.deckDetailCardId);
+  const setDeckDetail = useAppStore((s) => s.setDeckDetail);
+  const clearDeckDetailCard = useAppStore((s) => s.clearDeckDetailCard);
 
   useEffect(() => {
     const {
@@ -53,6 +56,17 @@ export default function StudyView() {
     setStudyFilterDeck(null);
     initSession(filter);
   }, [initSession]);
+
+  // Palette navigation can land here mid-session — abandon it and return to
+  // the today screen so the deck detail (rendered there) shows immediately.
+  // Keyed on deckDetailId, not phase: cram started *from* the detail changes
+  // the phase but not the deck, and must keep running.
+  useEffect(() => {
+    if (!deckDetailId) return;
+    const { phase } = useStudyStore.getState();
+    if (phase === "today" || phase === "loading") return;
+    void initSession();
+  }, [deckDetailId, initSession]);
 
   const current = cards[currentIndex];
   const accentColor = current?.libraryItemId
@@ -75,13 +89,15 @@ export default function StudyView() {
 
   // Today screen (landing) — hero on top, deck grid below, one scroll
   if (phase === "today") {
-    if (detailDeckId) {
+    if (deckDetailId) {
       return (
         <div className="h-full overflow-y-auto">
           <DeckDetail
-            deckId={detailDeckId}
+            deckId={deckDetailId}
+            highlightCardId={deckDetailCardId}
+            onHighlightConsumed={clearDeckDetailCard}
             onBack={() => {
-              setDetailDeckId(null);
+              setDeckDetail(null);
               // Cards may have been added/edited/deleted — rebuild today's queue
               void initSession();
             }}
@@ -90,12 +106,12 @@ export default function StudyView() {
       );
     }
     return (
-      <div className="h-full overflow-y-auto">
+      <div className="h-full overflow-y-auto dot-grid">
         {/* Slightly under full height so the deck section peeks above the fold */}
         <div className="h-[calc(100%-96px)] min-h-[420px]">
           <TodayScreen />
         </div>
-        <DeckGrid onOpenDeck={setDetailDeckId} />
+        <DeckGrid onOpenDeck={setDeckDetail} />
       </div>
     );
   }
@@ -105,7 +121,7 @@ export default function StudyView() {
     return (
       <div className="flex h-full">
         <StudyRail />
-        <div className="flex-1">
+        <div className="flex-1 dot-grid">
           <StudyComplete />
         </div>
       </div>
@@ -114,9 +130,9 @@ export default function StudyView() {
 
   // Active review
   return (
-    <div className="flex h-full bg-[#FAFAFA]">
+    <div className="flex h-full">
       <StudyRail />
-      <div className="flex-1 overflow-auto flex flex-col items-center justify-center gap-6 px-8 py-8">
+      <div className="flex-1 overflow-auto flex flex-col items-center justify-center gap-6 px-8 py-8 dot-grid">
         {/* Card */}
         {current && (
           <div className="w-full max-w-xl">

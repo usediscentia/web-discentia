@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { parseSearchQuery, matchesParsedQuery } from "./search-query";
+import {
+  parseSearchQuery,
+  matchesParsedQuery,
+  filterDecksByQuery,
+} from "./search-query";
 
 describe("parseSearchQuery", () => {
   it("splits an unquoted query into tokens", () => {
@@ -77,5 +81,38 @@ describe("matchesParsedQuery", () => {
 
   it("matches everything when the query is empty", () => {
     expect(matchesParsedQuery("anything", parseSearchQuery(""))).toBe(true);
+  });
+});
+
+describe("filterDecksByQuery", () => {
+  const decks = [
+    { name: "Biologia Celular" },
+    { name: "História do Brasil" },
+    { name: "Cell Biology Basics" },
+  ];
+
+  it("matches deck names by token, case-insensitive", () => {
+    expect(filterDecksByQuery(decks, "biologia")).toEqual([
+      { name: "Biologia Celular" },
+    ]);
+  });
+
+  it("requires all tokens to be present", () => {
+    expect(filterDecksByQuery(decks, "biology basics")).toEqual([
+      { name: "Cell Biology Basics" },
+    ]);
+    expect(filterDecksByQuery(decks, "biology brasil")).toEqual([]);
+  });
+
+  it("supports quoted exact phrases", () => {
+    expect(filterDecksByQuery(decks, '"cell biology"')).toEqual([
+      { name: "Cell Biology Basics" },
+    ]);
+    expect(filterDecksByQuery(decks, '"biology cell"')).toEqual([]);
+  });
+
+  it("returns no decks for an empty query", () => {
+    expect(filterDecksByQuery(decks, "")).toEqual([]);
+    expect(filterDecksByQuery(decks, "   ")).toEqual([]);
   });
 });

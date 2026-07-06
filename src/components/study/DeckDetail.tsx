@@ -21,10 +21,18 @@ function weakColor(score: number): string {
 
 interface DeckDetailProps {
   deckId: string;
+  /** Card to scroll to and flash once (e.g. arriving from the command palette) */
+  highlightCardId?: string | null;
+  onHighlightConsumed?: () => void;
   onBack: () => void;
 }
 
-export function DeckDetail({ deckId, onBack }: DeckDetailProps) {
+export function DeckDetail({
+  deckId,
+  highlightCardId,
+  onHighlightConsumed,
+  onBack,
+}: DeckDetailProps) {
   const [deck, setDeck] = useState<DeckWithCounts | null>(null);
   const [allDecks, setAllDecks] = useState<DeckWithCounts[]>([]);
   const [cards, setCards] = useState<SRSCard[]>([]);
@@ -42,6 +50,8 @@ export function DeckDetail({ deckId, onBack }: DeckDetailProps) {
   const [editFront, setEditFront] = useState("");
   const [editBack, setEditBack] = useState("");
 
+  const [flashCardId, setFlashCardId] = useState<string | null>(null);
+
   const refresh = useCallback(() => {
     return Promise.all([
       StorageService.listDecksWithCounts(),
@@ -57,6 +67,26 @@ export function DeckDetail({ deckId, onBack }: DeckDetailProps) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Scroll to + flash the highlighted card once the list is loaded
+  useEffect(() => {
+    if (!highlightCardId) return;
+    if (!cards.some((c) => c.id === highlightCardId)) return;
+    const frame = requestAnimationFrame(() => {
+      setFlashCardId(highlightCardId);
+      onHighlightConsumed?.();
+      document
+        .getElementById(`deck-card-${highlightCardId}`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [highlightCardId, cards, onHighlightConsumed]);
+
+  useEffect(() => {
+    if (!flashCardId) return;
+    const timeout = setTimeout(() => setFlashCardId(null), 2000);
+    return () => clearTimeout(timeout);
+  }, [flashCardId]);
 
   if (!deck) return null;
 
@@ -357,8 +387,13 @@ export function DeckDetail({ deckId, onBack }: DeckDetailProps) {
             ) : (
               <button
                 key={card.id}
+                id={`deck-card-${card.id}`}
                 onClick={() => startEdit(card)}
-                className="group flex flex-col gap-1 rounded-[12px] border border-[#E8E5E0] bg-white p-4 text-left cursor-pointer transition-colors hover:border-[#D8D4CE] hover:bg-[#FAFAF8]"
+                className={`group flex flex-col gap-1 rounded-[12px] border bg-white p-4 text-left cursor-pointer transition-colors hover:bg-[#FAFAF8] ${
+                  flashCardId === card.id
+                    ? "border-emerald-400 bg-emerald-50"
+                    : "border-[#E8E5E0] hover:border-[#D8D4CE]"
+                }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-[13px] font-medium text-[#1A1814]">
