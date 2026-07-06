@@ -139,6 +139,10 @@ export default function GenerationModal() {
             if (exerciseType === "flashcard") {
               const data = exercise.data as FlashcardData;
               setGeneratedCards(data.cards.map((c) => ({ id: c.id, front: c.front, back: c.back })));
+              // Topic from the AI beats the raw document title as a deck name
+              if (exercise.title.trim()) {
+                useGenerationStore.getState().setNewDeckName(exercise.title.trim());
+              }
             } else {
               setGeneratedExercise({ ...exercise, sourceItemId: documentId ?? undefined });
             }
@@ -197,10 +201,14 @@ export default function GenerationModal() {
   }, [setSavedCardIds, setStep]);
 
   const handleScheduleConfirm = useCallback(async (targetDate: Date) => {
+    const { selectedDeckId, newDeckName, documentTitle } = useGenerationStore.getState();
+    const deckId =
+      selectedDeckId ??
+      (await StorageService.createDeck(newDeckName || documentTitle)).id;
     const timestamps = distributeCards(savedCardIds.length, targetDate);
     await Promise.all(
       savedCardIds.map((id, i) =>
-        StorageService.updateSRSCard(id, { nextReviewDate: timestamps[i] })
+        StorageService.updateSRSCard(id, { nextReviewDate: timestamps[i], deckId })
       )
     );
     setStep("success");

@@ -28,9 +28,9 @@ export function StudyComplete() {
   const incorrectCount = results.filter((r) => r.verdict === "incorrect" || r.verdict === null).length;
   const accuracy = total > 0 ? Math.round(((correctCount + partialCount * 0.5) / total) * 100) : 0;
   const stats = [
-    { icon: Check, color: "text-emerald-600", bg: "bg-emerald-100", label: "Correct", value: correctCount },
-    { icon: Minus, color: "text-amber-600", bg: "bg-amber-100", label: "Partial", value: partialCount },
-    { icon: X, color: "text-red-500", bg: "bg-red-100", label: "Incorrect", value: incorrectCount },
+    { icon: Check, color: "text-emerald-600", bg: "bg-emerald-100", label: "Corretas", value: correctCount },
+    { icon: Minus, color: "text-amber-600", bg: "bg-amber-100", label: "Parciais", value: partialCount },
+    { icon: X, color: "text-red-500", bg: "bg-red-100", label: "Incorretas", value: incorrectCount },
   ];
 
   return (
@@ -42,14 +42,14 @@ export function StudyComplete() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 400, damping: 28 }}
         >
-          <h2 className="text-2xl font-semibold text-gray-900">Session Complete!</h2>
-          <p className="text-sm text-gray-400 mt-1">
-            {total} {total === 1 ? "card" : "cards"} reviewed
+          <h2 className="text-2xl font-semibold text-[#1A1814]">Sessão completa</h2>
+          <p className="text-sm text-[#9C9690] mt-1">
+            {total} {total === 1 ? "card revisado" : "cards revisados"}
           </p>
         </motion.div>
 
         <motion.div
-          className="w-full bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3"
+          className="w-full bg-white rounded-2xl border border-[#E3DFD8] p-5 flex flex-col gap-3"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 400, damping: 28, delay: 0.1 }}
@@ -63,15 +63,15 @@ export function StudyComplete() {
               <span className={`text-sm font-semibold ${color}`}>{value}</span>
             </div>
           ))}
-          <div className="border-t border-gray-100 pt-3 flex flex-col gap-2 mt-1">
+          <div className="border-t border-[#F0EDE8] pt-3 flex flex-col gap-2 mt-1">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">Accuracy</span>
-              <span className="text-sm font-semibold text-gray-900">{accuracy}%</span>
+              <span className="text-sm text-[#6B6560]">Precisão</span>
+              <span className="text-sm font-semibold text-[#1A1814]">{accuracy}%</span>
             </div>
             {sessionStartTime > 0 && (
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Time</span>
-                <span className="text-sm text-gray-400">{formatDuration(duration)}</span>
+                <span className="text-sm text-[#6B6560]">Tempo</span>
+                <span className="text-sm text-[#9C9690]">{formatDuration(duration)}</span>
               </div>
             )}
           </div>
@@ -86,7 +86,7 @@ export function StudyComplete() {
           >
             <Flame size={15} className="text-orange-500 shrink-0" />
             <span className="text-sm font-medium text-orange-700">
-              {streak === 1 ? "Streak started!" : `${streak}-day streak!`}
+              {streak === 1 ? "Streak começou!" : `${streak} dias de streak!`}
             </span>
           </motion.div>
         )}

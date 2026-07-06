@@ -1,13 +1,23 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Calendar as CalendarIcon, AlertTriangle } from "lucide-react";
+import { Calendar as CalendarIcon, AlertTriangle, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cardsPerDay } from "@/lib/distribute-cards";
+import { useGenerationStore } from "@/stores/generation.store";
+import { StorageService } from "@/services/storage";
+import type { Deck } from "@/types/srs";
 
 type QuickOption = "1w" | "2w" | "1m" | "custom";
 
@@ -39,9 +49,17 @@ interface ScheduleStepProps {
   onConfirm: (targetDate: Date) => void;
 }
 
+const NEW_DECK_VALUE = "__new__";
+
 export default function ScheduleStep({ cardCount, onConfirm }: ScheduleStepProps) {
   const [selected, setSelected] = useState<QuickOption>("2w");
   const [customDate, setCustomDate] = useState<Date | undefined>();
+  const { newDeckName, selectedDeckId, setSelectedDeckId } = useGenerationStore();
+  const [decks, setDecks] = useState<Deck[]>([]);
+
+  useEffect(() => {
+    StorageService.listDecks().then(setDecks);
+  }, []);
 
   const targetDate = useMemo(() => {
     if (selected === "custom") return customDate ?? null;
@@ -120,6 +138,32 @@ export default function ScheduleStep({ cardCount, onConfirm }: ScheduleStepProps
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Deck picker */}
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium text-[#0C0C0C]">Add to deck</p>
+        <Select
+          value={selectedDeckId ?? NEW_DECK_VALUE}
+          onValueChange={(value) =>
+            setSelectedDeckId(value === NEW_DECK_VALUE ? null : value)
+          }
+        >
+          <SelectTrigger className="w-full border-[#E4E3E1]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NEW_DECK_VALUE}>
+              <Plus size={13} className="shrink-0 text-muted-foreground" />
+              New deck &ldquo;{newDeckName || "Untitled deck"}&rdquo;
+            </SelectItem>
+            {decks.map((deck) => (
+              <SelectItem key={deck.id} value={deck.id}>
+                {deck.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Cards per day info */}
       {avgPerDay !== null && (

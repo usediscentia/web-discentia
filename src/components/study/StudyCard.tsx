@@ -27,7 +27,7 @@ interface StudyCardProps {
 }
 
 const cardVariants = {
-  enter: { opacity: 0, x: 60, scale: 0.97 },
+  enter: { opacity: 0, x: 28, scale: 0.98 },
   center: {
     opacity: 1,
     x: 0,
@@ -71,12 +71,12 @@ export function StudyCard({
         initial="enter"
         animate="center"
         exit="exit"
-        className={`w-full rounded-2xl border border-gray-200 bg-white overflow-hidden ${glowClass}`}
+        className={`w-full rounded-2xl border border-[#E3DFD8] bg-white shadow-[0_1px_2px_rgba(26,24,20,0.04),0_12px_32px_-16px_rgba(26,24,20,0.14)] overflow-hidden ${glowClass}`}
       >
         {/* Header */}
         <div className="px-6 pt-5 pb-0 flex items-center justify-between">
           <Badge variant="secondary" className="text-[10px] uppercase tracking-wider font-medium">
-            Card {index + 1} of {total}
+            Card {index + 1} de {total}
           </Badge>
           <div className="flex items-center gap-2">
             {card.libraryItemId && (
@@ -105,7 +105,7 @@ export function StudyCard({
 
         {/* Front — question */}
         <div className="px-6 py-6 flex flex-col gap-4">
-          <p className="text-[17px] font-medium text-gray-900 leading-relaxed">
+          <p className="text-[19px] font-medium text-[#1A1814] leading-[1.45] tracking-[-0.01em]">
             {card.front}
           </p>
           {!showAnswer && <HintLadder answer={card.back} />}
@@ -117,12 +117,12 @@ export function StudyCard({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
-            className="border-t border-gray-100 overflow-hidden"
+            className="border-t border-[#F0EDE8] overflow-hidden"
           >
             <div className="px-6 py-5 flex flex-col gap-3">
               <div>
-                <span className="text-[10px] uppercase tracking-wider font-medium text-gray-400">
-                  Correct answer
+                <span className="text-[10px] uppercase tracking-wider font-medium text-[#9C9690]">
+                  Resposta correta
                 </span>
                 <p className="text-sm text-gray-700 mt-1 leading-relaxed">{card.back}</p>
               </div>

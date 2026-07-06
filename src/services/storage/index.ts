@@ -13,7 +13,10 @@ import type {
   LibraryItemMetadata,
   LibraryItemType,
 } from "@/types/library";
-import type { SRSCard, ActivityEvent } from "@/types/srs";
+import type { SRSCard, ActivityEvent, Deck } from "@/types/srs";
+import { INBOX_DECK_ID, INBOX_DECK_NAME } from "./deck-migration";
+import { parseSearchQuery, matchesParsedQuery } from "@/lib/search-query";
+import { computeWeakScore, sortWeakestCards } from "@/lib/weak-score";
 import type { Exercise, ExerciseResult } from "@/types/exercise";
 import type { DashboardInsights, DashboardStats } from "@/types/dashboard";
 
@@ -66,6 +69,19 @@ export interface CreateSRSCardInput {
   front: string;
   back: string;
   libraryItemId?: string;
+  deckId?: string;
+}
+
+export interface DeckWithCounts extends Deck {
+  cardCount: number;
+  dueCount: number;
+  weakScore: number;
+}
+
+export interface SearchCardsInput {
+  query: string;
+  deckId?: string;
+  limit?: number;
 }
 
 async function syncLibraryItemCount(libraryId: string): Promise<void> {
@@ -309,7 +325,7 @@ export const StorageService = {
     input: SearchLibraryItemsInput
   ): Promise<ScoredLibraryItem[]> {
     const query = input.query.trim().toLowerCase();
-    const tokens = query.split(/\s+/).filter(Boolean);
+    const { phrases, tokens } = parseSearchQuery(input.query);
     const limit = input.limit ?? 25;
     let items: LibraryItem[] = [];
 
@@ -332,6 +348,9 @@ export const StorageService = {
         }
 
         if (title.includes(query)) titleScore += 40;
+        for (const phrase of phrases) {
+          if (title.includes(phrase)) titleScore += 40;
+        }
         for (const token of tokens) {
           if (title.includes(token)) titleScore += 8;
         }
@@ -343,6 +362,9 @@ export const StorageService = {
             const chunkText = chunk.text.toLowerCase();
             let chunkScore = 0;
             if (chunkText.includes(query)) chunkScore += 18;
+            for (const phrase of phrases) {
+              if (chunkText.includes(phrase)) chunkScore += 18;
+            }
             for (const token of tokens) {
               if (chunkText.includes(token)) chunkScore += 3;
             }
@@ -350,6 +372,9 @@ export const StorageService = {
             if (chunk.heading) {
               const headingText = chunk.heading.toLowerCase();
               if (headingText.includes(query)) chunkScore += 12;
+              for (const phrase of phrases) {
+                if (headingText.includes(phrase)) chunkScore += 12;
+              }
               for (const token of tokens) {
                 if (headingText.includes(token)) chunkScore += 4;
               }
@@ -367,6 +392,9 @@ export const StorageService = {
         const content = item.content.toLowerCase();
         let score = titleScore;
         if (content.includes(query)) score += 18;
+        for (const phrase of phrases) {
+          if (content.includes(phrase)) score += 18;
+        }
         for (const token of tokens) {
           if (content.includes(token)) score += 3;
         }
@@ -452,8 +480,21 @@ export const StorageService = {
 
   async createSRSCards(inputs: CreateSRSCardInput[]): Promise<SRSCard[]> {
     const now = Date.now();
+    if (inputs.some((input) => !input.deckId)) {
+      // Callers without a deck (until generation flow passes one) fall back to Inbox
+      const inbox = await getDB().decks.get(INBOX_DECK_ID);
+      if (!inbox) {
+        await getDB().decks.add({
+          id: INBOX_DECK_ID,
+          name: INBOX_DECK_NAME,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
     const cards: SRSCard[] = inputs.map((input) => ({
       id: nanoid(),
+      deckId: input.deckId ?? INBOX_DECK_ID,
       libraryItemId: input.libraryItemId,
       front: input.front,
       back: input.back,
@@ -480,8 +521,129 @@ export const StorageService = {
     return due;
   },
 
-  async deleteSRSCard(id: string): Promise<void> {
+  async createDeck(name: string): Promise<Deck> {
+    const now = Date.now();
+    const deck: Deck = {
+      id: nanoid(),
+      name: name.trim() || "Untitled deck",
+      createdAt: now,
+      updatedAt: now,
+    };
+    await getDB().decks.add(deck);
+    return deck;
+  },
+
+  async getDeck(id: string): Promise<Deck | undefined> {
+    return getDB().decks.get(id);
+  },
+
+  async getOrCreateDeckByName(name: string): Promise<Deck> {
+    const trimmed = name.trim() || "Untitled deck";
+    const decks = await getDB().decks.toArray();
+    const existing = decks.find((d) => d.name === trimmed);
+    if (existing) return existing;
+    return StorageService.createDeck(trimmed);
+  },
+
+  async listDecks(): Promise<Deck[]> {
+    return getDB().decks.orderBy("updatedAt").reverse().toArray();
+  },
+
+  async renameDeck(id: string, name: string): Promise<void> {
+    await getDB().decks.update(id, {
+      name: name.trim() || "Untitled deck",
+      updatedAt: Date.now(),
+    });
+  },
+
+  async deleteDeck(id: string): Promise<void> {
+    const db = getDB();
+    await db.transaction("rw", db.decks, db.srsCards, async () => {
+      await db.srsCards.where("deckId").equals(id).delete();
+      await db.decks.delete(id);
+    });
+  },
+
+  async listDecksWithCounts(): Promise<DeckWithCounts[]> {
+    const db = getDB();
+    const now = Date.now();
+    const [decks, cards] = await Promise.all([
+      db.decks.orderBy("updatedAt").reverse().toArray(),
+      db.srsCards.toArray(),
+    ]);
+
+    const groups = new Map<
+      string,
+      { cardCount: number; dueCount: number; eases: number[]; lapses: number }
+    >();
+    for (const card of cards) {
+      const g = groups.get(card.deckId) ?? {
+        cardCount: 0,
+        dueCount: 0,
+        eases: [],
+        lapses: 0,
+      };
+      g.cardCount += 1;
+      if (card.nextReviewDate <= now) g.dueCount += 1;
+      if (card.repetitions > 0) {
+        g.eases.push(card.easeFactor);
+        g.lapses += card.lapses;
+      }
+      groups.set(card.deckId, g);
+    }
+
+    return decks.map((deck) => {
+      const g = groups.get(deck.id);
+      // Need at least 2 reviewed cards to score (getWeakSpots relies on this gate)
+      const weakScore =
+        g && g.eases.length >= 2 ? computeWeakScore(g.eases, g.lapses) : 0;
+      return {
+        ...deck,
+        cardCount: g?.cardCount ?? 0,
+        dueCount: g?.dueCount ?? 0,
+        weakScore: Math.round(weakScore * 100) / 100,
+      };
+    });
+  },
+
+  async createCard(input: {
+    deckId: string;
+    front: string;
+    back: string;
+  }): Promise<SRSCard> {
+    const cards = await StorageService.createSRSCards([input]);
+    return cards[0];
+  },
+
+  async updateCard(
+    id: string,
+    updates: Partial<Pick<SRSCard, "front" | "back">>
+  ): Promise<void> {
+    await getDB().srsCards.update(id, updates);
+  },
+
+  async moveCard(cardId: string, deckId: string): Promise<void> {
+    await getDB().srsCards.update(cardId, { deckId });
+  },
+
+  async deleteCard(id: string): Promise<void> {
     await getDB().srsCards.delete(id);
+  },
+
+  async searchCards(input: SearchCardsInput): Promise<SRSCard[]> {
+    const parsed = parseSearchQuery(input.query);
+    const limit = input.limit ?? 50;
+
+    const cards = input.deckId
+      ? await getDB().srsCards.where("deckId").equals(input.deckId).toArray()
+      : await getDB().srsCards.toArray();
+
+    return cards
+      .filter((card) =>
+        matchesParsedQuery(`${card.front}\n${card.back}`, parsed)
+      )
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, limit);
   },
 
   async getDueLibraryBreakdown(): Promise<
@@ -862,56 +1024,45 @@ export const StorageService = {
     return result;
   },
 
+  async getDueCardsByDeck(deckId: string): Promise<SRSCard[]> {
+    const now = Date.now();
+    const cards = await getDB()
+      .srsCards.where("deckId")
+      .equals(deckId)
+      .toArray();
+
+    // Cram = real review: due cards first, else the whole deck
+    const due = cards.filter((c) => c.nextReviewDate <= now);
+    const result = due.length > 0 ? due : cards;
+
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  },
+
+  async getWeakestCardsByDeck(deckId: string, limit = 10): Promise<SRSCard[]> {
+    const cards = await getDB()
+      .srsCards.where("deckId")
+      .equals(deckId)
+      .toArray();
+    return sortWeakestCards(cards, limit);
+  },
+
   async getWeakSpots(): Promise<import("@/types/dashboard").WeakSpot[]> {
-    const db = getDB();
-
-    const [allCards, libraryItems, libraries] = await Promise.all([
-      db.srsCards.toArray(),
-      db.libraryItems.toArray(),
-      db.libraries.toArray(),
-    ]);
-
-    const itemById = new Map(libraryItems.map((i) => [i.id, i]));
-    const libraryById = new Map(libraries.map((l) => [l.id, l]));
-
-    const reviewed = allCards.filter((c) => c.libraryItemId && c.repetitions > 0);
-
-    const groups = new Map<string, { easeSums: number[]; lapses: number }>();
-    for (const card of reviewed) {
-      const id = card.libraryItemId!;
-      const g = groups.get(id) ?? { easeSums: [], lapses: 0 };
-      g.easeSums.push(card.easeFactor);
-      g.lapses += card.lapses;
-      groups.set(id, g);
-    }
-
-    const spots: import("@/types/dashboard").WeakSpot[] = [];
-
-    for (const [libraryItemId, { easeSums, lapses }] of groups) {
-      if (easeSums.length < 2) continue;
-
-      const item = itemById.get(libraryItemId);
-      if (!item) continue;
-      const library = libraryById.get(item.libraryId);
-
-      const avgEase = easeSums.reduce((a, b) => a + b, 0) / easeSums.length;
-      const easeScore = Math.max(0, Math.min(1, (2.5 - avgEase) / (2.5 - 1.3)));
-      const lapsesPerCard = lapses / easeSums.length;
-      const lapseScore = Math.min(1, lapsesPerCard / 10);
-      const weakScore = easeScore * 0.7 + lapseScore * 0.3;
-
-      spots.push({
-        libraryItemId,
-        itemTitle: item.title,
-        libraryName: library?.name ?? "General",
-        libraryColor: library?.color ?? "#34D399",
-        cardCount: easeSums.length,
-        avgEaseFactor: Math.round(avgEase * 100) / 100,
-        totalLapses: lapses,
-        weakScore: Math.round(weakScore * 100) / 100,
-      });
-    }
-
-    return spots.sort((a, b) => b.weakScore - a.weakScore).slice(0, 5);
+    // weakScore comes from listDecksWithCounts — one formula, one place.
+    // Decks with < 2 reviewed cards score 0 there, so the filter drops them.
+    const decks = await StorageService.listDecksWithCounts();
+    return decks
+      .filter((d) => d.weakScore > 0)
+      .sort((a, b) => b.weakScore - a.weakScore)
+      .slice(0, 5)
+      .map((d) => ({
+        deckId: d.id,
+        deckName: d.name,
+        cardCount: d.cardCount,
+        weakScore: d.weakScore,
+      }));
   },
 };

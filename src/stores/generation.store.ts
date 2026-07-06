@@ -37,6 +37,10 @@ interface GenerationState {
   // Schedule
   targetDate: Date | null;
   savedCardIds: string[];
+  /** Name for the deck to create when no existing deck is selected. */
+  newDeckName: string;
+  /** Existing deck to add cards to; null means create a new deck. */
+  selectedDeckId: string | null;
 
   // Error
   errorMessage: string | null;
@@ -57,6 +61,8 @@ interface GenerationState {
   setEditingCard: (id: string | null) => void;
   setTargetDate: (date: Date | null) => void;
   setSavedCardIds: (ids: string[]) => void;
+  setNewDeckName: (name: string) => void;
+  setSelectedDeckId: (id: string | null) => void;
   reset: () => void;
 }
 
@@ -76,6 +82,8 @@ const initialState = {
   editingCardId: null as string | null,
   targetDate: null as Date | null,
   savedCardIds: [] as string[],
+  newDeckName: "",
+  selectedDeckId: null as string | null,
   errorMessage: null as string | null,
 };
 
@@ -97,6 +105,8 @@ export const useGenerationStore = create<GenerationState>((set) => ({
       currentGeneratingIndex: 0,
       removedCardIds: new Set(),
       editingCardId: null,
+      newDeckName: documentTitle,
+      selectedDeckId: null,
       errorMessage: null,
     })),
 
@@ -139,6 +149,10 @@ export const useGenerationStore = create<GenerationState>((set) => ({
   setTargetDate: (targetDate) => set({ targetDate }),
 
   setSavedCardIds: (savedCardIds) => set({ savedCardIds }),
+
+  setNewDeckName: (newDeckName) => set({ newDeckName }),
+
+  setSelectedDeckId: (selectedDeckId) => set({ selectedDeckId }),
 
   reset: () => set(initialState),
 }));

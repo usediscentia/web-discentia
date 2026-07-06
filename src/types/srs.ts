@@ -1,5 +1,13 @@
+export interface Deck {
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface SRSCard {
   id: string;
+  deckId: string;
   libraryItemId?: string;
   front: string;
   back: string;
