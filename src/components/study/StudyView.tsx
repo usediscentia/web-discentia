@@ -6,6 +6,8 @@ import { Loader2 } from "lucide-react";
 import { useStudyStore } from "@/stores/study.store";
 import { useAppStore } from "@/stores/app.store";
 import { TodayScreen } from "./TodayScreen";
+import { DeckGrid } from "./DeckGrid";
+import { DeckDetail } from "./DeckDetail";
 import { StudyRail } from "./StudyRail";
 import { StudyCard } from "./StudyCard";
 import { StudyInput } from "./StudyInput";
@@ -32,12 +34,39 @@ export default function StudyView() {
     initSession,
   } = useStudyStore();
 
+  const deckDetailId = useAppStore((s) => s.deckDetailId);
+  const deckDetailCardId = useAppStore((s) => s.deckDetailCardId);
+  const setDeckDetail = useAppStore((s) => s.setDeckDetail);
+  const clearDeckDetailCard = useAppStore((s) => s.clearDeckDetailCard);
+
   useEffect(() => {
-    const { studyFilterItemId, setStudyFilterItemId } = useAppStore.getState();
-    const filterId = studyFilterItemId ?? undefined;
+    const {
+      studyFilterItemId,
+      studyFilterDeckId,
+      studyFilterDeckWeakest,
+      setStudyFilterItemId,
+      setStudyFilterDeck,
+    } = useAppStore.getState();
+    const filter = studyFilterDeckId
+      ? { deckId: studyFilterDeckId, weakestOnly: studyFilterDeckWeakest }
+      : studyFilterItemId
+        ? { libraryItemId: studyFilterItemId }
+        : undefined;
     setStudyFilterItemId(null);
-    initSession(filterId);
+    setStudyFilterDeck(null);
+    initSession(filter);
   }, [initSession]);
+
+  // Palette navigation can land here mid-session — abandon it and return to
+  // the today screen so the deck detail (rendered there) shows immediately.
+  // Keyed on deckDetailId, not phase: cram started *from* the detail changes
+  // the phase but not the deck, and must keep running.
+  useEffect(() => {
+    if (!deckDetailId) return;
+    const { phase } = useStudyStore.getState();
+    if (phase === "today" || phase === "loading") return;
+    void initSession();
+  }, [deckDetailId, initSession]);
 
   const current = cards[currentIndex];
   const accentColor = current?.libraryItemId
@@ -58,9 +87,33 @@ export default function StudyView() {
     );
   }
 
-  // Today screen (landing)
+  // Today screen (landing) — hero on top, deck grid below, one scroll
   if (phase === "today") {
-    return <TodayScreen />;
+    if (deckDetailId) {
+      return (
+        <div className="h-full overflow-y-auto">
+          <DeckDetail
+            deckId={deckDetailId}
+            highlightCardId={deckDetailCardId}
+            onHighlightConsumed={clearDeckDetailCard}
+            onBack={() => {
+              setDeckDetail(null);
+              // Cards may have been added/edited/deleted — rebuild today's queue
+              void initSession();
+            }}
+          />
+        </div>
+      );
+    }
+    return (
+      <div className="h-full overflow-y-auto dot-grid">
+        {/* Slightly under full height so the deck section peeks above the fold */}
+        <div className="h-[calc(100%-96px)] min-h-[420px]">
+          <TodayScreen />
+        </div>
+        <DeckGrid onOpenDeck={setDeckDetail} />
+      </div>
+    );
   }
 
   // Session complete
@@ -68,7 +121,7 @@ export default function StudyView() {
     return (
       <div className="flex h-full">
         <StudyRail />
-        <div className="flex-1">
+        <div className="flex-1 dot-grid">
           <StudyComplete />
         </div>
       </div>
@@ -77,9 +130,9 @@ export default function StudyView() {
 
   // Active review
   return (
-    <div className="flex h-full bg-[#FAFAFA]">
+    <div className="flex h-full">
       <StudyRail />
-      <div className="flex-1 overflow-auto flex flex-col items-center justify-center gap-6 px-8 py-8">
+      <div className="flex-1 overflow-auto flex flex-col items-center justify-center gap-6 px-8 py-8 dot-grid">
         {/* Card */}
         {current && (
           <div className="w-full max-w-xl">

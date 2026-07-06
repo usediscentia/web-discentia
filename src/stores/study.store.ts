@@ -16,6 +16,13 @@ interface UpcomingBucket {
   count: number;
 }
 
+export interface StudyFilter {
+  libraryItemId?: string;
+  deckId?: string;
+  /** With deckId: session over the deck's weakest cards only */
+  weakestOnly?: boolean;
+}
+
 interface SessionResult {
   card: SRSCard;
   userAnswer: string;
@@ -37,6 +44,7 @@ interface StudyState {
 
   // Dashboard context
   streak: number;
+  activityByDay: Record<string, number>;
   dueToday: number;
   reviewedToday: number;
   upcomingReviews: UpcomingBucket[];
@@ -53,14 +61,14 @@ interface StudyState {
   accentColors: Record<string, string>; // libraryItemId → library color hex
   libraryNames: Record<string, string>; // libraryItemId → library name
 
-  // Set only when session is started with a libraryItemId filter
+  // Set only when session is started with a filter (item title or deck name)
   activeFilterItemTitle: string | null;
 
   // Pending confidence (set before submitting/skipping)
   pendingConfidence: "unsure" | "think-so" | "certain" | null;
 
   // Actions
-  initSession: (libraryItemId?: string) => Promise<void>;
+  initSession: (filter?: StudyFilter) => Promise<void>;
   startReview: () => void;
   submitAnswer: (answer: string) => Promise<void>;
   skipCard: () => void;
@@ -80,6 +88,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
   sessionStartTime: 0,
 
   streak: 0,
+  activityByDay: {},
   dueToday: 0,
   reviewedToday: 0,
   upcomingReviews: [],
@@ -96,7 +105,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
   activeFilterItemTitle: null,
   pendingConfidence: null,
 
-  initSession: async (libraryItemId?: string) => {
+  initSession: async (filter?: StudyFilter) => {
     set({
       phase: "loading",
       cards: [],
@@ -116,15 +125,21 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       nextSessionCount: 0,
     });
 
-    const [cards, stats, insights, totalCards, nextReview] = await Promise.all([
-      libraryItemId
-        ? StorageService.getDueCardsByLibraryItem(libraryItemId)
-        : StorageService.getDueCards(),
-      StorageService.getDashboardStats(),
-      StorageService.getDashboardInsights(),
-      StorageService.getTotalCardCount(),
-      StorageService.getNextScheduledReview(),
-    ]);
+    const [cards, stats, insights, totalCards, nextReview, filterDeck] =
+      await Promise.all([
+        filter?.deckId
+          ? filter.weakestOnly
+            ? StorageService.getWeakestCardsByDeck(filter.deckId)
+            : StorageService.getDueCardsByDeck(filter.deckId)
+          : filter?.libraryItemId
+            ? StorageService.getDueCardsByLibraryItem(filter.libraryItemId)
+            : StorageService.getDueCards(),
+        StorageService.getDashboardStats(),
+        StorageService.getDashboardInsights(),
+        StorageService.getTotalCardCount(),
+        StorageService.getNextScheduledReview(),
+        filter?.deckId ? StorageService.getDeck(filter.deckId) : undefined,
+      ]);
 
     const upcomingReviews: UpcomingBucket[] = insights.upcomingReviews.map(
       (r) => ({ label: r.label, count: r.dueCount })
@@ -133,12 +148,14 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     set({
       cards,
       streak: stats.streak,
+      activityByDay: stats.activityByDay,
       dueToday: stats.dueToday,
       reviewedToday: stats.reviewedToday,
       upcomingReviews,
       totalCardsInSystem: totalCards,
       nextSessionDate: nextReview?.date ?? null,
       nextSessionCount: nextReview?.count ?? 0,
+      activeFilterItemTitle: filterDeck?.name ?? null,
       phase: "today",
     });
 
@@ -203,8 +220,8 @@ export const useStudyStore = create<StudyState>((set, get) => ({
         }
       }
 
-      const filterItem = libraryItemId
-        ? items.find((it) => it?.id === libraryItemId)
+      const filterItem = filter?.libraryItemId
+        ? items.find((it) => it?.id === filter.libraryItemId)
         : null;
 
       set({
@@ -213,7 +230,8 @@ export const useStudyStore = create<StudyState>((set, get) => ({
         libraryNames: names,
         activeLibraryName: firstName,
         activeLibraryColor: firstColor,
-        activeFilterItemTitle: filterItem?.title ?? null,
+        // Keep the deck name set above when filtering by deck
+        activeFilterItemTitle: filterItem?.title ?? get().activeFilterItemTitle,
       });
     })();
   },
@@ -300,7 +318,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
 
   deleteCard: async (cardId: string) => {
     const { cards, currentIndex, results, phase } = get();
-    await StorageService.deleteSRSCard(cardId);
+    await StorageService.deleteCard(cardId);
 
     const newCards = cards.filter((c) => c.id !== cardId);
     // If in evaluated phase, drop the result for the deleted card
