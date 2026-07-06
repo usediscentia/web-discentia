@@ -63,6 +63,8 @@ export default function AppShell() {
   const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
+    // localStorage is unavailable during SSR — must set after mount
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowOnboarding(localStorage.getItem("discentia_onboarded") !== "1")
   }, [])
 
