@@ -9,7 +9,7 @@ import { ProviderIcon } from "@lobehub/icons";
 import { ChevronRight, KeyRound } from "lucide-react";
 import { DiscentiaLogo } from "@/components/brand/DiscentiaLogo";
 import { useProviderStore } from "@/stores/provider.store";
-import { useAppStore } from "@/stores/app.store";
+import { useDialogStore } from "@/stores/dialog.store";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
 import type { AIProviderType } from "@/types/ai";
 
@@ -48,7 +48,7 @@ const providerCards: Array<{
 ];
 
 function SetupCard() {
-  const { setSettingsOpen } = useAppStore();
+  const { setSettingsOpen } = useDialogStore();
 
   return (
     <div className="flex flex-col items-center justify-center flex-1 gap-8 w-full px-4">

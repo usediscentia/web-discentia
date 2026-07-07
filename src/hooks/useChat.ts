@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useChatStore } from "@/stores/chat.store";
 import { useProviderStore } from "@/stores/provider.store";
-import { useAppStore } from "@/stores/app.store";
+import { useDialogStore } from "@/stores/dialog.store";
 import { StorageService } from "@/services/storage";
 import { stripCitationsBlock, extractCitationsFromChunks } from "@/lib/citations";
 import {
@@ -37,7 +37,6 @@ export function useChat() {
   const clearDeck = useChatStore(s => s.clearDeck);
 
   const { getConfiguredProvider } = useProviderStore();
-  const { setActiveView } = useAppStore();
 
   const refreshLibraries = useCallback(async () => {
     const decks = await StorageService.listDecks();
@@ -102,7 +101,7 @@ export function useChat() {
       const { config, provider } = getConfiguredProvider();
 
       if (PROVIDER_DEFAULTS[config.type].requiresApiKey && !config.apiKey) {
-        setActiveView("settings");
+        useDialogStore.getState().setSettingsOpen(true);
         return;
       }
 
@@ -259,7 +258,6 @@ export function useChat() {
       selectedDeckId,
       setActiveConversationId,
       setIsStreaming,
-      setActiveView,
       setMessages,
     ]
   );

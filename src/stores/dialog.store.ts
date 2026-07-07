@@ -32,6 +32,8 @@ interface PromptState {
 interface DialogState {
   confirm: ConfirmState;
   prompt: PromptState;
+  settingsOpen: boolean;
+  setSettingsOpen: (open: boolean) => void;
   showConfirm: (options: ConfirmOptions) => Promise<boolean>;
   resolveConfirm: (value: boolean) => void;
   showPrompt: (options: PromptOptions) => Promise<string | null>;
@@ -41,6 +43,8 @@ interface DialogState {
 export const useDialogStore = create<DialogState>((set, get) => ({
   confirm: { open: false, options: { title: "" }, resolve: null },
   prompt: { open: false, options: { title: "" }, resolve: null },
+  settingsOpen: false,
+  setSettingsOpen: (open) => set({ settingsOpen: open }),
 
   showConfirm: (options) => {
     return new Promise<boolean>((resolve) => {
