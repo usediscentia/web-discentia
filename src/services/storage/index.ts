@@ -115,18 +115,23 @@ function getBestStreak(reviewDays: Set<string>): number {
 export const StorageService = {
   async createConversation(
     title = "New Chat",
-    libraryIds: string[] = []
+    deckId = ""
   ): Promise<Conversation> {
     const now = Date.now();
     const conversation: Conversation = {
       id: nanoid(),
       title,
-      libraryIds,
+      deckId,
       createdAt: now,
       updatedAt: now,
     };
     await getDB().conversations.add(conversation);
     return conversation;
+  },
+
+  async getDeckConversation(deckId: string): Promise<Conversation | undefined> {
+    const conversations = await getDB().conversations.where("deckId").equals(deckId).toArray();
+    return conversations.sort((a, b) => b.updatedAt - a.updatedAt)[0];
   },
 
   async getConversation(id: string): Promise<Conversation | undefined> {
@@ -139,7 +144,7 @@ export const StorageService = {
 
   async updateConversation(
     id: string,
-    updates: Partial<Pick<Conversation, "title" | "updatedAt" | "libraryIds">>
+    updates: Partial<Pick<Conversation, "title" | "updatedAt" | "deckId">>
   ): Promise<void> {
     await getDB().conversations.update(id, updates);
   },

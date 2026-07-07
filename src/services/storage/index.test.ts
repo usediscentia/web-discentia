@@ -71,3 +71,15 @@ describe("deck-scoped SRS cards", () => {
     expect(cards).toHaveLength(1);
   });
 });
+
+describe("deck-scoped conversations", () => {
+  it("getDeckConversation returns the most recent conversation of the deck", async () => {
+    const deck = await StorageService.createDeck({ name: "A", color: "#000" });
+    await StorageService.createConversation("velha", deck.id);
+    const recent = await StorageService.createConversation("nova", deck.id);
+    await StorageService.updateConversation(recent.id, { updatedAt: Date.now() + 1000 });
+
+    const found = await StorageService.getDeckConversation(deck.id);
+    expect(found?.id).toBe(recent.id);
+  });
+});
