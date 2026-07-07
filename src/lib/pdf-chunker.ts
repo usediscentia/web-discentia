@@ -1,4 +1,4 @@
-import type { ContentChunk } from "@/types/library";
+import type { ContentChunk } from "@/types/deck";
 
 type PdfTextItem = { str?: string; transform?: number[] };
 

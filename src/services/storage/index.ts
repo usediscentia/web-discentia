@@ -8,34 +8,34 @@ import type {
 } from "@/types/chat";
 import type {
   ContentChunk,
-  Library,
-  LibraryItem,
-  LibraryItemMetadata,
-  LibraryItemType,
-} from "@/types/library";
+  Deck,
+  DeckSource,
+  DeckSourceMetadata,
+  DeckSourceType,
+} from "@/types/deck";
 import type { SRSCard, ActivityEvent } from "@/types/srs";
 import type { Exercise, ExerciseResult } from "@/types/exercise";
 import type { DashboardInsights, DashboardStats } from "@/types/dashboard";
 
-export interface CreateLibraryInput {
+export interface CreateDeckInput {
   name: string;
   color: string;
   description?: string;
 }
 
-export interface CreateLibraryItemInput {
-  libraryId: string;
-  type: LibraryItemType;
+export interface CreateDeckSourceInput {
+  deckId: string;
+  type: DeckSourceType;
   title: string;
   content: string;
   preview?: string;
   rawFile?: Blob;
-  metadata?: LibraryItemMetadata;
+  metadata?: DeckSourceMetadata;
 }
 
-export interface SearchLibraryItemsInput {
+export interface SearchDeckSourcesInput {
   query: string;
-  libraryIds?: string[];
+  deckIds?: string[];
   limit?: number;
 }
 
@@ -44,10 +44,10 @@ export interface MatchedChunk {
   chunkScore: number;
 }
 
-export interface ScoredLibraryItem {
-  item: LibraryItem;
+export interface ScoredDeckSource {
+  source: DeckSource;
   score: number;
-  matchedChunks?: MatchedChunk[]; // top chunks for items with chunk metadata
+  matchedChunks?: MatchedChunk[]; // top chunks for sources with chunk metadata
 }
 
 export interface ExportData {
@@ -55,8 +55,8 @@ export interface ExportData {
   exportedAt: string;
   conversations: Conversation[];
   messages: Message[];
-  libraries: Library[];
-  libraryItems: LibraryItem[];
+  decks: Deck[];
+  deckSources: DeckSource[];
   exercises: Exercise[];
   srsCards: SRSCard[];
   activityEvents: ActivityEvent[];
@@ -65,18 +65,13 @@ export interface ExportData {
 export interface CreateSRSCardInput {
   front: string;
   back: string;
-  libraryItemId?: string;
+  sourceId?: string;
 }
 
-async function syncLibraryItemCount(libraryId: string): Promise<void> {
-  const count = await getDB()
-    .libraryItems.where("libraryId")
-    .equals(libraryId)
-    .count();
-  await getDB().libraries.update(libraryId, {
-    itemCount: count,
-    updatedAt: Date.now(),
-  });
+async function syncDeckCardCount(deckId: string): Promise<void> {
+  if (!deckId) return; // interim "" sentinel until issue 07 wires deck context everywhere
+  const count = await getDB().srsCards.where("deckId").equals(deckId).count();
+  await getDB().decks.update(deckId, { cardCount: count, updatedAt: Date.now() });
 }
 
 function toDayKey(timestamp: number): string {
@@ -120,18 +115,23 @@ function getBestStreak(reviewDays: Set<string>): number {
 export const StorageService = {
   async createConversation(
     title = "New Chat",
-    libraryIds: string[] = []
+    deckId = ""
   ): Promise<Conversation> {
     const now = Date.now();
     const conversation: Conversation = {
       id: nanoid(),
       title,
-      libraryIds,
+      deckId,
       createdAt: now,
       updatedAt: now,
     };
     await getDB().conversations.add(conversation);
     return conversation;
+  },
+
+  async getDeckConversation(deckId: string): Promise<Conversation | undefined> {
+    const conversations = await getDB().conversations.where("deckId").equals(deckId).toArray();
+    return conversations.sort((a, b) => b.updatedAt - a.updatedAt)[0];
   },
 
   async getConversation(id: string): Promise<Conversation | undefined> {
@@ -144,7 +144,7 @@ export const StorageService = {
 
   async updateConversation(
     id: string,
-    updates: Partial<Pick<Conversation, "title" | "updatedAt" | "libraryIds">>
+    updates: Partial<Pick<Conversation, "title" | "updatedAt" | "deckId">>
   ): Promise<void> {
     await getDB().conversations.update(id, updates);
   },
@@ -195,67 +195,62 @@ export const StorageService = {
     await getDB().messages.delete(id);
   },
 
-  async createLibrary(input: CreateLibraryInput): Promise<Library> {
+  async createDeck(input: CreateDeckInput): Promise<Deck> {
     const now = Date.now();
-    const library: Library = {
+    const deck: Deck = {
       id: nanoid(),
       name: input.name.trim(),
       color: input.color,
       description: input.description?.trim() || undefined,
-      itemCount: 0,
+      cardCount: 0,
       createdAt: now,
       updatedAt: now,
     };
-    await getDB().libraries.add(library);
-    return library;
+    await getDB().decks.add(deck);
+    return deck;
   },
 
-  async getLibrary(id: string): Promise<Library | undefined> {
-    return getDB().libraries.get(id);
+  async getDeck(id: string): Promise<Deck | undefined> {
+    return getDB().decks.get(id);
   },
 
-  async listLibraries(): Promise<Library[]> {
-    return getDB().libraries.orderBy("updatedAt").reverse().toArray();
+  async listDecks(): Promise<Deck[]> {
+    return getDB().decks.orderBy("updatedAt").reverse().toArray();
   },
 
-  async updateLibrary(
+  async updateDeck(
     id: string,
-    updates: Partial<Pick<Library, "name" | "color" | "description">>
+    updates: Partial<Pick<Deck, "name" | "color" | "description">>
   ): Promise<void> {
-    await getDB().libraries.update(id, {
+    await getDB().decks.update(id, {
       ...updates,
       updatedAt: Date.now(),
     });
   },
 
-  async deleteLibrary(id: string): Promise<void> {
+  async deleteDeck(id: string): Promise<void> {
     const db = getDB();
-    await db.transaction("rw", db.libraries, db.libraryItems, db.conversations, async () => {
-      await db.libraryItems.where("libraryId").equals(id).delete();
-      await db.libraries.delete(id);
-
-      const conversations = await db.conversations.toArray();
-      const affected = conversations.filter((conversation) =>
-        conversation.libraryIds?.includes(id)
-      );
-      await Promise.all(
-        affected.map((conversation) =>
-          db.conversations.update(conversation.id, {
-            libraryIds: (conversation.libraryIds || []).filter(
-              (libraryId) => libraryId !== id
-            ),
-            updatedAt: Date.now(),
-          })
-        )
-      );
-    });
+    await db.transaction(
+      "rw",
+      [db.decks, db.deckSources, db.srsCards, db.conversations, db.messages],
+      async () => {
+        await db.deckSources.where("deckId").equals(id).delete();
+        await db.srsCards.where("deckId").equals(id).delete();
+        const deckConversations = await db.conversations.where("deckId").equals(id).toArray();
+        await Promise.all(
+          deckConversations.map((c) => db.messages.where("conversationId").equals(c.id).delete())
+        );
+        await db.conversations.where("deckId").equals(id).delete();
+        await db.decks.delete(id);
+      }
+    );
   },
 
-  async createLibraryItem(input: CreateLibraryItemInput): Promise<LibraryItem> {
+  async createDeckSource(input: CreateDeckSourceInput): Promise<DeckSource> {
     const now = Date.now();
-    const item: LibraryItem = {
+    const source: DeckSource = {
       id: nanoid(),
-      libraryId: input.libraryId,
+      deckId: input.deckId,
       type: input.type,
       title: input.title.trim() || "Untitled",
       content: input.content,
@@ -266,69 +261,64 @@ export const StorageService = {
       updatedAt: now,
     };
 
-    await getDB().libraryItems.add(item);
-    await syncLibraryItemCount(input.libraryId);
-    return item;
+    await getDB().deckSources.add(source);
+    return source;
   },
 
-  async getLibraryItem(id: string): Promise<LibraryItem | undefined> {
-    return getDB().libraryItems.get(id);
+  async getDeckSource(id: string): Promise<DeckSource | undefined> {
+    return getDB().deckSources.get(id);
   },
 
-  async listLibraryItems(libraryId?: string): Promise<LibraryItem[]> {
-    if (libraryId) {
-      const items = await getDB()
-        .libraryItems.where("libraryId")
-        .equals(libraryId)
+  async listDeckSources(deckId?: string): Promise<DeckSource[]> {
+    if (deckId) {
+      const sources = await getDB()
+        .deckSources.where("deckId")
+        .equals(deckId)
         .toArray();
-      return items.sort((a, b) => b.createdAt - a.createdAt);
+      return sources.sort((a, b) => b.createdAt - a.createdAt);
     }
 
-    return getDB().libraryItems.orderBy("createdAt").reverse().toArray();
+    return getDB().deckSources.orderBy("createdAt").reverse().toArray();
   },
 
-  async updateLibraryItem(
+  async updateDeckSource(
     id: string,
-    updates: Partial<Pick<LibraryItem, "title" | "content" | "preview" | "metadata" | "type">>
+    updates: Partial<Pick<DeckSource, "title" | "content" | "preview" | "metadata" | "type">>
   ): Promise<void> {
-    await getDB().libraryItems.update(id, {
+    await getDB().deckSources.update(id, {
       ...updates,
       updatedAt: Date.now(),
     });
   },
 
-  async deleteLibraryItem(id: string): Promise<void> {
-    const existing = await getDB().libraryItems.get(id);
-    if (!existing) return;
-
-    await getDB().libraryItems.delete(id);
-    await syncLibraryItemCount(existing.libraryId);
+  async deleteDeckSource(id: string): Promise<void> {
+    await getDB().deckSources.delete(id);
   },
 
-  async searchLibraryItems(
-    input: SearchLibraryItemsInput
-  ): Promise<ScoredLibraryItem[]> {
+  async searchDeckSources(
+    input: SearchDeckSourcesInput
+  ): Promise<ScoredDeckSource[]> {
     const query = input.query.trim().toLowerCase();
     const tokens = query.split(/\s+/).filter(Boolean);
     const limit = input.limit ?? 25;
-    let items: LibraryItem[] = [];
+    let sources: DeckSource[] = [];
 
-    if (input.libraryIds && input.libraryIds.length > 0) {
-      items = await getDB()
-        .libraryItems.where("libraryId")
-        .anyOf(input.libraryIds)
+    if (input.deckIds && input.deckIds.length > 0) {
+      sources = await getDB()
+        .deckSources.where("deckId")
+        .anyOf(input.deckIds)
         .toArray();
     } else {
-      items = await getDB().libraryItems.toArray();
+      sources = await getDB().deckSources.toArray();
     }
 
-    const scored = items
-      .map((item) => {
-        const title = item.title.toLowerCase();
+    const scored = sources
+      .map((source) => {
+        const title = source.title.toLowerCase();
         let titleScore = 0;
 
         if (!query) {
-          return { item, score: 1 };
+          return { source, score: 1 };
         }
 
         if (title.includes(query)) titleScore += 40;
@@ -336,9 +326,9 @@ export const StorageService = {
           if (title.includes(token)) titleScore += 8;
         }
 
-        const chunks = item.metadata?.chunks;
+        const chunks = source.metadata?.chunks;
         if (chunks && chunks.length > 0) {
-          // Score at chunk level for items with paragraph metadata
+          // Score at chunk level for sources with paragraph metadata
           const scoredChunks: MatchedChunk[] = chunks.map((chunk) => {
             const chunkText = chunk.text.toLowerCase();
             let chunkScore = 0;
@@ -360,22 +350,22 @@ export const StorageService = {
 
           const topChunkScore = scoredChunks.slice(0, 3).reduce((sum, c) => sum + c.chunkScore, 0);
           const score = titleScore + topChunkScore;
-          return { item, score, matchedChunks: scoredChunks };
+          return { source, score, matchedChunks: scoredChunks };
         }
 
-        // Fallback for legacy items without chunks
-        const content = item.content.toLowerCase();
+        // Fallback for legacy sources without chunks
+        const content = source.content.toLowerCase();
         let score = titleScore;
         if (content.includes(query)) score += 18;
         for (const token of tokens) {
           if (content.includes(token)) score += 3;
         }
-        return { item, score };
+        return { source, score };
       })
       .filter((entry) => (query ? entry.score > 0 : true))
       .sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
-        return b.item.updatedAt - a.item.updatedAt;
+        return b.source.updatedAt - a.source.updatedAt;
       });
 
     return scored.slice(0, limit);
@@ -450,11 +440,12 @@ export const StorageService = {
       .map(({ conversation, messageId, snippet }) => ({ conversation, messageId, snippet }));
   },
 
-  async createSRSCards(inputs: CreateSRSCardInput[]): Promise<SRSCard[]> {
+  async createSRSCards(deckId: string, inputs: CreateSRSCardInput[]): Promise<SRSCard[]> {
     const now = Date.now();
     const cards: SRSCard[] = inputs.map((input) => ({
       id: nanoid(),
-      libraryItemId: input.libraryItemId,
+      deckId,
+      sourceId: input.sourceId,
       front: input.front,
       back: input.back,
       easeFactor: 2.5,
@@ -466,7 +457,12 @@ export const StorageService = {
       createdAt: now,
     }));
     await getDB().srsCards.bulkAdd(cards);
+    await syncDeckCardCount(deckId);
     return cards;
+  },
+
+  async listDeckCards(deckId: string): Promise<SRSCard[]> {
+    return getDB().srsCards.where("deckId").equals(deckId).sortBy("createdAt");
   },
 
   async getDueCards(limit?: number): Promise<SRSCard[]> {
@@ -481,37 +477,36 @@ export const StorageService = {
   },
 
   async deleteSRSCard(id: string): Promise<void> {
+    const card = await getDB().srsCards.get(id);
     await getDB().srsCards.delete(id);
+    if (card) await syncDeckCardCount(card.deckId);
   },
 
-  async getDueLibraryBreakdown(): Promise<
-    { libraryId: string | null; name: string; color: string; count: number }[]
+  async getDueDeckBreakdown(): Promise<
+    { deckId: string | null; name: string; color: string; count: number }[]
   > {
     const now = Date.now();
     const db = getDB();
 
-    const [dueCards, libraryItems, libraries] = await Promise.all([
+    const [dueCards, decks] = await Promise.all([
       db.srsCards.where("nextReviewDate").belowOrEqual(now).toArray(),
-      db.libraryItems.toArray(),
-      db.libraries.toArray(),
+      db.decks.toArray(),
     ]);
 
-    const libraryById = new Map(libraries.map((l) => [l.id, l]));
-    const itemById = new Map(libraryItems.map((i) => [i.id, i]));
+    const deckById = new Map(decks.map((d) => [d.id, d]));
 
     const counter = new Map<
       string,
-      { libraryId: string | null; name: string; color: string; count: number }
+      { deckId: string | null; name: string; color: string; count: number }
     >();
 
     for (const card of dueCards) {
-      const item = card.libraryItemId ? itemById.get(card.libraryItemId) : undefined;
-      const library = item ? libraryById.get(item.libraryId) : undefined;
-      const key = library?.id ?? "__general__";
+      const deck = deckById.get(card.deckId);
+      const key = deck?.id ?? "__general__";
       const current = counter.get(key) ?? {
-        libraryId: library?.id ?? null,
-        name: library?.name ?? "General",
-        color: library?.color ?? "#34D399",
+        deckId: deck?.id ?? null,
+        name: deck?.name ?? "General",
+        color: deck?.color ?? "#34D399",
         count: 0,
       };
       current.count += 1;
@@ -592,29 +587,29 @@ export const StorageService = {
 
   async exportAllData(): Promise<ExportData> {
     const db = getDB();
-    const [conversations, messages, libraries, libraryItems, exercises, srsCards, activityEvents] =
+    const [conversations, messages, decks, deckSources, exercises, srsCards, activityEvents] =
       await Promise.all([
         db.conversations.toArray(),
         db.messages.toArray(),
-        db.libraries.toArray(),
-        db.libraryItems.toArray(),
+        db.decks.toArray(),
+        db.deckSources.toArray(),
         db.exercises.toArray(),
         db.srsCards.toArray(),
         db.activityEvents.toArray(),
       ]);
-    return { version: 1, exportedAt: new Date().toISOString(), conversations, messages, libraries, libraryItems, exercises, srsCards, activityEvents };
+    return { version: 2, exportedAt: new Date().toISOString(), conversations, messages, decks, deckSources, exercises, srsCards, activityEvents };
   },
 
   async importAllData(data: ExportData): Promise<void> {
     const db = getDB();
     await db.transaction("rw", [
-      db.conversations, db.messages, db.libraries, db.libraryItems,
+      db.conversations, db.messages, db.decks, db.deckSources,
       db.exercises, db.srsCards, db.activityEvents,
     ], async () => {
       if (data.conversations?.length) await db.conversations.bulkPut(data.conversations);
       if (data.messages?.length) await db.messages.bulkPut(data.messages);
-      if (data.libraries?.length) await db.libraries.bulkPut(data.libraries);
-      if (data.libraryItems?.length) await db.libraryItems.bulkPut(data.libraryItems);
+      if (data.decks?.length) await db.decks.bulkPut(data.decks);
+      if (data.deckSources?.length) await db.deckSources.bulkPut(data.deckSources);
       if (data.exercises?.length) await db.exercises.bulkPut(data.exercises);
       if (data.srsCards?.length) await db.srsCards.bulkPut(data.srsCards);
       if (data.activityEvents?.length) await db.activityEvents.bulkPut(data.activityEvents);
@@ -626,8 +621,8 @@ export const StorageService = {
     await Promise.all([
       db.conversations.clear(),
       db.messages.clear(),
-      db.libraries.clear(),
-      db.libraryItems.clear(),
+      db.decks.clear(),
+      db.deckSources.clear(),
       db.exercises.clear(),
       db.srsCards.clear(),
       db.activityEvents.clear(),
@@ -654,11 +649,11 @@ export const StorageService = {
     }));
   },
 
-  async getNextSRSReviewForItem(itemId: string): Promise<number | null> {
+  async getNextSRSReviewForSource(sourceId: string): Promise<number | null> {
     const now = Date.now();
     const cards = await getDB()
-      .srsCards.where("libraryItemId")
-      .equals(itemId)
+      .srsCards.where("sourceId")
+      .equals(sourceId)
       .toArray();
     const future = cards.filter((c) => c.nextReviewDate > now);
     if (future.length === 0) return null;
@@ -672,10 +667,10 @@ export const StorageService = {
     todayStart.setHours(0, 0, 0, 0);
     const todayTs = todayStart.getTime();
 
-    const [dueCards, allCards, libraryItems, srsReviewEvents] = await Promise.all([
+    const [dueCards, allCards, sources, srsReviewEvents] = await Promise.all([
       db.srsCards.where("nextReviewDate").belowOrEqual(now).count(),
       db.srsCards.toArray(),
-      db.libraryItems.count(),
+      db.deckSources.count(),
       db.activityEvents.where("type").equals("srs_review").toArray(),
     ]);
 
@@ -701,7 +696,7 @@ export const StorageService = {
       streak,
       totalCards: allCards.length,
       masteredCards,
-      libraryItemCount: libraryItems,
+      sourceCount: sources,
       activityByDay,
     };
   },
@@ -732,32 +727,29 @@ export const StorageService = {
     const db = getDB();
     const now = Date.now();
 
-    const [cards, libraryItems, libraries, events] = await Promise.all([
+    const [cards, decks, events] = await Promise.all([
       db.srsCards.toArray(),
-      db.libraryItems.toArray(),
-      db.libraries.toArray(),
+      db.decks.toArray(),
       db.activityEvents.orderBy("timestamp").reverse().limit(12).toArray(),
     ]);
 
-    const libraryById = new Map(libraries.map((library) => [library.id, library]));
-    const itemById = new Map(libraryItems.map((item) => [item.id, item]));
+    const deckById = new Map(decks.map((deck) => [deck.id, deck]));
 
-    const dueByLibraryCounter = new Map<string, { libraryId: string | null; name: string; dueCount: number }>();
+    const dueByDeckCounter = new Map<string, { deckId: string | null; name: string; dueCount: number }>();
     for (const card of cards) {
       if (card.nextReviewDate > now) continue;
-      const item = card.libraryItemId ? itemById.get(card.libraryItemId) : undefined;
-      const library = item ? libraryById.get(item.libraryId) : undefined;
-      const key = library?.id ?? "__general__";
-      const current = dueByLibraryCounter.get(key) ?? {
-        libraryId: library?.id ?? null,
-        name: library?.name ?? "General",
+      const deck = deckById.get(card.deckId);
+      const key = deck?.id ?? "__general__";
+      const current = dueByDeckCounter.get(key) ?? {
+        deckId: deck?.id ?? null,
+        name: deck?.name ?? "General",
         dueCount: 0,
       };
       current.dueCount += 1;
-      dueByLibraryCounter.set(key, current);
+      dueByDeckCounter.set(key, current);
     }
 
-    const dueByLibrary = [...dueByLibraryCounter.values()]
+    const dueByDeck = [...dueByDeckCounter.values()]
       .sort((a, b) => b.dueCount - a.dueCount)
       .slice(0, 4);
 
@@ -834,7 +826,7 @@ export const StorageService = {
     const bestStreak = getBestStreak(reviewDays);
 
     return {
-      dueByLibrary,
+      dueByDeck,
       upcomingReviews,
       recentActivity: events.slice(0, 4),
       reviewedThisMonth,
@@ -844,15 +836,15 @@ export const StorageService = {
     };
   },
 
-  async getDueCardsByLibraryItem(libraryItemId: string): Promise<SRSCard[]> {
+  async getDueCardsBySource(sourceId: string): Promise<SRSCard[]> {
     const now = Date.now();
     const cards = await getDB()
-      .srsCards.where("libraryItemId")
-      .equals(libraryItemId)
+      .srsCards.where("sourceId")
+      .equals(sourceId)
       .toArray();
 
     const due = cards.filter((c) => c.nextReviewDate <= now);
-    // If none are due yet, return all cards for the item so the user can drill anyway
+    // If none are due yet, return all cards for the source so the user can drill anyway
     const result = due.length > 0 ? due : cards;
 
     for (let i = result.length - 1; i > 0; i--) {
@@ -865,20 +857,20 @@ export const StorageService = {
   async getWeakSpots(): Promise<import("@/types/dashboard").WeakSpot[]> {
     const db = getDB();
 
-    const [allCards, libraryItems, libraries] = await Promise.all([
+    const [allCards, deckSources, decks] = await Promise.all([
       db.srsCards.toArray(),
-      db.libraryItems.toArray(),
-      db.libraries.toArray(),
+      db.deckSources.toArray(),
+      db.decks.toArray(),
     ]);
 
-    const itemById = new Map(libraryItems.map((i) => [i.id, i]));
-    const libraryById = new Map(libraries.map((l) => [l.id, l]));
+    const sourceById = new Map(deckSources.map((s) => [s.id, s]));
+    const deckById = new Map(decks.map((d) => [d.id, d]));
 
-    const reviewed = allCards.filter((c) => c.libraryItemId && c.repetitions > 0);
+    const reviewed = allCards.filter((c) => c.sourceId && c.repetitions > 0);
 
     const groups = new Map<string, { easeSums: number[]; lapses: number }>();
     for (const card of reviewed) {
-      const id = card.libraryItemId!;
+      const id = card.sourceId!;
       const g = groups.get(id) ?? { easeSums: [], lapses: 0 };
       g.easeSums.push(card.easeFactor);
       g.lapses += card.lapses;
@@ -887,12 +879,12 @@ export const StorageService = {
 
     const spots: import("@/types/dashboard").WeakSpot[] = [];
 
-    for (const [libraryItemId, { easeSums, lapses }] of groups) {
+    for (const [sourceId, { easeSums, lapses }] of groups) {
       if (easeSums.length < 2) continue;
 
-      const item = itemById.get(libraryItemId);
-      if (!item) continue;
-      const library = libraryById.get(item.libraryId);
+      const source = sourceById.get(sourceId);
+      if (!source) continue;
+      const deck = deckById.get(source.deckId);
 
       const avgEase = easeSums.reduce((a, b) => a + b, 0) / easeSums.length;
       const easeScore = Math.max(0, Math.min(1, (2.5 - avgEase) / (2.5 - 1.3)));
@@ -901,10 +893,10 @@ export const StorageService = {
       const weakScore = easeScore * 0.7 + lapseScore * 0.3;
 
       spots.push({
-        libraryItemId,
-        itemTitle: item.title,
-        libraryName: library?.name ?? "General",
-        libraryColor: library?.color ?? "#34D399",
+        sourceId,
+        sourceTitle: source.title,
+        deckName: deck?.name ?? "General",
+        deckColor: deck?.color ?? "#34D399",
         cardCount: easeSums.length,
         avgEaseFactor: Math.round(avgEase * 100) / 100,
         totalLapses: lapses,

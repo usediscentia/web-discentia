@@ -92,6 +92,7 @@ function FlashCardBatchComponent({
     setSaving(true);
     try {
       await StorageService.createSRSCards(
+        "", // TODO(issue-07): chat generation lands in the open deck
         cards.map((c) => ({ front: c.question, back: c.answer }))
       );
       setSaved(true);

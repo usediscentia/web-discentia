@@ -1,5 +1,5 @@
-import type { ScoredLibraryItem } from "@/services/storage";
-import type { ContentChunk } from "@/types/library";
+import type { ScoredDeckSource } from "@/services/storage";
+import type { ContentChunk } from "@/types/deck";
 
 export const DEFAULT_CONTEXT_TOKEN_BUDGET = 6000;
 const MAX_CHUNKS_PER_ITEM = 5;
@@ -20,19 +20,19 @@ export function estimateCharBudgetFromTokens(tokens: number): number {
 }
 
 export function buildContextSnippet(
-  items: ScoredLibraryItem[],
+  items: ScoredDeckSource[],
   maxTokens = DEFAULT_CONTEXT_TOKEN_BUDGET
-): { contextText: string; usedItems: ScoredLibraryItem[]; injectedChunks: InjectedChunk[] } {
+): { contextText: string; usedItems: ScoredDeckSource[]; injectedChunks: InjectedChunk[] } {
   const maxChars = estimateCharBudgetFromTokens(maxTokens);
-  const selected: ScoredLibraryItem[] = [];
+  const selected: ScoredDeckSource[] = [];
   const sections: string[] = [];
   const injectedChunks: InjectedChunk[] = [];
   let usedChars = 0;
 
   for (const entry of items) {
-    const { item, matchedChunks } = entry;
+    const { source, matchedChunks } = entry;
 
-    // Item had chunks metadata but zero matched → skip; dumping full content
+    // Source had chunks metadata but zero matched → skip; dumping full content
     // would starve the budget with low-signal text from a large doc.
     if (matchedChunks && matchedChunks.length === 0) continue;
 
@@ -45,9 +45,9 @@ export function buildContextSnippet(
       for (const { chunk } of topChunks) {
         const section = [
           `[SOURCE_START]`,
-          `libraryItemId: ${item.id}`,
-          `libraryId: ${item.libraryId}`,
-          `title: ${item.title}`,
+          `libraryItemId: ${source.id}`,
+          `libraryId: ${source.deckId}`,
+          `title: ${source.title}`,
           chunk.heading ? `section: ${chunk.heading}` : null,
           `chunkPage: ${chunk.page}`,
           `chunkIndex: ${chunk.index}`,
@@ -65,7 +65,7 @@ export function buildContextSnippet(
         }
 
         chunkSections.push(section);
-        addedChunks.push({ libraryItemId: item.id, libraryId: item.libraryId, itemTitle: item.title, chunk });
+        addedChunks.push({ libraryItemId: source.id, libraryId: source.deckId, itemTitle: source.title, chunk });
         usedChars += section.length;
       }
 
@@ -78,10 +78,10 @@ export function buildContextSnippet(
       // Fallback: inject whole content (legacy items or non-PDF) as a synthetic chunk
       const section = [
         `[SOURCE_START]`,
-        `libraryItemId: ${item.id}`,
-        `libraryId: ${item.libraryId}`,
-        `title: ${item.title}`,
-        `content: ${item.content}`,
+        `libraryItemId: ${source.id}`,
+        `libraryId: ${source.deckId}`,
+        `title: ${source.title}`,
+        `content: ${source.content}`,
         `[SOURCE_END]`,
       ].join("\n");
 
@@ -92,10 +92,10 @@ export function buildContextSnippet(
         sections.push(truncated);
         selected.push(entry);
         injectedChunks.push({
-          libraryItemId: item.id,
-          libraryId: item.libraryId,
-          itemTitle: item.title,
-          chunk: { text: item.content.slice(0, remaining), page: 0, index: 0, startChar: 0, endChar: remaining },
+          libraryItemId: source.id,
+          libraryId: source.deckId,
+          itemTitle: source.title,
+          chunk: { text: source.content.slice(0, remaining), page: 0, index: 0, startChar: 0, endChar: remaining },
         });
         break;
       }
@@ -103,10 +103,10 @@ export function buildContextSnippet(
       sections.push(section);
       selected.push(entry);
       injectedChunks.push({
-        libraryItemId: item.id,
-        libraryId: item.libraryId,
-        itemTitle: item.title,
-        chunk: { text: item.content, page: 0, index: 0, startChar: 0, endChar: item.content.length },
+        libraryItemId: source.id,
+        libraryId: source.deckId,
+        itemTitle: source.title,
+        chunk: { text: source.content, page: 0, index: 0, startChar: 0, endChar: source.content.length },
       });
       usedChars += section.length;
     }

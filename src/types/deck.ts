@@ -1,14 +1,14 @@
-export interface Library {
+export interface Deck {
   id: string;
   name: string;
   color: string;
   description?: string;
-  itemCount: number;
+  cardCount: number;
   createdAt: number;
   updatedAt: number;
 }
 
-export type LibraryItemType = "text" | "markdown" | "image" | "pdf" | "file";
+export type DeckSourceType = "text" | "markdown" | "image" | "pdf" | "file";
 
 export interface ContentChunk {
   text: string;
@@ -19,7 +19,7 @@ export interface ContentChunk {
   heading?: string;  // nearest section heading above this chunk (PDFs only)
 }
 
-export interface LibraryItemMetadata {
+export interface DeckSourceMetadata {
   fileSize?: number;
   mimeType?: string;
   wordCount?: number;
@@ -29,15 +29,15 @@ export interface LibraryItemMetadata {
   chunks?: ContentChunk[]; // paragraph-level chunks with position metadata (PDFs only)
 }
 
-export interface LibraryItem {
+export interface DeckSource {
   id: string;
-  libraryId: string;
-  type: LibraryItemType;
+  deckId: string;
+  type: DeckSourceType;
   title: string;
   content: string;
   preview: string;
   rawFile?: Blob;
-  metadata: LibraryItemMetadata;
+  metadata: DeckSourceMetadata;
   createdAt: number;
   updatedAt: number;
 }

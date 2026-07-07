@@ -100,10 +100,10 @@ export default function GenerationModal() {
     const { exerciseType, focusPrompt, cardCount, documentId } = useGenerationStore.getState();
     const prompt = focusPrompt.trim() || DEFAULT_PROMPTS[exerciseType];
 
-    const item = documentId ? await StorageService.getLibraryItem(documentId) : null;
+    const item = documentId ? await StorageService.getDeckSource(documentId) : null;
     const chunks = item?.metadata.chunks ?? [];
     const scoredItem = item
-      ? { item, score: 1, matchedChunks: chunks.map((chunk) => ({ chunk, chunkScore: 1 })) }
+      ? { source: item, score: 1, matchedChunks: chunks.map((chunk) => ({ chunk, chunkScore: 1 })) }
       : null;
     const { contextText } = buildContextSnippet(scoredItem ? [scoredItem] : [], 4000);
 
@@ -176,8 +176,10 @@ export default function GenerationModal() {
       if (activeCards.length === 0) return;
       setSaving(true);
       try {
+        const source = documentId ? await StorageService.getDeckSource(documentId) : undefined;
         const created = await StorageService.createSRSCards(
-          activeCards.map((c) => ({ front: c.front, back: c.back, libraryItemId: documentId ?? "" }))
+          source?.deckId ?? "", // TODO(issue-07): modal gains deck context
+          activeCards.map((c) => ({ front: c.front, back: c.back, sourceId: documentId ?? undefined }))
         );
         setSavedCardIds(created.map((c) => c.id));
         setStep("schedule");

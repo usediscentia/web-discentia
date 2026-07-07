@@ -18,14 +18,14 @@ export interface ChatContext {
 
 export async function buildChatContext(
   content: string,
-  selectedLibraryIds: string[],
+  deckIds: string[],
   historyMessages: Array<{ role: string; content: string }>,
   exerciseIntent: { type: ExerciseType; topic: string } | null
 ): Promise<ChatContext> {
-  const relevantItems = selectedLibraryIds.length
-    ? await StorageService.searchLibraryItems({
+  const relevantItems = deckIds.length
+    ? await StorageService.searchDeckSources({
         query: content,
-        libraryIds: selectedLibraryIds,
+        deckIds,
         limit: 24,
       })
     : [];
@@ -52,8 +52,8 @@ export async function buildChatContext(
             `- Reviewed last 7 days: ${insights.reviewedLast7Days}`,
             `- Reviewed previous 7 days: ${insights.reviewedPrev7Days}`,
             `- Best streak ever: ${insights.bestStreak} days`,
-            `- Due by library: ${
-              insights.dueByLibrary
+            `- Due by deck: ${
+              insights.dueByDeck
                 .map((l: { name: string; dueCount: number }) => `${l.name}: ${l.dueCount}`)
                 .join(", ") || "none"
             }`,

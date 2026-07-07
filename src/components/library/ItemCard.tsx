@@ -4,11 +4,11 @@ import Image from "next/image";
 import { Trash2, PencilLine } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useRef, useEffect, useCallback, useState, memo } from "react";
-import type { LibraryItem } from "@/types/library";
+import type { DeckSource } from "@/types/deck";
 import { cn } from "@/lib/utils";
 
 interface ItemCardProps {
-  item: LibraryItem;
+  item: DeckSource;
   libraryName: string;
   libraryColor: string;
   index: number;

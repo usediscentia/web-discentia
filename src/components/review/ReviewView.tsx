@@ -82,11 +82,11 @@ export default function ReviewView() {
       setLoading(false);
 
       const itemIds = [
-        ...new Set(due.map((c) => c.libraryItemId).filter(Boolean) as string[]),
+        ...new Set(due.map((c) => c.sourceId).filter(Boolean) as string[]),
       ];
       if (itemIds.length === 0) return;
 
-      Promise.all(itemIds.map((id) => StorageService.getLibraryItem(id))).then((items) => {
+      Promise.all(itemIds.map((id) => StorageService.getDeckSource(id))).then((items) => {
         const contextMap: Record<string, string> = {};
         const libraryIdToItemIds: Record<string, string[]> = {};
 
@@ -104,16 +104,16 @@ export default function ReviewView() {
             contextMap[item.id] = item.content.slice(0, 1500);
           }
 
-          if (!libraryIdToItemIds[item.libraryId]) {
-            libraryIdToItemIds[item.libraryId] = [];
+          if (!libraryIdToItemIds[item.deckId]) {
+            libraryIdToItemIds[item.deckId] = [];
           }
-          libraryIdToItemIds[item.libraryId].push(item.id);
+          libraryIdToItemIds[item.deckId].push(item.id);
         }
 
         setSourceContexts(contextMap);
 
         const libraryIds = Object.keys(libraryIdToItemIds);
-        Promise.all(libraryIds.map((id) => StorageService.getLibrary(id))).then((libraries) => {
+        Promise.all(libraryIds.map((id) => StorageService.getDeck(id))).then((libraries) => {
           const colorMap: Record<string, string> = {};
           for (const library of libraries) {
             if (!library) continue;
@@ -133,8 +133,8 @@ export default function ReviewView() {
   }, [loadSessionData]);
 
   const current = cards[index];
-  const accentColor = current?.libraryItemId
-    ? (accentColors[current.libraryItemId] ?? DEFAULT_ACCENT)
+  const accentColor = current?.sourceId
+    ? (accentColors[current.sourceId] ?? DEFAULT_ACCENT)
     : DEFAULT_ACCENT;
 
   const handleCheck = useCallback(
@@ -149,8 +149,8 @@ export default function ReviewView() {
         const config = getActiveProviderConfig();
         const provider = getAIProvider(config.type);
         if (provider) {
-          const sourceCtx = current.libraryItemId
-            ? sourceContexts[current.libraryItemId]
+          const sourceCtx = current.sourceId
+            ? sourceContexts[current.sourceId]
             : undefined;
 
           const prompt = buildEvaluationPrompt({
