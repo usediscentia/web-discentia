@@ -228,7 +228,7 @@ export default function GenerationModal() {
     clearProgress();
     close();
     setTimeout(reset, 300);
-    useAppStore.getState().setActiveView(exerciseType === "flashcard" ? "study" : "library");
+    useAppStore.getState().setActiveView(exerciseType === "flashcard" ? "study" : "decks");
   }, [close, reset]);
 
   const successCardCount =

@@ -1,35 +1,30 @@
 import { create } from "zustand";
 
-export type ActiveView =
-  | "chat"
-  | "library"
-  | "editor"
-  | "settings"
-  | "study"
-  | "stats";
+export type ActiveView = "decks" | "study";
 
 interface AppState {
   activeView: ActiveView;
-  settingsOpen: boolean;
+  selectedDeckId: string | null;
   commandPaletteOpen: boolean;
   sidebarCollapsed: boolean;
   libraryFocusItemId: string | null;
   editorItemId: string | null;
   studyFilterItemId: string | null;
   activeLibraryId: string | null;
-  setStudyFilterItemId: (id: string | null) => void;
   setActiveView: (view: ActiveView) => void;
-  setSettingsOpen: (open: boolean) => void;
+  openDeck: (id: string) => void;
+  closeDeck: () => void;
   setCommandPaletteOpen: (open: boolean) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setLibraryFocusItemId: (id: string | null) => void;
   setEditorItemId: (id: string | null) => void;
+  setStudyFilterItemId: (id: string | null) => void;
   setActiveLibraryId: (id: string | null) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  activeView: "study",
-  settingsOpen: false,
+  activeView: "decks",
+  selectedDeckId: null,
   commandPaletteOpen: false,
   sidebarCollapsed:
     typeof window !== "undefined"
@@ -39,8 +34,9 @@ export const useAppStore = create<AppState>((set) => ({
   editorItemId: null,
   studyFilterItemId: null,
   activeLibraryId: null,
-  setActiveView: (view) => set({ activeView: view }),
-  setSettingsOpen: (open) => set({ settingsOpen: open }),
+  setActiveView: (view) => set({ activeView: view, selectedDeckId: null }),
+  openDeck: (id) => set({ activeView: "decks", selectedDeckId: id }),
+  closeDeck: () => set({ selectedDeckId: null }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   setSidebarCollapsed: (collapsed) => {
     if (typeof window !== "undefined") {

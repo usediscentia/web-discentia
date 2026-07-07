@@ -7,20 +7,23 @@ import {
   FileText,
   Image,
   File,
-  MessageSquare,
+  Layers,
+  Sparkles,
+  Settings,
   X,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useAppStore } from "@/stores/app.store";
-import { useChatStore } from "@/stores/chat.store";
+import { useDialogStore } from "@/stores/dialog.store";
 import { StorageService } from "@/services/storage";
 import type { ScoredDeckSource } from "@/services/storage";
-import type { Conversation } from "@/types/chat";
 import type { Deck, DeckSourceType } from "@/types/deck";
 
-interface ConversationResult {
-  conversation: Conversation;
-  messageId: string;
-  snippet: string;
+interface NavCommand {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  run: () => void;
 }
 
 function highlight(text: string, term: string): React.ReactNode {
@@ -60,23 +63,20 @@ export function CommandPalette() {
     commandPaletteOpen,
     setCommandPaletteOpen,
     setActiveView,
-    setEditorItemId,
+    openDeck,
   } = useAppStore();
-  const { setActiveConversationId, setSearchHighlight } = useChatStore();
+  const setSettingsOpen = useDialogStore((s) => s.setSettingsOpen);
 
   const [query, setQuery] = useState("");
-  const [libraryResults, setLibraryResults] = useState<ScoredDeckSource[]>([]);
-  const [conversationResults, setConversationResults] = useState<
-    ConversationResult[]
-  >([]);
-  const [libraries, setLibraries] = useState<Map<string, Deck>>(new Map());
+  const [decks, setDecks] = useState<Deck[]>([]);
+  const [sourceResults, setSourceResults] = useState<ScoredDeckSource[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Focus input + load libraries when opened
+  // Focus input + load decks when opened
   useEffect(() => {
     if (commandPaletteOpen) {
       const timeout = window.setTimeout(() => {
@@ -84,29 +84,22 @@ export function CommandPalette() {
         setActiveIndex(0);
       }, 0);
       setTimeout(() => inputRef.current?.focus(), 50);
-      StorageService.listDecks().then((libs) =>
-        setLibraries(new Map(libs.map((l) => [l.id, l])))
-      );
+      StorageService.listDecks().then(setDecks);
       return () => window.clearTimeout(timeout);
     }
   }, [commandPaletteOpen]);
 
-  // Load recents when query is empty
+  // Load recent sources when query is empty
   useEffect(() => {
     if (!commandPaletteOpen) return;
     if (query.trim()) return;
 
-    StorageService.searchDeckSources({ query: "", limit: 5 }).then((r) =>
-      setLibraryResults(r)
-    );
-    StorageService.listConversations().then((convos) =>
-      setConversationResults(
-        convos.slice(0, 5).map((c) => ({ conversation: c, messageId: "", snippet: "" }))
-      )
+    StorageService.searchDeckSources({ query: "", limit: 5 }).then(
+      setSourceResults
     );
   }, [commandPaletteOpen, query]);
 
-  // Debounced search
+  // Debounced source search
   useEffect(() => {
     if (!query.trim()) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -114,13 +107,12 @@ export function CommandPalette() {
     let cancelled = false;
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
-      const [lib, convos] = await Promise.all([
-        StorageService.searchDeckSources({ query, limit: 5 }),
-        StorageService.searchConversations(query, 5),
-      ]);
+      const sources = await StorageService.searchDeckSources({
+        query,
+        limit: 5,
+      });
       if (cancelled) return;
-      setLibraryResults(lib);
-      setConversationResults(convos);
+      setSourceResults(sources);
       setActiveIndex(0);
       setLoading(false);
     }, 200);
@@ -131,45 +123,70 @@ export function CommandPalette() {
     };
   }, [query]);
 
+  const deckMap = useMemo(
+    () => new Map(decks.map((d) => [d.id, d])),
+    [decks]
+  );
+
+  const navCommands = useMemo<NavCommand[]>(
+    () => [
+      {
+        id: "nav-decks",
+        label: "Ir para Decks",
+        icon: Layers,
+        run: () => setActiveView("decks"),
+      },
+      {
+        id: "nav-study",
+        label: "Ir para Estudar",
+        icon: Sparkles,
+        run: () => setActiveView("study"),
+      },
+      {
+        id: "nav-settings",
+        label: "Abrir Configurações",
+        icon: Settings,
+        run: () => setSettingsOpen(true),
+      },
+    ],
+    [setActiveView, setSettingsOpen]
+  );
+
+  const commandResults = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return navCommands;
+    return navCommands.filter((c) => c.label.toLowerCase().includes(q));
+  }, [query, navCommands]);
+
+  const deckResults = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = q
+      ? decks.filter((d) => d.name.toLowerCase().includes(q))
+      : decks;
+    return list.slice(0, 5);
+  }, [query, decks]);
+
   const allResults = useMemo(
     () => [
-      ...libraryResults.map((r) => ({ type: "library" as const, data: r })),
-      ...conversationResults.map((r) => ({
-        type: "conversation" as const,
-        data: r,
-      })),
+      ...commandResults.map((c) => ({ type: "command" as const, data: c })),
+      ...deckResults.map((d) => ({ type: "deck" as const, data: d })),
+      ...sourceResults.map((r) => ({ type: "source" as const, data: r })),
     ],
-    [libraryResults, conversationResults]
+    [commandResults, deckResults, sourceResults]
   );
 
   const openResult = useCallback(
     (result: (typeof allResults)[number]) => {
-      if (result.type === "library") {
-        const item = result.data.source;
-        if (item.type === "markdown" || item.type === "text") {
-          setEditorItemId(item.id);
-          setActiveView("editor");
-        } else {
-          setActiveView("library");
-        }
+      if (result.type === "command") {
+        result.data.run();
+      } else if (result.type === "deck") {
+        openDeck(result.data.id);
       } else {
-        const { conversation, messageId } = result.data;
-        setActiveConversationId(conversation.id);
-        if (messageId) {
-          setSearchHighlight({ term: query, messageId });
-        }
-        setActiveView("chat");
+        openDeck(result.data.source.deckId); // TODO(issue-05): focus the source inside the deck
       }
       setCommandPaletteOpen(false);
     },
-    [
-      query,
-      setActiveView,
-      setEditorItemId,
-      setActiveConversationId,
-      setSearchHighlight,
-      setCommandPaletteOpen,
-    ]
+    [openDeck, setCommandPaletteOpen]
   );
 
   const handleKeyDown = useCallback(
@@ -249,51 +266,69 @@ export function CommandPalette() {
                 </p>
               )}
 
-              {/* Library section */}
-              {libraryResults.length > 0 && (
+              {/* Commands section */}
+              {commandResults.length > 0 && (
                 <>
                   <p className="text-[12px] font-medium text-[#9CA3AF] px-4 pt-2 pb-1">
-                    {query.trim() ? "Library Items" : "Recent"}
+                    Comandos
                   </p>
-                  {libraryResults.map((r, i) => {
-                    const lib = libraries.get(r.source.deckId);
-                    const Icon = ITEM_TYPE_ICONS[r.source.type] ?? FileText;
+                  {commandResults.map((c, i) => {
+                    const Icon = c.icon;
                     const globalIdx = i;
                     return (
                       <button
-                        key={r.source.id}
-                        onClick={() =>
-                          openResult({ type: "library", data: r })
-                        }
+                        key={c.id}
+                        onClick={() => openResult({ type: "command", data: c })}
                         onMouseEnter={() => setActiveIndex(globalIdx)}
-                        className={`w-full flex items-center gap-3 h-[44px] px-4 text-left transition-colors cursor-pointer ${
+                        className={`w-full flex items-center gap-3 h-[40px] px-4 text-left transition-colors cursor-pointer ${
                           activeIndex === globalIdx
                             ? "bg-[#F3F4F6]"
                             : "hover:bg-[#FAFAFA]"
                         }`}
                       >
-                        <Icon
-                          size={16}
-                          className="text-[#9CA3AF] shrink-0"
+                        <Icon size={16} className="text-[#9CA3AF] shrink-0" />
+                        <p className="flex-1 min-w-0 text-[14px] text-[#171717] truncate">
+                          {highlight(c.label, query)}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+
+              {/* Divider */}
+              {commandResults.length > 0 && deckResults.length > 0 && (
+                <div className="h-px bg-[#E5E7EB] mx-0 my-1" />
+              )}
+
+              {/* Decks section */}
+              {deckResults.length > 0 && (
+                <>
+                  <p className="text-[12px] font-medium text-[#9CA3AF] px-4 pt-2 pb-1">
+                    Decks
+                  </p>
+                  {deckResults.map((deck, i) => {
+                    const globalIdx = commandResults.length + i;
+                    return (
+                      <button
+                        key={deck.id}
+                        onClick={() => openResult({ type: "deck", data: deck })}
+                        onMouseEnter={() => setActiveIndex(globalIdx)}
+                        className={`w-full flex items-center gap-3 h-[40px] px-4 text-left transition-colors cursor-pointer ${
+                          activeIndex === globalIdx
+                            ? "bg-[#F3F4F6]"
+                            : "hover:bg-[#FAFAFA]"
+                        }`}
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: deck.color }}
                         />
-                        <div className="flex-1 min-w-0 flex flex-col">
-                          <p className="text-[14px] text-[#171717] truncate leading-tight">
-                            {highlight(r.source.title, query)}
-                          </p>
-                          {lib && (
-                            <p className="text-[12px] text-[#9CA3AF] truncate leading-tight">
-                              {lib.name}
-                            </p>
-                          )}
-                        </div>
-                        {lib && (
-                          <div
-                            className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: lib.color }}
-                          />
-                        )}
+                        <p className="flex-1 min-w-0 text-[14px] text-[#171717] truncate">
+                          {highlight(deck.name, query)}
+                        </p>
                         <span className="text-[11px] text-[#D1D5DB] shrink-0">
-                          {timeAgo(r.source.updatedAt)}
+                          {deck.cardCount} cards
                         </span>
                       </button>
                     );
@@ -302,41 +337,52 @@ export function CommandPalette() {
               )}
 
               {/* Divider */}
-              {libraryResults.length > 0 &&
-                conversationResults.length > 0 && (
+              {(commandResults.length > 0 || deckResults.length > 0) &&
+                sourceResults.length > 0 && (
                   <div className="h-px bg-[#E5E7EB] mx-0 my-1" />
                 )}
 
-              {/* Conversations section */}
-              {conversationResults.length > 0 && (
+              {/* Sources section */}
+              {sourceResults.length > 0 && (
                 <>
                   <p className="text-[12px] font-medium text-[#9CA3AF] px-4 pt-2 pb-1">
-                    Conversations
+                    {query.trim() ? "Fontes" : "Recentes"}
                   </p>
-                  {conversationResults.map((r, i) => {
-                    const globalIdx = libraryResults.length + i;
+                  {sourceResults.map((r, i) => {
+                    const deck = deckMap.get(r.source.deckId);
+                    const Icon = ITEM_TYPE_ICONS[r.source.type] ?? FileText;
+                    const globalIdx =
+                      commandResults.length + deckResults.length + i;
                     return (
                       <button
-                        key={r.conversation.id}
-                        onClick={() =>
-                          openResult({ type: "conversation", data: r })
-                        }
+                        key={r.source.id}
+                        onClick={() => openResult({ type: "source", data: r })}
                         onMouseEnter={() => setActiveIndex(globalIdx)}
-                        className={`w-full flex items-center gap-3 h-[40px] px-4 text-left transition-colors cursor-pointer ${
+                        className={`w-full flex items-center gap-3 h-[44px] px-4 text-left transition-colors cursor-pointer ${
                           activeIndex === globalIdx
                             ? "bg-[#F3F4F6]"
                             : "hover:bg-[#FAFAFA]"
                         }`}
                       >
-                        <MessageSquare
-                          size={16}
-                          className="text-[#9CA3AF] shrink-0"
-                        />
-                        <p className="flex-1 min-w-0 text-[14px] text-[#171717] truncate">
-                          {highlight(r.conversation.title, query)}
-                        </p>
+                        <Icon size={16} className="text-[#9CA3AF] shrink-0" />
+                        <div className="flex-1 min-w-0 flex flex-col">
+                          <p className="text-[14px] text-[#171717] truncate leading-tight">
+                            {highlight(r.source.title, query)}
+                          </p>
+                          {deck && (
+                            <p className="text-[12px] text-[#9CA3AF] truncate leading-tight">
+                              {deck.name}
+                            </p>
+                          )}
+                        </div>
+                        {deck && (
+                          <div
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: deck.color }}
+                          />
+                        )}
                         <span className="text-[11px] text-[#D1D5DB] shrink-0">
-                          {timeAgo(r.conversation.updatedAt)}
+                          {timeAgo(r.source.updatedAt)}
                         </span>
                       </button>
                     );
@@ -350,9 +396,6 @@ export function CommandPalette() {
               <div className="flex items-center justify-between h-[40px] px-4 border-t border-[#E5E7EB]">
                 <span className="text-[12px] text-[#9CA3AF]">↵ Open</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] text-[#9CA3AF]">
-                    Tab switch category
-                  </span>
                   <span className="text-[12px] text-[#9CA3AF]">Esc close</span>
                 </div>
               </div>

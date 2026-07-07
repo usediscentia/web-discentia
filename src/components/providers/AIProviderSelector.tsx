@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Check, ChevronDown, ArrowRight, Cpu, Search } from "lucide-react";
 import { ProviderIcon, ModelIcon } from "@lobehub/icons";
 import { useProviderStore } from "@/stores/provider.store";
-import { useAppStore } from "@/stores/app.store";
+import { useDialogStore } from "@/stores/dialog.store";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
 import type { AIProviderType } from "@/types/ai";
 
@@ -164,7 +164,7 @@ export function AIProviderSelector({
     githubCopilotModels,
     fetchGithubCopilotModels,
   } = useProviderStore();
-  const { setActiveView } = useAppStore();
+  const setSettingsOpen = useDialogStore((s) => s.setSettingsOpen);
 
   const [modelSearchByProvider, setModelSearchByProvider] = useState<
     Partial<Record<AIProviderType, string>>
@@ -214,7 +214,7 @@ export function AIProviderSelector({
 
   const handleManageKeys = () => {
     onClose();
-    setActiveView("settings");
+    setSettingsOpen(true);
   };
 
   const renderModelButton = (model: string, providerId: AIProviderType) => {

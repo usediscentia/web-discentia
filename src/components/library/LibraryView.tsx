@@ -244,7 +244,7 @@ export default function LibraryView() {
     });
     if (created) {
       setEditorItemId(created.id);
-      setActiveView("editor");
+      setActiveView("decks"); // TODO(issue-05): contextual editor
     }
   };
 
@@ -573,7 +573,7 @@ export default function LibraryView() {
                             item.type === "markdown" || item.type === "text"
                               ? () => {
                                   setEditorItemId(item.id);
-                                  setActiveView("editor");
+                                  setActiveView("decks"); // TODO(issue-05): contextual editor
                                 }
                               : undefined
                           }
