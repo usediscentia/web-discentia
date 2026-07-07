@@ -13,9 +13,9 @@ import {
 import { useAppStore } from "@/stores/app.store";
 import { useChatStore } from "@/stores/chat.store";
 import { StorageService } from "@/services/storage";
-import type { ScoredLibraryItem } from "@/services/storage";
+import type { ScoredDeckSource } from "@/services/storage";
 import type { Conversation } from "@/types/chat";
-import type { Library, LibraryItemType } from "@/types/library";
+import type { Deck, DeckSourceType } from "@/types/deck";
 
 interface ConversationResult {
   conversation: Conversation;
@@ -47,7 +47,7 @@ function timeAgo(ts: number): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-const ITEM_TYPE_ICONS: Record<LibraryItemType, typeof FileText> = {
+const ITEM_TYPE_ICONS: Record<DeckSourceType, typeof FileText> = {
   markdown: FileText,
   text: FileText,
   image: Image,
@@ -65,11 +65,11 @@ export function CommandPalette() {
   const { setActiveConversationId, setSearchHighlight } = useChatStore();
 
   const [query, setQuery] = useState("");
-  const [libraryResults, setLibraryResults] = useState<ScoredLibraryItem[]>([]);
+  const [libraryResults, setLibraryResults] = useState<ScoredDeckSource[]>([]);
   const [conversationResults, setConversationResults] = useState<
     ConversationResult[]
   >([]);
-  const [libraries, setLibraries] = useState<Map<string, Library>>(new Map());
+  const [libraries, setLibraries] = useState<Map<string, Deck>>(new Map());
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(false);
 
@@ -84,7 +84,7 @@ export function CommandPalette() {
         setActiveIndex(0);
       }, 0);
       setTimeout(() => inputRef.current?.focus(), 50);
-      StorageService.listLibraries().then((libs) =>
+      StorageService.listDecks().then((libs) =>
         setLibraries(new Map(libs.map((l) => [l.id, l])))
       );
       return () => window.clearTimeout(timeout);
@@ -96,7 +96,7 @@ export function CommandPalette() {
     if (!commandPaletteOpen) return;
     if (query.trim()) return;
 
-    StorageService.searchLibraryItems({ query: "", limit: 5 }).then((r) =>
+    StorageService.searchDeckSources({ query: "", limit: 5 }).then((r) =>
       setLibraryResults(r)
     );
     StorageService.listConversations().then((convos) =>
@@ -115,7 +115,7 @@ export function CommandPalette() {
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       const [lib, convos] = await Promise.all([
-        StorageService.searchLibraryItems({ query, limit: 5 }),
+        StorageService.searchDeckSources({ query, limit: 5 }),
         StorageService.searchConversations(query, 5),
       ]);
       if (cancelled) return;
@@ -145,7 +145,7 @@ export function CommandPalette() {
   const openResult = useCallback(
     (result: (typeof allResults)[number]) => {
       if (result.type === "library") {
-        const item = result.data.item;
+        const item = result.data.source;
         if (item.type === "markdown" || item.type === "text") {
           setEditorItemId(item.id);
           setActiveView("editor");
@@ -256,12 +256,12 @@ export function CommandPalette() {
                     {query.trim() ? "Library Items" : "Recent"}
                   </p>
                   {libraryResults.map((r, i) => {
-                    const lib = libraries.get(r.item.libraryId);
-                    const Icon = ITEM_TYPE_ICONS[r.item.type] ?? FileText;
+                    const lib = libraries.get(r.source.deckId);
+                    const Icon = ITEM_TYPE_ICONS[r.source.type] ?? FileText;
                     const globalIdx = i;
                     return (
                       <button
-                        key={r.item.id}
+                        key={r.source.id}
                         onClick={() =>
                           openResult({ type: "library", data: r })
                         }
@@ -278,7 +278,7 @@ export function CommandPalette() {
                         />
                         <div className="flex-1 min-w-0 flex flex-col">
                           <p className="text-[14px] text-[#171717] truncate leading-tight">
-                            {highlight(r.item.title, query)}
+                            {highlight(r.source.title, query)}
                           </p>
                           {lib && (
                             <p className="text-[12px] text-[#9CA3AF] truncate leading-tight">
@@ -293,7 +293,7 @@ export function CommandPalette() {
                           />
                         )}
                         <span className="text-[11px] text-[#D1D5DB] shrink-0">
-                          {timeAgo(r.item.updatedAt)}
+                          {timeAgo(r.source.updatedAt)}
                         </span>
                       </button>
                     );

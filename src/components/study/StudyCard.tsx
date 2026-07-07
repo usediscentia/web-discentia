@@ -79,7 +79,7 @@ export function StudyCard({
             Card {index + 1} of {total}
           </Badge>
           <div className="flex items-center gap-2">
-            {card.libraryItemId && (
+            {card.sourceId && (
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor }} />
             )}
             {onDelete && (

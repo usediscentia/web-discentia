@@ -152,7 +152,7 @@ export default function StatsView() {
           transition={{ duration: 0.3, delay: 0.15 }}
           className="grid grid-cols-3 gap-4"
         >
-          <LibraryReviews libraries={insights.dueByLibrary} />
+          <LibraryReviews libraries={insights.dueByDeck} />
           <ReviewForecast upcoming={insights.upcomingReviews} />
           <div className="flex flex-col">
             <WeakSpotsWidget />

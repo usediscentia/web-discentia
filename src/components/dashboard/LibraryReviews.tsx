@@ -3,10 +3,10 @@
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/stores/app.store";
-import type { DashboardDueByLibrary } from "@/types/dashboard";
+import type { DashboardDueByDeck } from "@/types/dashboard";
 
 interface LibraryReviewsProps {
-  libraries: DashboardDueByLibrary[];
+  libraries: DashboardDueByDeck[];
 }
 
 const BAR_COLORS = ["#22C55E", "#3B82F6", "#8B5CF6", "#F59E0B"];
@@ -48,7 +48,7 @@ export default function LibraryReviews({ libraries }: LibraryReviewsProps) {
           <div className="flex h-4 w-full overflow-hidden rounded-full bg-[#F0EDE9]">
             {rows.map((lib, index) => (
               <motion.div
-                key={lib.libraryId ?? `lib-${index}`}
+                key={lib.deckId ?? `lib-${index}`}
                 initial={{ width: 0 }}
                 animate={{ width: `${(lib.dueCount / total) * 100}%` }}
                 transition={{ duration: 0.6, delay: 0.22 + index * 0.06, ease: "easeOut" }}
@@ -64,7 +64,7 @@ export default function LibraryReviews({ libraries }: LibraryReviewsProps) {
               const pct = Math.round((lib.dueCount / total) * 100);
               return (
                 <div
-                  key={lib.libraryId ?? `legend-${index}`}
+                  key={lib.deckId ?? `legend-${index}`}
                   className="flex items-center justify-between"
                 >
                   <div className="flex items-center gap-2 min-w-0">
