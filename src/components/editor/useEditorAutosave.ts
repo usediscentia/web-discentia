@@ -53,7 +53,7 @@ export function useEditorAutosave({
       const preview = markdown.replace(/[#*_~`>\-|]/g, "").slice(0, 180).trim();
 
       if (itemIdRef.current) {
-        await StorageService.updateLibraryItem(itemIdRef.current, {
+        await StorageService.updateDeckSource(itemIdRef.current, {
           type: "markdown",
           title: currentTitle || "Untitled",
           content: markdown,
@@ -63,8 +63,8 @@ export function useEditorAutosave({
           },
         });
       } else {
-        const item = await StorageService.createLibraryItem({
-          libraryId: currentLibraryId,
+        const item = await StorageService.createDeckSource({
+          deckId: currentLibraryId,
           type: "markdown",
           title: currentTitle || "Untitled",
           content: markdown,

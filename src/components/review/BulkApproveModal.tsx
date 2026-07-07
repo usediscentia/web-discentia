@@ -8,13 +8,13 @@ import type { FlashcardData } from "@/types/exercise";
 
 interface BulkApproveModalProps {
   cards: FlashcardData["cards"];
-  libraryItemId?: string;
+  sourceId?: string;
   initialDismissed?: Set<string>;
   onDone: () => void;
   onSkip: () => void;
 }
 
-export function BulkApproveModal({ cards, libraryItemId, initialDismissed, onDone, onSkip }: BulkApproveModalProps) {
+export function BulkApproveModal({ cards, sourceId, initialDismissed, onDone, onSkip }: BulkApproveModalProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(() => initialDismissed ?? new Set());
   const [saving, setSaving] = useState(false);
 
@@ -36,8 +36,10 @@ export function BulkApproveModal({ cards, libraryItemId, initialDismissed, onDon
     if (kept.length === 0) { onSkip(); return; }
     setSaving(true);
     try {
+      const source = sourceId ? await StorageService.getDeckSource(sourceId) : undefined;
       await StorageService.createSRSCards(
-        kept.map((c) => ({ front: c.front, back: c.back, libraryItemId }))
+        source?.deckId ?? "", // TODO(issue-07): generation flows receive explicit deck context
+        kept.map((c) => ({ front: c.front, back: c.back, sourceId }))
       );
       await StorageService.logActivityEvent(
         "exercise_completed",

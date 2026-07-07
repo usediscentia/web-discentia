@@ -1,7 +1,7 @@
 export interface Conversation {
   id: string;
   title: string;
-  libraryIds?: string[];
+  deckId: string;
   createdAt: number;
   updatedAt: number;
 }

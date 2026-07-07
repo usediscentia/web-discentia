@@ -41,7 +41,7 @@ export default function WeakSpotsWidget() {
   }, []);
 
   const handleStudy = (spot: WeakSpot) => {
-    setStudyFilterItemId(spot.libraryItemId);
+    setStudyFilterItemId(spot.sourceId);
     setActiveView("study");
   };
 
@@ -76,7 +76,7 @@ export default function WeakSpotsWidget() {
       <div className="flex flex-col gap-2">
         {spots.map((spot, i) => (
           <motion.div
-            key={spot.libraryItemId}
+            key={spot.sourceId}
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.05 }}
@@ -85,11 +85,11 @@ export default function WeakSpotsWidget() {
           >
             <span
               className="w-2 h-2 rounded-full shrink-0"
-              style={{ background: spot.libraryColor }}
+              style={{ background: spot.deckColor }}
             />
             <div className="flex flex-col gap-1 flex-1 min-w-0">
               <span className="text-[12px] font-medium text-[#1A1814] truncate">
-                {spot.itemTitle}
+                {spot.sourceTitle}
               </span>
               <div className="flex items-center gap-2">
                 <DifficultyBar score={spot.weakScore} />

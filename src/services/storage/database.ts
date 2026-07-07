@@ -1,14 +1,14 @@
 import Dexie, { type Table } from "dexie";
 import type { Conversation, Message } from "@/types/chat";
-import type { Library, LibraryItem } from "@/types/library";
+import type { Deck, DeckSource } from "@/types/deck";
 import type { Exercise } from "@/types/exercise";
 import type { SRSCard, ActivityEvent } from "@/types/srs";
 
 class DiscentiaDB extends Dexie {
   conversations!: Table<Conversation, string>;
   messages!: Table<Message, string>;
-  libraries!: Table<Library, string>;
-  libraryItems!: Table<LibraryItem, string>;
+  decks!: Table<Deck, string>;
+  deckSources!: Table<DeckSource, string>;
   exercises!: Table<Exercise, string>;
   srsCards!: Table<SRSCard, string>;
   activityEvents!: Table<ActivityEvent, string>;
@@ -60,6 +60,30 @@ class DiscentiaDB extends Dexie {
       srsCards: "id, libraryItemId, nextReviewDate, [nextReviewDate+id]",
       activityEvents: "id, type, timestamp",
     });
+
+    // v6: deck-centric clean start — libraries/libraryItems dropped,
+    // decks/deckSources created, remaining rows wiped (no migration by design)
+    this.version(6)
+      .stores({
+        conversations: "id, deckId, updatedAt",
+        messages: "id, conversationId, timestamp",
+        decks: "id, updatedAt",
+        deckSources: "id, deckId, createdAt, [deckId+createdAt], type",
+        exercises: "id, messageId, type, createdAt",
+        srsCards: "id, deckId, sourceId, nextReviewDate, [nextReviewDate+id]",
+        activityEvents: "id, type, timestamp",
+        libraries: null,
+        libraryItems: null,
+      })
+      .upgrade(async (tx) => {
+        await Promise.all([
+          tx.table("conversations").clear(),
+          tx.table("messages").clear(),
+          tx.table("exercises").clear(),
+          tx.table("srsCards").clear(),
+          tx.table("activityEvents").clear(),
+        ]);
+      });
   }
 }
 

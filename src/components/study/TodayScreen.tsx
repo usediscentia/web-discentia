@@ -52,8 +52,8 @@ export function TodayScreen() {
 
   const cardOrbitItems = cards.map((card) => ({
     card,
-    libraryName: card.libraryItemId ? (libraryNames[card.libraryItemId] ?? "Biblioteca") : "Biblioteca",
-    libraryColor: card.libraryItemId ? (accentColors[card.libraryItemId] ?? "#34D399") : "#34D399",
+    libraryName: card.sourceId ? (libraryNames[card.sourceId] ?? "Biblioteca") : "Biblioteca",
+    libraryColor: card.sourceId ? (accentColors[card.sourceId] ?? "#34D399") : "#34D399",
   }));
 
   // State 3 — No cards at all

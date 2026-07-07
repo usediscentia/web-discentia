@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Mock modules before importing the module under test
 vi.mock("@/services/storage", () => ({
   StorageService: {
-    searchLibraryItems: vi.fn().mockResolvedValue([]),
+    searchDeckSources: vi.fn().mockResolvedValue([]),
     getDashboardStats: vi.fn().mockResolvedValue({
       dueToday: 5,
       reviewedToday: 3,
@@ -15,7 +15,7 @@ vi.mock("@/services/storage", () => ({
       reviewedLast7Days: 20,
       reviewedPrev7Days: 15,
       bestStreak: 14,
-      dueByLibrary: [{ name: "Math", dueCount: 3 }],
+      dueByDeck: [{ name: "Math", dueCount: 3 }],
       upcomingReviews: [{ label: "Tomorrow", dueCount: 5 }],
     }),
   },
@@ -39,7 +39,7 @@ vi.mock("@/services/ai/prompts/exercise.prompts", () => ({
 import { buildChatContext } from "@/lib/chat-context";
 import { StorageService } from "@/services/storage";
 
-const mockSearch = StorageService.searchLibraryItems as ReturnType<typeof vi.fn>;
+const mockSearch = StorageService.searchDeckSources as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -55,13 +55,13 @@ beforeEach(() => {
     reviewedLast7Days: 20,
     reviewedPrev7Days: 15,
     bestStreak: 14,
-    dueByLibrary: [{ name: "Math", dueCount: 3 }],
+    dueByDeck: [{ name: "Math", dueCount: 3 }],
     upcomingReviews: [{ label: "Tomorrow", dueCount: 5 }],
   });
 });
 
 describe("buildChatContext", () => {
-  it("returns system + user messages with no libraries", async () => {
+  it("returns system + user messages with no decks", async () => {
     const { aiMessages, injectedChunks } = await buildChatContext(
       "hello",
       [],
@@ -79,12 +79,12 @@ describe("buildChatContext", () => {
     });
   });
 
-  it("searches library items when libraryIds provided", async () => {
-    await buildChatContext("hello", ["lib-1", "lib-2"], [], null);
+  it("searches deck sources when deckIds provided", async () => {
+    await buildChatContext("hello", ["deck-1", "deck-2"], [], null);
 
     expect(mockSearch).toHaveBeenCalledWith({
       query: "hello",
-      libraryIds: ["lib-1", "lib-2"],
+      deckIds: ["deck-1", "deck-2"],
       limit: 24,
     });
   });
@@ -93,7 +93,7 @@ describe("buildChatContext", () => {
     const { aiMessages } = await buildChatContext("hello", [], [], null);
 
     expect(aiMessages[0].content).toContain("Cards due today: 5");
-    expect(aiMessages[0].content).toContain("Due by library: Math: 3");
+    expect(aiMessages[0].content).toContain("Due by deck: Math: 3");
     expect(aiMessages[0].content).toContain("Upcoming reviews: Tomorrow: 5");
   });
 

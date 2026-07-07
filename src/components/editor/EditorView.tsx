@@ -23,7 +23,7 @@ import { useGenerationStore } from "@/stores/generation.store";
 import { StorageService } from "@/services/storage";
 import MarkdownEditor from "./MarkdownEditor";
 import { useEditorAutosave } from "./useEditorAutosave";
-import type { Library } from "@/types/library";
+import type { Deck } from "@/types/deck";
 import { LIBRARY_COLORS } from "@/lib/colors";
 
 
@@ -100,10 +100,10 @@ function SaveToast({
 
 // --- Library Selector Popover ---
 interface LibrarySelectorProps {
-  libraries: Library[];
+  libraries: Deck[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  onLibraryCreated: (lib: Library) => void;
+  onLibraryCreated: (lib: Deck) => void;
 }
 
 function LibrarySelector({ libraries, selectedId, onSelect, onLibraryCreated }: LibrarySelectorProps) {
@@ -128,7 +128,7 @@ function LibrarySelector({ libraries, selectedId, onSelect, onLibraryCreated }: 
     // Load item counts when popover opens
     Promise.all(
       libraries.map((lib) =>
-        StorageService.listLibraryItems(lib.id).then((items) => ({
+        StorageService.listDeckSources(lib.id).then((items) => ({
           id: lib.id,
           count: items.length,
         }))
@@ -175,7 +175,7 @@ function LibrarySelector({ libraries, selectedId, onSelect, onLibraryCreated }: 
     if (!trimmed || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const lib = await StorageService.createLibrary({ name: trimmed, color: newColor });
+      const lib = await StorageService.createDeck({ name: trimmed, color: newColor });
       onLibraryCreated(lib);
       onSelect(lib.id);
       setOpen(false);
@@ -381,7 +381,7 @@ export default function EditorView() {
 
   const [title, setTitle] = useState("");
   const [libraryId, setLibraryId] = useState<string | null>(null);
-  const [libraries, setLibraries] = useState<Library[]>([]);
+  const [libraries, setLibraries] = useState<Deck[]>([]);
   const [initialContent, setInitialContent] = useState<string | undefined>(
     undefined
   );
@@ -404,7 +404,7 @@ export default function EditorView() {
   const hasContent = Boolean(editorMarkdown && editorMarkdown.trim().length > 0);
 
   useEffect(() => {
-    StorageService.listLibraries().then(setLibraries);
+    StorageService.listDecks().then(setLibraries);
   }, []);
 
   useEffect(() => {
@@ -467,14 +467,14 @@ export default function EditorView() {
     const loadingTimeout = window.setTimeout(() => {
       if (!cancelled) setContentReady(false);
     }, 0);
-    StorageService.getLibraryItem(editorItemId).then((item) => {
+    StorageService.getDeckSource(editorItemId).then((item) => {
       if (cancelled) return;
       if (!item) {
         setContentReady(true);
         return;
       }
       setTitle(item.title);
-      setLibraryId(item.libraryId);
+      setLibraryId(item.deckId);
       setInitialContent(item.content);
       setContentReady(true);
     });
