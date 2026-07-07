@@ -6,7 +6,7 @@ import { AnimatePresence, motion, useMotionValue, animate } from "motion/react";
 import { useLibrary } from "@/hooks/useLibrary";
 import { useAppStore } from "@/stores/app.store";
 import { StorageService } from "@/services/storage";
-import type { LibraryItem } from "@/types/library";
+import type { DeckSource } from "@/types/deck";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import DocumentDetailPage from "@/components/document/DocumentDetailPage";
 type DragPhase = "dragging" | "fly-to-trash" | "shrinking" | "returning";
 
 type DragState = {
-  item: LibraryItem;
+  item: DeckSource;
   libraryColor: string;
   cardRect: DOMRect;
   startX: number;
@@ -29,7 +29,7 @@ type DragState = {
 } | null;
 
 type PendingDelete = {
-  item: LibraryItem;
+  item: DeckSource;
   timerId: ReturnType<typeof setTimeout>;
 } | null;
 
@@ -55,7 +55,7 @@ export default function LibraryView() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
-  const [detailItem, setDetailItem] = useState<LibraryItem | null>(null);
+  const [detailItem, setDetailItem] = useState<DeckSource | null>(null);
   const [newLibraryName, setNewLibraryName] = useState("");
   const [newLibraryColor, setNewLibraryColor] = useState("#34D399");
 
@@ -80,7 +80,7 @@ export default function LibraryView() {
   // ── Drag handlers ─────────────────────────────────────────────────────────
   const handleDragStart = useCallback(
     (
-      item: LibraryItem,
+      item: DeckSource,
       libraryColor: string,
       cardRect: DOMRect,
       pointerX: number,
@@ -196,7 +196,7 @@ export default function LibraryView() {
     return libraries
       .map((lib) => ({
         library: lib,
-        items: items.filter((i) => i.libraryId === lib.id && i.id !== pendingId),
+        items: items.filter((i) => i.deckId === lib.id && i.id !== pendingId),
       }))
       .filter((g) => g.items.length > 0);
   }, [activeLibraryId, items, libraries, librariesMap, pendingDelete]);
@@ -204,9 +204,9 @@ export default function LibraryView() {
   useEffect(() => {
     if (!libraryFocusItemId) return;
 
-    StorageService.getLibraryItem(libraryFocusItemId).then((item) => {
+    StorageService.getDeckSource(libraryFocusItemId).then((item) => {
       if (item) {
-        setActiveLibraryId(item.libraryId);
+        setActiveLibraryId(item.deckId);
         setDetailItem(item);
       }
       setLibraryFocusItemId(null);
@@ -227,7 +227,7 @@ export default function LibraryView() {
   }) => {
     if (!activeLibraryId) return;
     await addTextItem({
-      libraryId: activeLibraryId,
+      deckId: activeLibraryId,
       title: data.title || "Untitled note",
       content: data.content,
       type: data.type,
@@ -237,7 +237,7 @@ export default function LibraryView() {
   const handleCreateMarkdown = async (title: string) => {
     if (!activeLibraryId) return;
     const created = await addTextItem({
-      libraryId: activeLibraryId,
+      deckId: activeLibraryId,
       title: title.trim() || "Untitled",
       content: `# ${title.trim() || "Untitled"}\n\n`,
       type: "markdown",
@@ -254,7 +254,7 @@ export default function LibraryView() {
   };
 
   const handleDeleteItem = useCallback(
-    (item: LibraryItem) => {
+    (item: DeckSource) => {
       // Clear any existing pending delete first
       if (pendingDelete) {
         clearTimeout(pendingDelete.timerId);
@@ -284,7 +284,7 @@ export default function LibraryView() {
     return (
       <DocumentDetailPage
         item={detailItem}
-        library={librariesMap[detailItem.libraryId]}
+        library={librariesMap[detailItem.deckId]}
         onBack={() => setDetailItem(null)}
         onDelete={async () => {
           await handleDeleteItem(detailItem);
@@ -478,7 +478,7 @@ export default function LibraryView() {
                         style={{ backgroundColor: library.color }}
                       />
                       {library.name}
-                      <span className="text-[10px] opacity-60">({library.itemCount})</span>
+                      <span className="text-[10px] opacity-60">({library.cardCount})</span>
                     </motion.button>
                   );
                 })}

@@ -18,12 +18,11 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
-import type { LibraryItem } from "@/types/library";
-import type { Library } from "@/types/library";
+import type { DeckSource, Deck } from "@/types/deck";
 
 interface ItemDetailPanelProps {
-  item: LibraryItem;
-  library: Library | undefined;
+  item: DeckSource;
+  library: Deck | undefined;
   onBack: () => void;
   onDelete: () => void;
   onGenerateFlashcards?: () => void;

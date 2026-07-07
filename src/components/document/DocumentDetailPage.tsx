@@ -23,7 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { LibraryItem, Library } from "@/types/library";
+import type { DeckSource, Deck } from "@/types/deck";
 import type { Conversation, Citation } from "@/types/chat";
 import { StorageService } from "@/services/storage";
 import { useAppStore } from "@/stores/app.store";
@@ -43,8 +43,8 @@ interface CitationEntry {
 }
 
 interface DocumentDetailPageProps {
-  item: LibraryItem;
-  library: Library | undefined;
+  item: DeckSource;
+  library: Deck | undefined;
   onBack: () => void;
   onDelete: () => void;
 }
@@ -94,7 +94,7 @@ function StatCard({ value, label }: { value: string; label: string }) {
   );
 }
 
-function BookCover({ item, library }: { item: LibraryItem; library?: Library }) {
+function BookCover({ item, library }: { item: DeckSource; library?: Deck }) {
   const color = library?.color ?? "#A8A5A0";
   const hasThumbnail = item.type === "pdf" && Boolean(item.metadata.thumbnail);
 
@@ -142,7 +142,7 @@ const GENERATE_TILES = [
   { icon: Link2, label: "Connections", mode: "connections" as const, disabled: false },
 ] as const;
 
-function OverviewTab({ item, library }: { item: LibraryItem; library?: Library }) {
+function OverviewTab({ item, library }: { item: DeckSource; library?: Deck }) {
   const [flashcardCount, setFlashcardCount] = useState(0);
   const [citationCount, setCitationCount] = useState(0);
   const [nextReview, setNextReview] = useState<number | null>(null);
@@ -152,7 +152,7 @@ function OverviewTab({ item, library }: { item: LibraryItem; library?: Library }
     Promise.all([
       StorageService.listExercisesBySourceItem(item.id),
       StorageService.listMessagesCitingItem(item.id),
-      StorageService.getNextSRSReviewForItem(item.id),
+      StorageService.getNextSRSReviewForSource(item.id),
     ]).then(([exs, pairs, nextReview]) => {
       setFlashcardCount(exs.reduce((sum, e) => {
         if (e.type === "flashcard") {
@@ -223,7 +223,7 @@ function OverviewTab({ item, library }: { item: LibraryItem; library?: Library }
 
 // ── Citations Tab ──────────────────────────────────────────────────────────────
 
-function CitationsTab({ item, library }: { item: LibraryItem; library?: Library }) {
+function CitationsTab({ item, library }: { item: DeckSource; library?: Deck }) {
   const [entries, setEntries] = useState<CitationEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const { setActiveView } = useAppStore();
@@ -431,7 +431,7 @@ export default function DocumentDetailPage({
             className="text-[#7C7974] hover:text-[#3D3B38] cursor-pointer -ml-2 gap-1.5"
           >
             <ArrowLeft size={16} />
-            Back to Library
+            Back to Deck
           </Button>
 
           <DropdownMenu>

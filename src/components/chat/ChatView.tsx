@@ -43,8 +43,9 @@ export default function ChatView() {
     stopStreaming,
     startNewConversation,
     availableLibraries,
-    selectedLibraryIds,
-    toggleLibrary,
+    selectedDeckId,
+    setSelectedDeckId,
+    clearDeck,
     activeConversationId,
   } = useChat();
 
@@ -230,10 +231,8 @@ export default function ChatView() {
   };
 
   const providerLabel = useMemo(() => {
-    return selectedLibraryIds.length > 0
-      ? `${selectedLibraryIds.length} libraries selected`
-      : "No libraries selected";
-  }, [selectedLibraryIds.length]);
+    return selectedDeckId ? "1 library selected" : "No libraries selected";
+  }, [selectedDeckId]);
 
   return (
     <div className="flex flex-col h-full w-full bg-[#FAFAFA]">
@@ -314,8 +313,10 @@ export default function ChatView() {
           isStreaming={isStreaming}
           onAIProviderClick={() => setAiSelectorOpen(!aiSelectorOpen)}
           libraries={availableLibraries}
-          selectedLibraryIds={selectedLibraryIds}
-          onToggleLibrary={toggleLibrary}
+          selectedLibraryIds={selectedDeckId ? [selectedDeckId] : []}
+          onToggleLibrary={(id) =>
+            id === selectedDeckId ? clearDeck() : setSelectedDeckId(id)
+          }
         />
         <AIProviderSelector
           isOpen={aiSelectorOpen}

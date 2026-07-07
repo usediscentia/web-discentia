@@ -562,7 +562,7 @@ function StepLibrary({
     if (!name) return;
     setCreating(true);
     try {
-      await StorageService.createLibrary({
+      await StorageService.createDeck({
         name,
         color: selectedColor,
       });

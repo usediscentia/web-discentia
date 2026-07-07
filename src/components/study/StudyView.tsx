@@ -40,8 +40,8 @@ export default function StudyView() {
   }, [initSession]);
 
   const current = cards[currentIndex];
-  const accentColor = current?.libraryItemId
-    ? (accentColors[current.libraryItemId] ?? DEFAULT_ACCENT)
+  const accentColor = current?.sourceId
+    ? (accentColors[current.sourceId] ?? DEFAULT_ACCENT)
     : DEFAULT_ACCENT;
 
   const lastResult = results[results.length - 1];
