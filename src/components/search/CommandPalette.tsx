@@ -7,19 +7,15 @@ import {
   FileText,
   Image,
   File,
-  Layers,
   MessageSquare,
-  StickyNote,
   X,
 } from "lucide-react";
 import { useAppStore } from "@/stores/app.store";
 import { useChatStore } from "@/stores/chat.store";
 import { StorageService } from "@/services/storage";
-import type { DeckWithCounts, ScoredLibraryItem } from "@/services/storage";
-import { filterDecksByQuery } from "@/lib/search-query";
+import type { ScoredLibraryItem } from "@/services/storage";
 import type { Conversation } from "@/types/chat";
 import type { Library, LibraryItemType } from "@/types/library";
-import type { SRSCard } from "@/types/srs";
 
 interface ConversationResult {
   conversation: Conversation;
@@ -65,7 +61,6 @@ export function CommandPalette() {
     setCommandPaletteOpen,
     setActiveView,
     setEditorItemId,
-    setDeckDetail,
   } = useAppStore();
   const { setActiveConversationId, setSearchHighlight } = useChatStore();
 
@@ -74,9 +69,6 @@ export function CommandPalette() {
   const [conversationResults, setConversationResults] = useState<
     ConversationResult[]
   >([]);
-  const [deckResults, setDeckResults] = useState<DeckWithCounts[]>([]);
-  const [cardResults, setCardResults] = useState<SRSCard[]>([]);
-  const [deckNames, setDeckNames] = useState<Map<string, string>>(new Map());
   const [libraries, setLibraries] = useState<Map<string, Library>>(new Map());
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -122,18 +114,13 @@ export function CommandPalette() {
     let cancelled = false;
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
-      const [lib, convos, decks, cards] = await Promise.all([
+      const [lib, convos] = await Promise.all([
         StorageService.searchLibraryItems({ query, limit: 5 }),
         StorageService.searchConversations(query, 5),
-        StorageService.listDecksWithCounts(),
-        StorageService.searchCards({ query, limit: 5 }),
       ]);
       if (cancelled) return;
       setLibraryResults(lib);
       setConversationResults(convos);
-      setDeckResults(filterDecksByQuery(decks, query).slice(0, 5));
-      setCardResults(cards);
-      setDeckNames(new Map(decks.map((d) => [d.id, d.name])));
       setActiveIndex(0);
       setLoading(false);
     }, 200);
@@ -144,20 +131,6 @@ export function CommandPalette() {
     };
   }, [query]);
 
-  // Quotes are query syntax (exact match) — strip them so the bold span still lands
-  const highlightTerm = query.replace(/"/g, "").trim();
-
-  // Decks/cards have no "recents" — they only show for an actual query
-  const showStudySections = query.trim().length > 0;
-  const visibleDecks = useMemo(
-    () => (showStudySections ? deckResults : []),
-    [showStudySections, deckResults]
-  );
-  const visibleCards = useMemo(
-    () => (showStudySections ? cardResults : []),
-    [showStudySections, cardResults]
-  );
-
   const allResults = useMemo(
     () => [
       ...libraryResults.map((r) => ({ type: "library" as const, data: r })),
@@ -165,10 +138,8 @@ export function CommandPalette() {
         type: "conversation" as const,
         data: r,
       })),
-      ...visibleDecks.map((r) => ({ type: "deck" as const, data: r })),
-      ...visibleCards.map((r) => ({ type: "card" as const, data: r })),
     ],
-    [libraryResults, conversationResults, visibleDecks, visibleCards]
+    [libraryResults, conversationResults]
   );
 
   const openResult = useCallback(
@@ -181,12 +152,6 @@ export function CommandPalette() {
         } else {
           setActiveView("library");
         }
-      } else if (result.type === "deck") {
-        setDeckDetail(result.data.id);
-        setActiveView("study");
-      } else if (result.type === "card") {
-        setDeckDetail(result.data.deckId, result.data.id);
-        setActiveView("study");
       } else {
         const { conversation, messageId } = result.data;
         setActiveConversationId(conversation.id);
@@ -201,7 +166,6 @@ export function CommandPalette() {
       query,
       setActiveView,
       setEditorItemId,
-      setDeckDetail,
       setActiveConversationId,
       setSearchHighlight,
       setCommandPaletteOpen,
@@ -374,99 +338,6 @@ export function CommandPalette() {
                         <span className="text-[11px] text-[#D1D5DB] shrink-0">
                           {timeAgo(r.conversation.updatedAt)}
                         </span>
-                      </button>
-                    );
-                  })}
-                </>
-              )}
-
-              {/* Divider */}
-              {libraryResults.length + conversationResults.length > 0 &&
-                visibleDecks.length > 0 && (
-                  <div className="h-px bg-[#E5E7EB] mx-0 my-1" />
-                )}
-
-              {/* Decks section */}
-              {visibleDecks.length > 0 && (
-                <>
-                  <p className="text-[12px] font-medium text-[#9CA3AF] px-4 pt-2 pb-1">
-                    Decks
-                  </p>
-                  {visibleDecks.map((deck, i) => {
-                    const globalIdx =
-                      libraryResults.length + conversationResults.length + i;
-                    return (
-                      <button
-                        key={deck.id}
-                        onClick={() => openResult({ type: "deck", data: deck })}
-                        onMouseEnter={() => setActiveIndex(globalIdx)}
-                        className={`w-full flex items-center gap-3 h-[40px] px-4 text-left transition-colors cursor-pointer ${
-                          activeIndex === globalIdx
-                            ? "bg-[#F3F4F6]"
-                            : "hover:bg-[#FAFAFA]"
-                        }`}
-                      >
-                        <Layers size={16} className="text-[#9CA3AF] shrink-0" />
-                        <p className="flex-1 min-w-0 text-[14px] text-[#171717] truncate">
-                          {highlight(deck.name, highlightTerm)}
-                        </p>
-                        <span className="text-[11px] text-[#D1D5DB] shrink-0">
-                          {deck.cardCount}{" "}
-                          {deck.cardCount === 1 ? "card" : "cards"}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </>
-              )}
-
-              {/* Divider */}
-              {libraryResults.length +
-                conversationResults.length +
-                visibleDecks.length >
-                0 &&
-                visibleCards.length > 0 && (
-                  <div className="h-px bg-[#E5E7EB] mx-0 my-1" />
-                )}
-
-              {/* Cards section */}
-              {visibleCards.length > 0 && (
-                <>
-                  <p className="text-[12px] font-medium text-[#9CA3AF] px-4 pt-2 pb-1">
-                    Cards
-                  </p>
-                  {visibleCards.map((card, i) => {
-                    const globalIdx =
-                      libraryResults.length +
-                      conversationResults.length +
-                      visibleDecks.length +
-                      i;
-                    const deckName = deckNames.get(card.deckId);
-                    return (
-                      <button
-                        key={card.id}
-                        onClick={() => openResult({ type: "card", data: card })}
-                        onMouseEnter={() => setActiveIndex(globalIdx)}
-                        className={`w-full flex items-center gap-3 h-[44px] px-4 text-left transition-colors cursor-pointer ${
-                          activeIndex === globalIdx
-                            ? "bg-[#F3F4F6]"
-                            : "hover:bg-[#FAFAFA]"
-                        }`}
-                      >
-                        <StickyNote
-                          size={16}
-                          className="text-[#9CA3AF] shrink-0"
-                        />
-                        <div className="flex-1 min-w-0 flex flex-col">
-                          <p className="text-[14px] text-[#171717] truncate leading-tight">
-                            {highlight(card.front, highlightTerm)}
-                          </p>
-                          {deckName && (
-                            <p className="text-[12px] text-[#9CA3AF] truncate leading-tight">
-                              {deckName}
-                            </p>
-                          )}
-                        </div>
                       </button>
                     );
                   })}

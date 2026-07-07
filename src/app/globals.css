@@ -117,20 +117,3 @@
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
-
-/* Dot-grid notebook paper. The first background layer is a soft radial
-   "clearing" so the dots fade out behind the content sitting at center. */
-.dot-grid {
-  background-color: #fafaf8;
-  background-image:
-    radial-gradient(ellipse 70% 55% at 50% 42%, #fafaf8 25%, rgba(250, 250, 248, 0) 100%),
-    radial-gradient(circle, rgba(26, 24, 20, 0.16) 1px, transparent 1px);
-  background-size: 100% 100%, 22px 22px;
-}
-
-.dark .dot-grid {
-  background-color: #09090b;
-  background-image:
-    radial-gradient(ellipse 70% 55% at 50% 42%, #09090b 25%, rgba(9, 9, 11, 0) 100%),
-    radial-gradient(circle, rgba(250, 250, 250, 0.1) 1px, transparent 1px);
-}

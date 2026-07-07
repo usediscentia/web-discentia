@@ -7,6 +7,9 @@ import {
   ChevronDown,
   ChevronLeft,
   Loader2,
+  BookOpen,
+  HelpCircle,
+  Sparkles,
   Check,
   X,
   CloudUpload,
@@ -16,6 +19,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useAppStore } from "@/stores/app.store";
+import { useGenerationStore } from "@/stores/generation.store";
 import { StorageService } from "@/services/storage";
 import MarkdownEditor from "./MarkdownEditor";
 import { useEditorAutosave } from "./useEditorAutosave";
@@ -373,6 +377,7 @@ function EditorEmptyState() {
 // --- Main EditorView ---
 export default function EditorView() {
   const { editorItemId, setEditorItemId, setActiveView } = useAppStore();
+  const openGeneration = useGenerationStore((s) => s.open);
 
   const [title, setTitle] = useState("");
   const [libraryId, setLibraryId] = useState<string | null>(null);
@@ -517,6 +522,14 @@ export default function EditorView() {
     resetAutosave();
   }, [setEditorItemId, resetAutosave]);
 
+  const handleAIAction = useCallback(
+    (type: "flashcard" | "quiz") => {
+      if (!hasContent || !editorItemId) return;
+      openGeneration(editorItemId, title || "Untitled", type);
+    },
+    [hasContent, editorItemId, title, openGeneration]
+  );
+
   const [statusNow, setStatusNow] = useState(() => Date.now());
 
   const saveStatusText = useMemo(() => {
@@ -645,6 +658,38 @@ export default function EditorView() {
               Not saved yet — start typing
             </span>
           ) : null}
+        </div>
+      </div>
+
+      {/* AI Action Bar */}
+      <div
+        className={`h-14 px-8 border-t border-[#E2E8F0] bg-[#F8FAFC] flex items-center justify-between flex-shrink-0 transition-opacity ${
+          hasContent ? "opacity-100" : "opacity-50"
+        }`}
+      >
+        <div className="flex items-center gap-2.5">
+          <Sparkles size={18} className="text-primary" />
+          <span className="text-sm font-medium text-[#374151]">
+            Generate exercises from this note
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleAIAction("flashcard")}
+            disabled={!hasContent}
+            className="flex items-center gap-1.5 text-[13px] font-medium px-3.5 py-1.5 rounded-lg border border-[#E5E7EB] text-[#374151] bg-white hover:bg-[#F9FAFB] hover:border-[#D1D5DB] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <BookOpen size={14} />
+            Flashcards
+          </button>
+          <button
+            onClick={() => handleAIAction("quiz")}
+            disabled={!hasContent}
+            className="flex items-center gap-1.5 text-[13px] font-medium px-3.5 py-1.5 rounded-lg border border-[#E5E7EB] text-[#374151] bg-white hover:bg-[#F9FAFB] hover:border-[#D1D5DB] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <HelpCircle size={14} />
+            Quiz
+          </button>
         </div>
       </div>
     </div>

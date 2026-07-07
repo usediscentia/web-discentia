@@ -19,21 +19,21 @@ const OPTIONS: {
 }[] = [
   {
     value: "unsure",
-    label: "Incerto",
+    label: "Not sure",
     Icon: Meh,
     activeClass: "bg-rose-500 border-rose-500 text-white",
     hoverClass: "hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600",
   },
   {
     value: "think-so",
-    label: "Acho que sei",
+    label: "Think so",
     Icon: ThumbsUp,
     activeClass: "bg-amber-400 border-amber-400 text-white",
     hoverClass: "hover:bg-amber-50 hover:border-amber-200 hover:text-amber-600",
   },
   {
     value: "certain",
-    label: "Certeza",
+    label: "Certain",
     Icon: BadgeCheck,
     activeClass: "bg-emerald-500 border-emerald-500 text-white",
     hoverClass: "hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600",
@@ -43,8 +43,8 @@ const OPTIONS: {
 export function ConfidenceRating({ value, onChange }: ConfidenceRatingProps) {
   return (
     <div className="flex flex-col gap-2 mb-3">
-      <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-[#9C9690]">
-        Quão confiante você está?
+      <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-gray-400/80">
+        How confident are you?
       </p>
       <div className="flex gap-2">
         {OPTIONS.map((opt, i) => {

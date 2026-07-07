@@ -14,7 +14,7 @@ function buildHints(answer: string): [string, string, string] {
   const wordCount = words.length;
   const firstLetter = words[0]?.[0]?.toUpperCase() ?? "?";
 
-  const hint1 = `${wordCount} ${wordCount === 1 ? "palavra" : "palavras"} · começa com "${firstLetter}"`;
+  const hint1 = `${wordCount} ${wordCount === 1 ? "word" : "words"} · starts with "${firstLetter}"`;
 
   const hint2 = words
     .map((w) => {

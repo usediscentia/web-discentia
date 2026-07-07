@@ -43,8 +43,8 @@ export function StudyInput({ onSubmit, onSkip, disabled }: StudyInputProps) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Digite sua resposta..."
-        className="min-h-[80px] resize-none text-sm bg-white border-[#E3DFD8]"
+        placeholder="Type your answer..."
+        className="min-h-[80px] resize-none text-sm"
         disabled={disabled}
       />
       <div className="flex items-center gap-2">
@@ -56,7 +56,7 @@ export function StudyInput({ onSubmit, onSkip, disabled }: StudyInputProps) {
           className="text-gray-400 hover:text-gray-600"
         >
           <SkipForward size={14} className="mr-1.5" />
-          Não sei
+          Don&apos;t know
         </Button>
         <div className="flex-1" />
         <Button
@@ -65,7 +65,7 @@ export function StudyInput({ onSubmit, onSkip, disabled }: StudyInputProps) {
           disabled={disabled || !value.trim()}
         >
           <Send size={14} className="mr-1.5" />
-          Verificar resposta
+          Check answer
           <kbd className="ml-2 text-[10px] opacity-50">⌘↵</kbd>
         </Button>
       </div>
