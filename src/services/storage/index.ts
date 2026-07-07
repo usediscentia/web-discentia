@@ -65,7 +65,13 @@ export interface ExportData {
 export interface CreateSRSCardInput {
   front: string;
   back: string;
-  libraryItemId?: string;
+  sourceId?: string;
+}
+
+async function syncDeckCardCount(deckId: string): Promise<void> {
+  if (!deckId) return; // interim "" sentinel until issue 07 wires deck context everywhere
+  const count = await getDB().srsCards.where("deckId").equals(deckId).count();
+  await getDB().decks.update(deckId, { cardCount: count, updatedAt: Date.now() });
 }
 
 function toDayKey(timestamp: number): string {
@@ -429,11 +435,12 @@ export const StorageService = {
       .map(({ conversation, messageId, snippet }) => ({ conversation, messageId, snippet }));
   },
 
-  async createSRSCards(inputs: CreateSRSCardInput[]): Promise<SRSCard[]> {
+  async createSRSCards(deckId: string, inputs: CreateSRSCardInput[]): Promise<SRSCard[]> {
     const now = Date.now();
     const cards: SRSCard[] = inputs.map((input) => ({
       id: nanoid(),
-      libraryItemId: input.libraryItemId,
+      deckId,
+      sourceId: input.sourceId,
       front: input.front,
       back: input.back,
       easeFactor: 2.5,
@@ -445,7 +452,12 @@ export const StorageService = {
       createdAt: now,
     }));
     await getDB().srsCards.bulkAdd(cards);
+    await syncDeckCardCount(deckId);
     return cards;
+  },
+
+  async listDeckCards(deckId: string): Promise<SRSCard[]> {
+    return getDB().srsCards.where("deckId").equals(deckId).sortBy("createdAt");
   },
 
   async getDueCards(limit?: number): Promise<SRSCard[]> {
@@ -460,7 +472,9 @@ export const StorageService = {
   },
 
   async deleteSRSCard(id: string): Promise<void> {
+    const card = await getDB().srsCards.get(id);
     await getDB().srsCards.delete(id);
+    if (card) await syncDeckCardCount(card.deckId);
   },
 
   async getDueLibraryBreakdown(): Promise<
@@ -633,11 +647,11 @@ export const StorageService = {
     }));
   },
 
-  async getNextSRSReviewForItem(itemId: string): Promise<number | null> {
+  async getNextSRSReviewForSource(sourceId: string): Promise<number | null> {
     const now = Date.now();
     const cards = await getDB()
-      .srsCards.where("libraryItemId")
-      .equals(itemId)
+      .srsCards.where("sourceId")
+      .equals(sourceId)
       .toArray();
     const future = cards.filter((c) => c.nextReviewDate > now);
     if (future.length === 0) return null;
@@ -823,15 +837,15 @@ export const StorageService = {
     };
   },
 
-  async getDueCardsByLibraryItem(libraryItemId: string): Promise<SRSCard[]> {
+  async getDueCardsBySource(sourceId: string): Promise<SRSCard[]> {
     const now = Date.now();
     const cards = await getDB()
-      .srsCards.where("libraryItemId")
-      .equals(libraryItemId)
+      .srsCards.where("sourceId")
+      .equals(sourceId)
       .toArray();
 
     const due = cards.filter((c) => c.nextReviewDate <= now);
-    // If none are due yet, return all cards for the item so the user can drill anyway
+    // If none are due yet, return all cards for the source so the user can drill anyway
     const result = due.length > 0 ? due : cards;
 
     for (let i = result.length - 1; i > 0; i--) {

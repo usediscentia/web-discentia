@@ -40,3 +40,34 @@ describe("deck CRUD", () => {
     expect(await StorageService.getMessages(conv.id)).toHaveLength(0);
   });
 });
+
+describe("deck-scoped SRS cards", () => {
+  it("creates cards in a deck and lists them by deckId", async () => {
+    const deck = await StorageService.createDeck({ name: "A", color: "#000" });
+    await StorageService.createSRSCards(deck.id, [
+      { front: "q1", back: "a1" },
+      { front: "q2", back: "a2" },
+    ]);
+    const cards = await StorageService.listDeckCards(deck.id);
+    expect(cards).toHaveLength(2);
+    expect(cards.every((c) => c.deckId === deck.id)).toBe(true);
+  });
+
+  it("keeps deck.cardCount consistent across create and delete", async () => {
+    const deck = await StorageService.createDeck({ name: "A", color: "#000" });
+    const created = await StorageService.createSRSCards(deck.id, [
+      { front: "q1", back: "a1" },
+      { front: "q2", back: "a2" },
+      { front: "q3", back: "a3" },
+    ]);
+    expect((await StorageService.getDeck(deck.id))!.cardCount).toBe(3);
+
+    await StorageService.deleteSRSCard(created[0].id);
+    expect((await StorageService.getDeck(deck.id))!.cardCount).toBe(2);
+  });
+
+  it("card creation with empty deckId does not throw (interim sentinel)", async () => {
+    const cards = await StorageService.createSRSCards("", [{ front: "q", back: "a" }]);
+    expect(cards).toHaveLength(1);
+  });
+});
