@@ -1,35 +1,22 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
-  MessageSquare,
-  BookOpen,
+  Layers,
   Sparkles,
-  BarChart2,
   Settings,
   ChevronLeft,
   Search,
-  Clock,
-  Plus,
-  PencilLine,
-  Trash2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAppStore, type ActiveView } from "@/stores/app.store";
-import { useChatStore } from "@/stores/chat.store";
+import { useDialogStore } from "@/stores/dialog.store";
 import { StorageService } from "@/services/storage";
-import type { Conversation } from "@/types/chat";
 
 const primaryNav: { id: ActiveView; label: string; icon: LucideIcon }[] = [
+  { id: "decks", label: "Decks", icon: Layers },
   { id: "study", label: "Estudar", icon: Sparkles },
-  { id: "library", label: "Biblioteca", icon: BookOpen },
-  { id: "chat", label: "Chat com IA", icon: MessageSquare },
-];
-
-const secondaryNav: { id: ActiveView; label: string; icon: LucideIcon }[] = [
-  { id: "stats", label: "Estatísticas", icon: BarChart2 },
-  { id: "settings", label: "Configurações", icon: Settings },
 ];
 
 const EXPANDED_W = 240;
@@ -43,45 +30,12 @@ export default function Sidebar() {
     setSidebarCollapsed,
     setCommandPaletteOpen,
   } = useAppStore();
-  const activeConversationId = useChatStore(s => s.activeConversationId);
-  const setActiveConversationId = useChatStore(s => s.setActiveConversationId);
-  const messages = useChatStore(s => s.messages);
-  const [recentChats, setRecentChats] = useState<Conversation[]>([]);
+  const setSettingsOpen = useDialogStore((s) => s.setSettingsOpen);
   const [dueCount, setDueCount] = useState(0);
 
   useEffect(() => {
     StorageService.getDashboardStats().then((s) => setDueCount(s.dueToday));
   }, [activeView]);
-
-  const refreshChats = useCallback(() => {
-    StorageService.listConversations().then((convos) => {
-      setRecentChats(convos.slice(0, 8));
-    });
-  }, []);
-
-  useEffect(() => {
-    refreshChats();
-  }, [activeView, activeConversationId, messages.length, refreshChats]);
-
-  const handleRenameConversation = async (conversation: Conversation) => {
-    const nextTitle = window.prompt("Rename conversation", conversation.title);
-    if (!nextTitle || !nextTitle.trim()) return;
-    await StorageService.updateConversation(conversation.id, {
-      title: nextTitle.trim(),
-      updatedAt: Date.now(),
-    });
-    refreshChats();
-  };
-
-  const handleDeleteConversation = async (conversation: Conversation) => {
-    const confirmed = window.confirm(`Delete "${conversation.title}"?`);
-    if (!confirmed) return;
-    await StorageService.deleteConversation(conversation.id);
-    if (activeConversationId === conversation.id) {
-      setActiveConversationId(null);
-    }
-    refreshChats();
-  };
 
   const fade = `transition-opacity duration-200 ${
     sidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
@@ -95,6 +49,7 @@ export default function Sidebar() {
     const Icon = item.icon;
     return (
       <button
+        key={item.id}
         onClick={() => setActiveView(item.id)}
         className={`flex items-center gap-3 rounded-md cursor-pointer transition-colors px-3 py-2 ${
           isActive
@@ -169,11 +124,7 @@ export default function Sidebar() {
           <span className={`mb-1 px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground ${fade}`}>
             Principal
           </span>
-          {primaryNav.map((item) => (
-            <Fragment key={item.id}>
-              {renderNavItem(item, item.id === "study")}
-            </Fragment>
-          ))}
+          {primaryNav.map((item) => renderNavItem(item, item.id === "study"))}
         </div>
 
         {/* Secundário section */}
@@ -181,76 +132,14 @@ export default function Sidebar() {
           <span className={`mb-1 px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground ${fade}`}>
             Secundário
           </span>
-          {secondaryNav.map((item) => (
-            <Fragment key={item.id}>
-              {renderNavItem(item)}
-            </Fragment>
-          ))}
-        </div>
-
-        {/* Recent Chats */}
-        <div
-          className={`flex flex-col gap-0.5 px-2 mt-5 transition-opacity duration-200 ${
-            sidebarCollapsed || recentChats.length === 0
-              ? "opacity-0 pointer-events-none"
-              : "opacity-100"
-          }`}
-        >
-          <div className="flex items-center justify-between px-2 mb-1">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Conversas recentes
-            </span>
-            <button
-              onClick={() => {
-                setActiveConversationId(null);
-                setActiveView("chat");
-              }}
-              className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
-              title="Nova conversa"
-            >
-              <Plus size={13} />
-            </button>
-          </div>
-          {recentChats.map((chat) => (
-            <div
-              key={chat.id}
-              className={`group flex items-center gap-2 px-2 py-1.5 rounded-md ${
-                activeConversationId === chat.id
-                  ? "bg-muted"
-                  : "hover:bg-muted/60"
-              }`}
-            >
-              <button
-                onClick={() => {
-                  setActiveConversationId(chat.id);
-                  setActiveView("chat");
-                }}
-                className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer text-left"
-                title={chat.title}
-              >
-                <Clock size={14} className="shrink-0 text-muted-foreground" />
-                <span className="truncate text-sm text-muted-foreground">
-                  {chat.title}
-                </span>
-              </button>
-              <div className="hidden group-hover:flex items-center gap-1">
-                <button
-                  className="cursor-pointer text-muted-foreground hover:text-foreground"
-                  onClick={() => handleRenameConversation(chat)}
-                  title="Renomear"
-                >
-                  <PencilLine size={12} />
-                </button>
-                <button
-                  className="cursor-pointer text-muted-foreground hover:text-red-600"
-                  onClick={() => handleDeleteConversation(chat)}
-                  title="Excluir"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            </div>
-          ))}
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="flex items-center gap-3 rounded-md cursor-pointer transition-colors px-3 py-2 text-muted-foreground hover:bg-muted/60"
+            title={sidebarCollapsed ? "Configurações" : undefined}
+          >
+            <Settings size={18} className="shrink-0" />
+            <span className={`text-sm whitespace-nowrap ${fade}`}>Configurações</span>
+          </button>
         </div>
 
         {/* Spacer */}
