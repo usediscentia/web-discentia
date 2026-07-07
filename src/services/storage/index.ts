@@ -482,34 +482,31 @@ export const StorageService = {
     if (card) await syncDeckCardCount(card.deckId);
   },
 
-  async getDueLibraryBreakdown(): Promise<
-    { libraryId: string | null; name: string; color: string; count: number }[]
+  async getDueDeckBreakdown(): Promise<
+    { deckId: string | null; name: string; color: string; count: number }[]
   > {
     const now = Date.now();
     const db = getDB();
 
-    const [dueCards, libraryItems, libraries] = await Promise.all([
+    const [dueCards, decks] = await Promise.all([
       db.srsCards.where("nextReviewDate").belowOrEqual(now).toArray(),
-      db.libraryItems.toArray(),
-      db.libraries.toArray(),
+      db.decks.toArray(),
     ]);
 
-    const libraryById = new Map(libraries.map((l) => [l.id, l]));
-    const itemById = new Map(libraryItems.map((i) => [i.id, i]));
+    const deckById = new Map(decks.map((d) => [d.id, d]));
 
     const counter = new Map<
       string,
-      { libraryId: string | null; name: string; color: string; count: number }
+      { deckId: string | null; name: string; color: string; count: number }
     >();
 
     for (const card of dueCards) {
-      const item = card.libraryItemId ? itemById.get(card.libraryItemId) : undefined;
-      const library = item ? libraryById.get(item.libraryId) : undefined;
-      const key = library?.id ?? "__general__";
+      const deck = deckById.get(card.deckId);
+      const key = deck?.id ?? "__general__";
       const current = counter.get(key) ?? {
-        libraryId: library?.id ?? null,
-        name: library?.name ?? "General",
-        color: library?.color ?? "#34D399",
+        deckId: deck?.id ?? null,
+        name: deck?.name ?? "General",
+        color: deck?.color ?? "#34D399",
         count: 0,
       };
       current.count += 1;
@@ -670,10 +667,10 @@ export const StorageService = {
     todayStart.setHours(0, 0, 0, 0);
     const todayTs = todayStart.getTime();
 
-    const [dueCards, allCards, libraryItems, srsReviewEvents] = await Promise.all([
+    const [dueCards, allCards, sources, srsReviewEvents] = await Promise.all([
       db.srsCards.where("nextReviewDate").belowOrEqual(now).count(),
       db.srsCards.toArray(),
-      db.libraryItems.count(),
+      db.deckSources.count(),
       db.activityEvents.where("type").equals("srs_review").toArray(),
     ]);
 
@@ -699,7 +696,7 @@ export const StorageService = {
       streak,
       totalCards: allCards.length,
       masteredCards,
-      libraryItemCount: libraryItems,
+      sourceCount: sources,
       activityByDay,
     };
   },
@@ -730,32 +727,29 @@ export const StorageService = {
     const db = getDB();
     const now = Date.now();
 
-    const [cards, libraryItems, libraries, events] = await Promise.all([
+    const [cards, decks, events] = await Promise.all([
       db.srsCards.toArray(),
-      db.libraryItems.toArray(),
-      db.libraries.toArray(),
+      db.decks.toArray(),
       db.activityEvents.orderBy("timestamp").reverse().limit(12).toArray(),
     ]);
 
-    const libraryById = new Map(libraries.map((library) => [library.id, library]));
-    const itemById = new Map(libraryItems.map((item) => [item.id, item]));
+    const deckById = new Map(decks.map((deck) => [deck.id, deck]));
 
-    const dueByLibraryCounter = new Map<string, { libraryId: string | null; name: string; dueCount: number }>();
+    const dueByDeckCounter = new Map<string, { deckId: string | null; name: string; dueCount: number }>();
     for (const card of cards) {
       if (card.nextReviewDate > now) continue;
-      const item = card.libraryItemId ? itemById.get(card.libraryItemId) : undefined;
-      const library = item ? libraryById.get(item.libraryId) : undefined;
-      const key = library?.id ?? "__general__";
-      const current = dueByLibraryCounter.get(key) ?? {
-        libraryId: library?.id ?? null,
-        name: library?.name ?? "General",
+      const deck = deckById.get(card.deckId);
+      const key = deck?.id ?? "__general__";
+      const current = dueByDeckCounter.get(key) ?? {
+        deckId: deck?.id ?? null,
+        name: deck?.name ?? "General",
         dueCount: 0,
       };
       current.dueCount += 1;
-      dueByLibraryCounter.set(key, current);
+      dueByDeckCounter.set(key, current);
     }
 
-    const dueByLibrary = [...dueByLibraryCounter.values()]
+    const dueByDeck = [...dueByDeckCounter.values()]
       .sort((a, b) => b.dueCount - a.dueCount)
       .slice(0, 4);
 
@@ -832,7 +826,7 @@ export const StorageService = {
     const bestStreak = getBestStreak(reviewDays);
 
     return {
-      dueByLibrary,
+      dueByDeck,
       upcomingReviews,
       recentActivity: events.slice(0, 4),
       reviewedThisMonth,
@@ -863,20 +857,20 @@ export const StorageService = {
   async getWeakSpots(): Promise<import("@/types/dashboard").WeakSpot[]> {
     const db = getDB();
 
-    const [allCards, libraryItems, libraries] = await Promise.all([
+    const [allCards, deckSources, decks] = await Promise.all([
       db.srsCards.toArray(),
-      db.libraryItems.toArray(),
-      db.libraries.toArray(),
+      db.deckSources.toArray(),
+      db.decks.toArray(),
     ]);
 
-    const itemById = new Map(libraryItems.map((i) => [i.id, i]));
-    const libraryById = new Map(libraries.map((l) => [l.id, l]));
+    const sourceById = new Map(deckSources.map((s) => [s.id, s]));
+    const deckById = new Map(decks.map((d) => [d.id, d]));
 
-    const reviewed = allCards.filter((c) => c.libraryItemId && c.repetitions > 0);
+    const reviewed = allCards.filter((c) => c.sourceId && c.repetitions > 0);
 
     const groups = new Map<string, { easeSums: number[]; lapses: number }>();
     for (const card of reviewed) {
-      const id = card.libraryItemId!;
+      const id = card.sourceId!;
       const g = groups.get(id) ?? { easeSums: [], lapses: 0 };
       g.easeSums.push(card.easeFactor);
       g.lapses += card.lapses;
@@ -885,12 +879,12 @@ export const StorageService = {
 
     const spots: import("@/types/dashboard").WeakSpot[] = [];
 
-    for (const [libraryItemId, { easeSums, lapses }] of groups) {
+    for (const [sourceId, { easeSums, lapses }] of groups) {
       if (easeSums.length < 2) continue;
 
-      const item = itemById.get(libraryItemId);
-      if (!item) continue;
-      const library = libraryById.get(item.libraryId);
+      const source = sourceById.get(sourceId);
+      if (!source) continue;
+      const deck = deckById.get(source.deckId);
 
       const avgEase = easeSums.reduce((a, b) => a + b, 0) / easeSums.length;
       const easeScore = Math.max(0, Math.min(1, (2.5 - avgEase) / (2.5 - 1.3)));
@@ -899,10 +893,10 @@ export const StorageService = {
       const weakScore = easeScore * 0.7 + lapseScore * 0.3;
 
       spots.push({
-        libraryItemId,
-        itemTitle: item.title,
-        libraryName: library?.name ?? "General",
-        libraryColor: library?.color ?? "#34D399",
+        sourceId,
+        sourceTitle: source.title,
+        deckName: deck?.name ?? "General",
+        deckColor: deck?.color ?? "#34D399",
         cardCount: easeSums.length,
         avgEaseFactor: Math.round(avgEase * 100) / 100,
         totalLapses: lapses,
