@@ -83,3 +83,18 @@ describe("deck-scoped conversations", () => {
     expect(found?.id).toBe(recent.id);
   });
 });
+
+describe("deck breakdowns", () => {
+  it("groups due cards by deck directly via card.deckId", async () => {
+    const a = await StorageService.createDeck({ name: "A", color: "#111111" });
+    const b = await StorageService.createDeck({ name: "B", color: "#222222" });
+    await StorageService.createSRSCards(a.id, [{ front: "1", back: "1" }, { front: "2", back: "2" }]);
+    await StorageService.createSRSCards(b.id, [{ front: "3", back: "3" }]);
+
+    const breakdown = await StorageService.getDueDeckBreakdown();
+    const byId = new Map(breakdown.map((e) => [e.deckId, e]));
+    expect(byId.get(a.id)?.count).toBe(2);
+    expect(byId.get(b.id)?.count).toBe(1);
+    expect(byId.get(a.id)?.color).toBe("#111111");
+  });
+});
