@@ -4,12 +4,12 @@ export interface DashboardStats {
   streak: number;
   totalCards: number;
   masteredCards: number;
-  libraryItemCount: number;
+  sourceCount: number;
   activityByDay: Record<string, number>; // "YYYY-MM-DD" → review count
 }
 
-export interface DashboardDueByLibrary {
-  libraryId: string | null;
+export interface DashboardDueByDeck {
+  deckId: string | null;
   name: string;
   dueCount: number;
 }
@@ -28,7 +28,7 @@ export interface DashboardActivityItem {
 }
 
 export interface DashboardInsights {
-  dueByLibrary: DashboardDueByLibrary[];
+  dueByDeck: DashboardDueByDeck[];
   upcomingReviews: DashboardUpcomingReview[];
   recentActivity: DashboardActivityItem[];
   reviewedThisMonth: number;
@@ -47,10 +47,10 @@ export interface WeekDayData {
 }
 
 export interface WeakSpot {
-  libraryItemId: string;
-  itemTitle: string;
-  libraryName: string;
-  libraryColor: string;
+  sourceId: string;
+  sourceTitle: string;
+  deckName: string;
+  deckColor: string;
   cardCount: number;
   avgEaseFactor: number; // 1.3–2.5; lower = weaker
   totalLapses: number;

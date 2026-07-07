@@ -1,6 +1,7 @@
 export interface SRSCard {
   id: string;
-  libraryItemId?: string;
+  deckId: string;
+  sourceId?: string;
   front: string;
   back: string;
   easeFactor: number;
