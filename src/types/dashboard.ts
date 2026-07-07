@@ -47,8 +47,12 @@ export interface WeekDayData {
 }
 
 export interface WeakSpot {
-  deckId: string;
-  deckName: string;
+  libraryItemId: string;
+  itemTitle: string;
+  libraryName: string;
+  libraryColor: string;
   cardCount: number;
+  avgEaseFactor: number; // 1.3–2.5; lower = weaker
+  totalLapses: number;
   weakScore: number; // 0.0–1.0; higher = weaker
 }

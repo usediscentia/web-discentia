@@ -9,14 +9,12 @@ import type { FlashcardData } from "@/types/exercise";
 interface BulkApproveModalProps {
   cards: FlashcardData["cards"];
   libraryItemId?: string;
-  /** Deck to file cards under (matched by name, created if missing). Falls back to Inbox. */
-  deckName?: string;
   initialDismissed?: Set<string>;
   onDone: () => void;
   onSkip: () => void;
 }
 
-export function BulkApproveModal({ cards, libraryItemId, deckName, initialDismissed, onDone, onSkip }: BulkApproveModalProps) {
+export function BulkApproveModal({ cards, libraryItemId, initialDismissed, onDone, onSkip }: BulkApproveModalProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(() => initialDismissed ?? new Set());
   const [saving, setSaving] = useState(false);
 
@@ -38,11 +36,8 @@ export function BulkApproveModal({ cards, libraryItemId, deckName, initialDismis
     if (kept.length === 0) { onSkip(); return; }
     setSaving(true);
     try {
-      const deckId = deckName?.trim()
-        ? (await StorageService.getOrCreateDeckByName(deckName)).id
-        : undefined;
       await StorageService.createSRSCards(
-        kept.map((c) => ({ front: c.front, back: c.back, libraryItemId, deckId }))
+        kept.map((c) => ({ front: c.front, back: c.back, libraryItemId }))
       );
       await StorageService.logActivityEvent(
         "exercise_completed",

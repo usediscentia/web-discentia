@@ -60,13 +60,10 @@ function MobileNav() {
 export default function AppShell() {
   const { activeView, setCommandPaletteOpen } = useAppStore()
   const { loadProviderConfigs } = useProviderStore()
-  const [showOnboarding, setShowOnboarding] = useState(false)
-
-  useEffect(() => {
-    // localStorage is unavailable during SSR — must set after mount
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setShowOnboarding(localStorage.getItem("discentia_onboarded") !== "1")
-  }, [])
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window === "undefined") return false
+    return localStorage.getItem("discentia_onboarded") !== "1"
+  })
 
   useEffect(() => {
     void loadProviderConfigs()

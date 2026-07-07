@@ -31,7 +31,7 @@ function DifficultyBar({ score }: { score: number }) {
 export default function WeakSpotsWidget() {
   const [spots, setSpots] = useState<WeakSpot[]>([]);
   const [loading, setLoading] = useState(true);
-  const { setActiveView, setStudyFilterDeck } = useAppStore();
+  const { setActiveView, setStudyFilterItemId } = useAppStore();
 
   useEffect(() => {
     StorageService.getWeakSpots().then((data) => {
@@ -41,7 +41,7 @@ export default function WeakSpotsWidget() {
   }, []);
 
   const handleStudy = (spot: WeakSpot) => {
-    setStudyFilterDeck(spot.deckId, true);
+    setStudyFilterItemId(spot.libraryItemId);
     setActiveView("study");
   };
 
@@ -59,7 +59,7 @@ export default function WeakSpotsWidget() {
           <span className="text-[13px] font-semibold text-[#1A1814]">Weak Spots</span>
         </div>
         <p className="text-[12px] text-[#9C9690] mt-2">
-          Review more cards to surface your weakest decks.
+          Review more cards to surface your weakest topics.
         </p>
       </div>
     );
@@ -76,16 +76,20 @@ export default function WeakSpotsWidget() {
       <div className="flex flex-col gap-2">
         {spots.map((spot, i) => (
           <motion.div
-            key={spot.deckId}
+            key={spot.libraryItemId}
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.05 }}
             className="group flex items-center gap-3 rounded-[8px] px-2 py-1.5 hover:bg-[#FAFAF8] cursor-pointer transition-colors"
             onClick={() => handleStudy(spot)}
           >
+            <span
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ background: spot.libraryColor }}
+            />
             <div className="flex flex-col gap-1 flex-1 min-w-0">
               <span className="text-[12px] font-medium text-[#1A1814] truncate">
-                {spot.deckName}
+                {spot.itemTitle}
               </span>
               <div className="flex items-center gap-2">
                 <DifficultyBar score={spot.weakScore} />

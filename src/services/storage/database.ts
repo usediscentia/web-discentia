@@ -1,10 +1,8 @@
 import Dexie, { type Table } from "dexie";
-import { nanoid } from "nanoid";
 import type { Conversation, Message } from "@/types/chat";
 import type { Library, LibraryItem } from "@/types/library";
 import type { Exercise } from "@/types/exercise";
-import type { SRSCard, ActivityEvent, Deck } from "@/types/srs";
-import { planDeckMigration } from "./deck-migration";
+import type { SRSCard, ActivityEvent } from "@/types/srs";
 
 class DiscentiaDB extends Dexie {
   conversations!: Table<Conversation, string>;
@@ -14,7 +12,6 @@ class DiscentiaDB extends Dexie {
   exercises!: Table<Exercise, string>;
   srsCards!: Table<SRSCard, string>;
   activityEvents!: Table<ActivityEvent, string>;
-  decks!: Table<Deck, string>;
 
   constructor() {
     super("discentia");
@@ -63,36 +60,6 @@ class DiscentiaDB extends Dexie {
       srsCards: "id, libraryItemId, nextReviewDate, [nextReviewDate+id]",
       activityEvents: "id, type, timestamp",
     });
-
-    // v6: decks table + deckId on cards
-    this.version(6)
-      .stores({
-        conversations: "id, updatedAt",
-        messages: "id, conversationId, timestamp",
-        libraries: "id, updatedAt",
-        libraryItems: "id, libraryId, createdAt, [libraryId+createdAt], type",
-        exercises: "id, messageId, type, createdAt",
-        srsCards: "id, deckId, libraryItemId, nextReviewDate, [nextReviewDate+id]",
-        activityEvents: "id, type, timestamp",
-        decks: "id, updatedAt",
-      })
-      .upgrade(async (tx) => {
-        const cards = await tx.table<SRSCard>("srsCards").toArray();
-        if (cards.length === 0) return;
-
-        const items = await tx.table<LibraryItem>("libraryItems").toArray();
-        const itemTitles = new Map(items.map((item) => [item.id, item.title]));
-
-        const plan = planDeckMigration(cards, itemTitles, Date.now(), nanoid);
-
-        await tx.table<Deck>("decks").bulkAdd(plan.decks);
-        await tx
-          .table<SRSCard>("srsCards")
-          .toCollection()
-          .modify((card) => {
-            card.deckId = plan.assignments[card.id];
-          });
-      });
   }
 }
 
