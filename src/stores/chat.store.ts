@@ -5,7 +5,7 @@ interface ChatState {
   activeConversationId: string | null;
   isStreaming: boolean;
   messages: Message[];
-  selectedLibraryIds: string[];
+  selectedDeckId: string | null;
   pendingMessage: string | null;
   searchHighlight: { term: string; messageId: string } | null;
   setActiveConversationId: (id: string | null) => void;
@@ -13,9 +13,8 @@ interface ChatState {
   setMessages: (messages: Message[]) => void;
   appendMessage: (message: Message) => void;
   clearMessages: () => void;
-  setSelectedLibraryIds: (ids: string[]) => void;
-  toggleLibrary: (id: string) => void;
-  clearLibraries: () => void;
+  setSelectedDeckId: (id: string | null) => void;
+  clearDeck: () => void;
   setPendingMessage: (msg: string | null) => void;
   setSearchHighlight: (highlight: { term: string; messageId: string } | null) => void;
 }
@@ -24,7 +23,7 @@ export const useChatStore = create<ChatState>((set) => ({
   activeConversationId: null,
   isStreaming: false,
   messages: [],
-  selectedLibraryIds: [],
+  selectedDeckId: null,
   pendingMessage: null,
   searchHighlight: null,
   setActiveConversationId: (id) => set({ activeConversationId: id }),
@@ -33,14 +32,8 @@ export const useChatStore = create<ChatState>((set) => ({
   appendMessage: (message) =>
     set((state) => ({ messages: [...state.messages, message] })),
   clearMessages: () => set({ messages: [] }),
-  setSelectedLibraryIds: (ids) => set({ selectedLibraryIds: ids }),
-  toggleLibrary: (id) =>
-    set((state) => ({
-      selectedLibraryIds: state.selectedLibraryIds.includes(id)
-        ? state.selectedLibraryIds.filter((x) => x !== id)
-        : [...state.selectedLibraryIds, id],
-    })),
-  clearLibraries: () => set({ selectedLibraryIds: [] }),
+  setSelectedDeckId: (id) => set({ selectedDeckId: id }),
+  clearDeck: () => set({ selectedDeckId: null }),
   setPendingMessage: (msg) => set({ pendingMessage: msg }),
   setSearchHighlight: (highlight) => set({ searchHighlight: highlight }),
 }));
