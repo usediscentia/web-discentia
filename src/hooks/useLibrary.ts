@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StorageService } from "@/services/storage";
-import type { ContentChunk, Library, LibraryItem, LibraryItemType } from "@/types/library";
+import type { ContentChunk, Deck, DeckSource, DeckSourceType } from "@/types/deck";
 import { LIBRARY_COLORS } from "@/lib/colors";
 import { useAppStore } from "@/stores/app.store";
 import { chunkPageItems, detectHeaderFooterTexts } from "@/lib/pdf-chunker";
@@ -131,14 +131,14 @@ function cleanFileTitle(filename: string): string {
   );
 }
 
-async function buildItemFromFile(libraryId: string, file: File) {
+async function buildItemFromFile(deckId: string, file: File) {
   const lower = file.name.toLowerCase();
   const nowType = file.type.toLowerCase();
 
   if (lower.endsWith(".md") || lower.endsWith(".markdown")) {
     const content = await file.text();
     return {
-      libraryId,
+      deckId,
       type: "markdown" as const,
       title: cleanFileTitle(file.name),
       content,
@@ -155,7 +155,7 @@ async function buildItemFromFile(libraryId: string, file: File) {
   if (lower.endsWith(".txt") || nowType.startsWith("text/")) {
     const content = await file.text();
     return {
-      libraryId,
+      deckId,
       type: "text" as const,
       title: cleanFileTitle(file.name),
       content,
@@ -173,7 +173,7 @@ async function buildItemFromFile(libraryId: string, file: File) {
     const extracted = await extractPdfText(file);
     const content = extracted.text || "PDF uploaded. Text extraction unavailable for this file.";
     return {
-      libraryId,
+      deckId,
       type: "pdf" as const,
       title: cleanFileTitle(file.name),
       content,
@@ -194,7 +194,7 @@ async function buildItemFromFile(libraryId: string, file: File) {
     const dataUrl = await fileToDataUrl(file);
     const dimensions = await getImageDimensions(dataUrl).catch(() => undefined);
     return {
-      libraryId,
+      deckId,
       type: "image" as const,
       title: cleanFileTitle(file.name),
       content: dataUrl,
@@ -210,7 +210,7 @@ async function buildItemFromFile(libraryId: string, file: File) {
 
   const fallbackContent = await file.text().catch(() => "");
   return {
-    libraryId,
+    deckId,
     type: "file" as const,
     title: file.name,
     content: fallbackContent,
@@ -224,15 +224,15 @@ async function buildItemFromFile(libraryId: string, file: File) {
 }
 
 export interface CreateTextItemInput {
-  libraryId: string;
+  deckId: string;
   title: string;
   content: string;
-  type?: Extract<LibraryItemType, "text" | "markdown">;
+  type?: Extract<DeckSourceType, "text" | "markdown">;
 }
 
 export function useLibrary() {
-  const [libraries, setLibraries] = useState<Library[]>([]);
-  const [items, setItems] = useState<LibraryItem[]>([]);
+  const [libraries, setLibraries] = useState<Deck[]>([]);
+  const [items, setItems] = useState<DeckSource[]>([]);
   const { activeLibraryId, setActiveLibraryId } = useAppStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -244,7 +244,7 @@ export function useLibrary() {
   const hasInitializedRef = useRef(false);
 
   const refreshLibraries = useCallback(async () => {
-    const allLibraries = await StorageService.listLibraries();
+    const allLibraries = await StorageService.listDecks();
     setLibraries(allLibraries);
     const current = useAppStore.getState().activeLibraryId;
     if (!hasInitializedRef.current) {
@@ -265,16 +265,16 @@ export function useLibrary() {
   const refreshItems = useCallback(async () => {
     const query = searchQuery.trim();
     if (query) {
-      const result = await StorageService.searchLibraryItems({
+      const result = await StorageService.searchDeckSources({
         query,
-        libraryIds: activeLibraryId ? [activeLibraryId] : undefined,
+        deckIds: activeLibraryId ? [activeLibraryId] : undefined,
         limit: 120,
       });
-      setItems(result.map((entry) => entry.item));
+      setItems(result.map((entry) => entry.source));
       return;
     }
 
-    const list = await StorageService.listLibraryItems(activeLibraryId || undefined);
+    const list = await StorageService.listDeckSources(activeLibraryId || undefined);
     setItems(list);
   }, [activeLibraryId, searchQuery]);
 
@@ -317,7 +317,7 @@ export function useLibrary() {
       setIsMutating(true);
       setError(null);
       try {
-        const created = await StorageService.createLibrary({
+        const created = await StorageService.createDeck({
           name: trimmed,
           color: color || LIBRARY_COLORS[libraries.length % LIBRARY_COLORS.length].hex,
           description,
@@ -338,12 +338,12 @@ export function useLibrary() {
   const updateLibrary = useCallback(
     async (
       id: string,
-      updates: Partial<Pick<Library, "name" | "color" | "description">>
+      updates: Partial<Pick<Deck, "name" | "color" | "description">>
     ) => {
       setIsMutating(true);
       setError(null);
       try {
-        await StorageService.updateLibrary(id, updates);
+        await StorageService.updateDeck(id, updates);
         await refreshLibraries();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to update library");
@@ -359,7 +359,7 @@ export function useLibrary() {
       setIsMutating(true);
       setError(null);
       try {
-        await StorageService.deleteLibrary(id);
+        await StorageService.deleteDeck(id);
         await refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to delete library");
@@ -371,14 +371,14 @@ export function useLibrary() {
   );
 
   const addTextItem = useCallback(
-    async ({ libraryId, title, content, type = "text" }: CreateTextItemInput) => {
-      if (!libraryId || !content.trim()) return null;
+    async ({ deckId, title, content, type = "text" }: CreateTextItemInput) => {
+      if (!deckId || !content.trim()) return null;
 
       setIsMutating(true);
       setError(null);
       try {
-        const created = await StorageService.createLibraryItem({
-          libraryId,
+        const created = await StorageService.createDeckSource({
+          deckId,
           type,
           title: title.trim() || "Untitled note",
           content,
@@ -401,15 +401,15 @@ export function useLibrary() {
   );
 
   const addFiles = useCallback(
-    async (libraryId: string, files: File[]) => {
-      if (!libraryId || files.length === 0) return;
+    async (deckId: string, files: File[]) => {
+      if (!deckId || files.length === 0) return;
 
       setIsMutating(true);
       setError(null);
       try {
         for (const file of files) {
-          const parsed = await buildItemFromFile(libraryId, file);
-          await StorageService.createLibraryItem(parsed);
+          const parsed = await buildItemFromFile(deckId, file);
+          await StorageService.createDeckSource(parsed);
         }
         await refresh();
       } catch (err) {
@@ -426,7 +426,7 @@ export function useLibrary() {
       setIsMutating(true);
       setError(null);
       try {
-        await StorageService.deleteLibraryItem(itemId);
+        await StorageService.deleteDeckSource(itemId);
         await refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to delete item");
@@ -438,7 +438,7 @@ export function useLibrary() {
   );
 
   const librariesMap = useMemo(() => {
-    return libraries.reduce<Record<string, Library>>((acc, library) => {
+    return libraries.reduce<Record<string, Deck>>((acc, library) => {
       acc[library.id] = library;
       return acc;
     }, {});

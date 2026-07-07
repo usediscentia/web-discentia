@@ -49,18 +49,18 @@ interface StudyState {
   nextSessionCount: number;
 
   // Source contexts for AI evaluation
-  sourceContexts: Record<string, string>; // libraryItemId → text
-  accentColors: Record<string, string>; // libraryItemId → library color hex
-  libraryNames: Record<string, string>; // libraryItemId → library name
+  sourceContexts: Record<string, string>; // sourceId → text
+  accentColors: Record<string, string>; // sourceId → deck color hex
+  libraryNames: Record<string, string>; // sourceId → deck name
 
-  // Set only when session is started with a libraryItemId filter
+  // Set only when session is started with a sourceId filter
   activeFilterItemTitle: string | null;
 
   // Pending confidence (set before submitting/skipping)
   pendingConfidence: "unsure" | "think-so" | "certain" | null;
 
   // Actions
-  initSession: (libraryItemId?: string) => Promise<void>;
+  initSession: (sourceId?: string) => Promise<void>;
   startReview: () => void;
   submitAnswer: (answer: string) => Promise<void>;
   skipCard: () => void;
@@ -96,7 +96,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
   activeFilterItemTitle: null,
   pendingConfidence: null,
 
-  initSession: async (libraryItemId?: string) => {
+  initSession: async (sourceId?: string) => {
     set({
       phase: "loading",
       cards: [],
@@ -117,8 +117,8 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     });
 
     const [cards, stats, insights, totalCards, nextReview] = await Promise.all([
-      libraryItemId
-        ? StorageService.getDueCardsByLibraryItem(libraryItemId)
+      sourceId
+        ? StorageService.getDueCardsBySource(sourceId)
         : StorageService.getDueCards(),
       StorageService.getDashboardStats(),
       StorageService.getDashboardInsights(),
@@ -145,11 +145,11 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     // Non-blocking: load source contexts and accent colors in parallel
     void (async () => {
       const uniqueItemIds = [...new Set(
-        cards.filter(c => c.libraryItemId).map(c => c.libraryItemId!)
+        cards.filter(c => c.sourceId).map(c => c.sourceId!)
       )];
 
       const items = await Promise.all(
-        uniqueItemIds.map(id => StorageService.getLibraryItem(id).catch(() => null))
+        uniqueItemIds.map(id => StorageService.getDeckSource(id).catch(() => null))
       );
 
       const contexts: Record<string, string> = {};
@@ -176,12 +176,12 @@ export const useStudyStore = create<StudyState>((set, get) => ({
           text = item.content.slice(0, 1500);
         }
         contexts[id] = text;
-        if (item.libraryId) itemLibraryIds[id] = item.libraryId;
+        if (item.deckId) itemLibraryIds[id] = item.deckId;
       }
 
       const uniqueLibraryIds = [...new Set(Object.values(itemLibraryIds))];
       const libraries = await Promise.all(
-        uniqueLibraryIds.map(id => StorageService.getLibrary(id).catch(() => null))
+        uniqueLibraryIds.map(id => StorageService.getDeck(id).catch(() => null))
       );
       const libraryById = new Map(
         libraries.filter(Boolean).map(lib => [lib!.id, lib!])
@@ -203,8 +203,8 @@ export const useStudyStore = create<StudyState>((set, get) => ({
         }
       }
 
-      const filterItem = libraryItemId
-        ? items.find((it) => it?.id === libraryItemId)
+      const filterItem = sourceId
+        ? items.find((it) => it?.id === sourceId)
         : null;
 
       set({
@@ -233,7 +233,7 @@ export const useStudyStore = create<StudyState>((set, get) => ({
     set({ phase: "evaluating" });
 
     const { config, provider } = useProviderStore.getState().getConfiguredProvider();
-    const sourceContext = card.libraryItemId ? sourceContexts[card.libraryItemId] : undefined;
+    const sourceContext = card.sourceId ? sourceContexts[card.sourceId] : undefined;
 
     const { verdict, explanation, keyMissing } = await evaluateAnswer(card, answer, sourceContext, provider, config);
 

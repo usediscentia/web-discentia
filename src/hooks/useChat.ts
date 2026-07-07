@@ -10,7 +10,7 @@ import {
   detectExerciseIntent,
   parseExerciseFromResponse,
 } from "@/services/ai/parsers/exercise.parser";
-import type { Library } from "@/types/library";
+import type { Deck } from "@/types/deck";
 import { PROVIDER_DEFAULTS } from "@/types/ai";
 import { buildChatContext } from "@/lib/chat-context";
 
@@ -18,7 +18,7 @@ export function useChat() {
   const [streamingContent, setStreamingContent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isGeneratingExercise, setIsGeneratingExercise] = useState(false);
-  const [availableLibraries, setAvailableLibraries] = useState<Library[]>([]);
+  const [availableLibraries, setAvailableLibraries] = useState<Deck[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
   const skipNextLoadRef = useRef(false);
   const tokenBufferRef = useRef<string>("");
@@ -32,17 +32,16 @@ export function useChat() {
   const setMessages = useChatStore(s => s.setMessages);
   const appendMessage = useChatStore(s => s.appendMessage);
   const clearMessages = useChatStore(s => s.clearMessages);
-  const selectedLibraryIds = useChatStore(s => s.selectedLibraryIds);
-  const setSelectedLibraryIds = useChatStore(s => s.setSelectedLibraryIds);
-  const toggleLibrary = useChatStore(s => s.toggleLibrary);
-  const clearLibraries = useChatStore(s => s.clearLibraries);
+  const selectedDeckId = useChatStore(s => s.selectedDeckId);
+  const setSelectedDeckId = useChatStore(s => s.setSelectedDeckId);
+  const clearDeck = useChatStore(s => s.clearDeck);
 
   const { getConfiguredProvider } = useProviderStore();
   const { setActiveView } = useAppStore();
 
   const refreshLibraries = useCallback(async () => {
-    const libraries = await StorageService.listLibraries();
-    setAvailableLibraries(libraries);
+    const decks = await StorageService.listDecks();
+    setAvailableLibraries(decks);
   }, []);
 
   useEffect(() => {
@@ -61,7 +60,7 @@ export function useChat() {
 
     if (!activeConversationId) {
       clearMessages();
-      clearLibraries();
+      clearDeck();
       return;
     }
     if (skipNextLoadRef.current) {
@@ -76,7 +75,7 @@ export function useChat() {
       .then(([conversationMessages, conversation]) => {
         if (cancelled) return;
         setMessages(conversationMessages);
-        setSelectedLibraryIds(conversation?.libraryIds || []);
+        setSelectedDeckId(conversation?.deckId || null);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -92,10 +91,10 @@ export function useChat() {
     };
   }, [
     activeConversationId,
-    clearLibraries,
+    clearDeck,
     clearMessages,
     setMessages,
-    setSelectedLibraryIds,
+    setSelectedDeckId,
   ]);
 
   const sendMessage = useCallback(
@@ -123,16 +122,16 @@ export function useChat() {
       if (!convId) {
         const conversation = await StorageService.createConversation(
           content.slice(0, 50),
-          selectedLibraryIds
+          selectedDeckId ?? "" // TODO(issue-06): chat becomes deck-scoped, "" dies
         );
         convId = conversation.id;
         skipNextLoadRef.current = true;
         setActiveConversationId(convId);
       }
 
-      // Persist selected libraries in existing conversations as well.
+      // Persist selected deck in existing conversations as well.
       await StorageService.updateConversation(convId, {
-        libraryIds: selectedLibraryIds,
+        deckId: selectedDeckId ?? "",
         updatedAt: Date.now(),
       });
 
@@ -144,7 +143,7 @@ export function useChat() {
 
       const { aiMessages, injectedChunks } = await buildChatContext(
         content,
-        selectedLibraryIds,
+        selectedDeckId ? [selectedDeckId] : [],
         currentMessages,
         exerciseIntent
       );
@@ -257,7 +256,7 @@ export function useChat() {
     [
       getConfiguredProvider,
       appendMessage,
-      selectedLibraryIds,
+      selectedDeckId,
       setActiveConversationId,
       setIsStreaming,
       setActiveView,
@@ -272,10 +271,10 @@ export function useChat() {
   const startNewConversation = useCallback(() => {
     setActiveConversationId(null);
     clearMessages();
-    clearLibraries();
+    clearDeck();
     setStreamingContent("");
     setError(null);
-  }, [clearLibraries, clearMessages, setActiveConversationId]);
+  }, [clearDeck, clearMessages, setActiveConversationId]);
 
   return {
     messages,
@@ -288,9 +287,9 @@ export function useChat() {
     stopStreaming,
     startNewConversation,
     availableLibraries,
-    selectedLibraryIds,
-    toggleLibrary,
-    setSelectedLibraryIds,
+    selectedDeckId,
+    setSelectedDeckId,
+    clearDeck,
     refreshLibraries,
   };
 }
