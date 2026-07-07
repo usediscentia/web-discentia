@@ -181,7 +181,7 @@ export default function ChatView() {
 
   const handleOpenCitation = (citation: Citation) => {
     setLibraryFocusItemId(citation.libraryItemId);
-    setActiveView("library");
+    setActiveView("decks"); // TODO(issue-06)
   };
 
   const handleRenameConversation = () => {

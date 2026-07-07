@@ -99,7 +99,7 @@ export function StudyComplete() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.25 }}
         >
-          <Button onClick={() => setActiveView("stats")} className="w-full">
+          <Button onClick={() => setActiveView("study") /* TODO(issue-08): stats section */} className="w-full">
             Ver estatísticas
           </Button>
           <button

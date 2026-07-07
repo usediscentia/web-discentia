@@ -78,7 +78,7 @@ export function TodayScreen() {
             </p>
           </div>
           <Button
-            onClick={() => setActiveView("library")}
+            onClick={() => setActiveView("decks")}
             className="mt-2"
           >
             Criar meu primeiro deck
@@ -133,7 +133,7 @@ export function TodayScreen() {
           )}
 
           <button
-            onClick={() => setActiveView("library")}
+            onClick={() => setActiveView("decks")}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer mt-2"
           >
             Ver todos os decks

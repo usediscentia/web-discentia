@@ -283,7 +283,7 @@ function CitationsTab({ item, library }: { item: DeckSource; library?: Deck }) {
   const goToConversation = (conversationId: string | undefined) => {
     if (!conversationId) return;
     setActiveConversationId(conversationId);
-    setActiveView("chat");
+    setActiveView("decks"); // TODO(issue-06): deck chat
   };
 
   const accentColor = library?.color ?? "#34D399";
